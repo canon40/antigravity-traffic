@@ -83,14 +83,42 @@ def test_naver_connection():
         return False, str(e)
 
 
+def _load_defaults_config():
+    for path in (
+        _DEFAULT_CONFIG_PATH,
+        os.path.join(os.getcwd(), "config.defaults.json"),
+    ):
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                return json.load(f)
+    return None
+
+
 def load_config():
+    defaults = _load_defaults_config()
     path = _config_path()
+    user = None
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    if os.path.exists(_DEFAULT_CONFIG_PATH):
-        with open(_DEFAULT_CONFIG_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                user = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            user = None
+
+    if user and defaults:
+        cfg = {**defaults, **user}
+        for key in ("keywords", "products", "product_urls", "blog_urls", "priority_keywords"):
+            if not cfg.get(key):
+                cfg[key] = defaults.get(key) or []
+        return cfg
+    if user:
+        if user.get("keywords"):
+            return user
+        if defaults:
+            return {**defaults, **user, "keywords": defaults.get("keywords") or []}
+        return user
+    if defaults:
+        return defaults
     return {
         "store_name": "나눔랩",
         "track_interval_minutes": 60,
@@ -102,8 +130,16 @@ def load_config():
 
 
 def save_config(config):
-    with open(_config_path(), "w", encoding="utf-8") as f:
-        json.dump(config, f, ensure_ascii=False, indent=2)
+    path = _config_path()
+    try:
+        parent = os.path.dirname(path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(config, f, ensure_ascii=False, indent=2)
+    except OSError:
+        if not os.environ.get("VERCEL"):
+            raise
 
 
 def ensure_history_file():
@@ -116,6 +152,14 @@ def ensure_history_file():
 
 
 def get_history(limit=None):
+    try:
+        from rank_persistence import fetch_history
+
+        rows = fetch_history(limit=limit)
+        if rows:
+            return rows
+    except Exception:
+        pass
     ensure_history_file()
     rows = []
     try:
@@ -151,18 +195,26 @@ def append_history(keyword, store_name, rank, prev_rank, task_type, detail):
     else:
         change = "0"
 
+    row = {
+        "날짜": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "키워드": keyword,
+        "스토어명": store_name,
+        "순위": rank,
+        "이전순위": prev_rank if prev_rank is not None else "-",
+        "변동": change,
+        "작업유형": task_type,
+        "상세": detail,
+    }
+    try:
+        from rank_persistence import append_history_row
+
+        append_history_row(row)
+        return
+    except Exception:
+        pass
     with open(_history_path(), "a", encoding="utf-8-sig", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow([
-            datetime.now().strftime("%Y-%m-%d %H:%M"),
-            keyword,
-            store_name,
-            rank,
-            prev_rank if prev_rank is not None else "-",
-            change,
-            task_type,
-            detail,
-        ])
+        writer.writerow([row[h] for h in HISTORY_HEADERS])
 
 
 def get_all_product_rankings(keyword, product_map, logger=None, max_pages=13):
@@ -365,11 +417,25 @@ def _keywords_for_run(config=None, *, serverless=False):
     return config.get("keywords") or []
 
 
-def track_all_keywords(logger=None, *, serverless=None):
+def _rotate_keywords(keywords, offset: int, batch_size: int):
+    if not keywords or batch_size <= 0:
+        return keywords
+    n = len(keywords)
+    size = min(batch_size, n)
+    start = offset % n
+    picked = [keywords[(start + i) % n] for i in range(size)]
+    return picked
+
+
+def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keyword_batch_size=None):
     config = load_config()
     if serverless is None:
         serverless = bool(os.environ.get("VERCEL"))
     keywords = _keywords_for_run(config, serverless=serverless)
+    if keyword_batch_size:
+        keywords = _rotate_keywords(keywords, int(keyword_offset or 0), int(keyword_batch_size))
+        if logger:
+            logger(f"📌 Cron 배치: {len(keywords)}개 키워드 (offset={keyword_offset})")
     if not keywords:
         kw = config.get("default_keyword")
         if kw:
@@ -381,6 +447,8 @@ def track_all_keywords(logger=None, *, serverless=None):
     if logger and serverless:
         logger(f"📌 서버리스 우선 추적: {len(keywords)}개 키워드")
 
+    max_pages = int(config.get("serverless_max_pages") or 5) if serverless else 13
+
     results = []
     for item in keywords:
         keyword = item.get("keyword", "")
@@ -391,7 +459,7 @@ def track_all_keywords(logger=None, *, serverless=None):
         prev = get_last_rank(keyword, store_name)
         product_id = item.get("product_id")
         if product_id:
-            rank = check_product_rank(keyword, product_id, logger=logger)
+            rank = check_product_rank(keyword, product_id, logger=logger, max_pages=max_pages)
         else:
             rank = check_naver_shopping_rank(keyword, store_name, logger=logger)
         if rank is None:

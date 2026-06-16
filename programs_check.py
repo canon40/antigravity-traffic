@@ -153,6 +153,28 @@ def check_javis_port() -> dict:
         )
 
 
+def check_seo_hub() -> dict:
+    try:
+        import subprocess
+
+        py = sys.executable
+        proc = subprocess.run(
+            [py, os.path.join(_ROOT, "scripts", "verify_seo_hub.py"), "--json"],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            cwd=_ROOT,
+        )
+        if proc.returncode != 0:
+            return _step("SEO 허브 API", False, (proc.stdout or proc.stderr)[:200], "run_seo_hub_verify.bat")
+        data = json.loads(proc.stdout or "{}")
+        fails = [r["name"] for r in (data.get("results") or []) if not r.get("ok")]
+        detail = f"checks={len(data.get('results') or [])}, fail={len(fails)}"
+        return _step("SEO 허브 API", data.get("ok", False), detail, "scripts/verify_seo_hub.py")
+    except Exception as e:
+        return _step("SEO 허브 API", False, str(e)[:100], "run_seo_hub_verify.bat")
+
+
 def run_checks(*, include_optional: bool = True) -> list[dict]:
     steps = [
         check_python(),
@@ -161,6 +183,7 @@ def run_checks(*, include_optional: bool = True) -> list[dict]:
         check_wiki(),
         check_drawer(),
         check_gui_import(),
+        check_seo_hub(),
         check_ollama(),
     ]
     if include_optional:
@@ -187,7 +210,7 @@ def main(argv=None) -> int:
     args = p.parse_args(argv)
 
     steps = run_checks(include_optional=not args.minimal)
-    required = steps if args.minimal else steps[:7]
+    required = steps if args.minimal else steps[:8]
     all_required_ok = all(s["ok"] for s in required)
     all_ok = all(s["ok"] for s in steps)
 

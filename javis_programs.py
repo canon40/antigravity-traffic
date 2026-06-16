@@ -1,18 +1,22 @@
 # -*- coding: utf-8 -*-
-"""JARVIS·로컬 프로그램 카탈로그 및 안전 실행."""
+"""JARVIS·Traffic 프로그램 카탈로그 및 로컬 실행."""
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
+
+from javis_serverless import cloud_runtime, is_vercel_runtime, resolve_cloud_action, run_serverless_program
 
 _ROOT = Path(__file__).resolve().parent
-JARVIS_ROOT = Path(os.environ.get("JARVIS_ROOT", r"D:\@code\javis"))
+_CATALOG_PATH = _ROOT / "data" / "programs_catalog.json"
 
 CATEGORIES: dict[str, str] = {
+    "traffic": "트래픽 · SEO 허브",
     "seo": "SEO · 순위",
     "blog": "블로그 · 콘텐츠",
     "video": "영상 · 숏츠",
@@ -21,160 +25,51 @@ CATEGORIES: dict[str, str] = {
     "ops": "연동 · 점검",
 }
 
-# source: local = anty traffic 루트 bat, javis = JARVIS_ROOT bat
-PROGRAMS: list[dict[str, Any]] = [
-    {
-        "id": "web_hub",
-        "name": "웹 SEO 허브 (현재)",
-        "category": "seo",
-        "source": "local",
-        "launcher": "run.bat",
-        "description": "순위 추적·SEO·블로그·JARVIS 런처 PWA 대시보드",
-        "icon": "fa-gauge-high",
-    },
-    {
-        "id": "autoblog_gui",
-        "name": "Autoblog GUI",
-        "category": "blog",
-        "source": "local",
-        "launcher": "run_gui.bat",
-        "description": "네이버·티스토리 블로그 자동화 데스크톱 GUI",
-        "icon": "fa-window-maximize",
-    },
-    {
-        "id": "seo_pipeline",
-        "name": "SEO 파이프라인",
-        "category": "seo",
-        "source": "local",
-        "launcher": "run_seo_pipeline.bat",
-        "description": "키워드·순위·콘텐츠 일괄 SEO 작업",
-        "icon": "fa-diagram-project",
-    },
-    {
-        "id": "content_factory",
-        "name": "콘텐츠 팩토리",
-        "category": "blog",
-        "source": "local",
-        "launcher": "run_content_factory.bat",
-        "description": "상품·블로그용 콘텐츠 생성 파이프라인",
-        "icon": "fa-industry",
-    },
-    {
-        "id": "shorts_local",
-        "name": "숏츠 팩토리 (로컬)",
-        "category": "video",
-        "source": "local",
-        "launcher": "run_shorts_factory.bat",
-        "description": "쇼핑·숏츠 영상 제작 (로컬 연동)",
-        "icon": "fa-film",
-    },
-    {
-        "id": "javis_connect",
-        "name": "JARVIS 연동 점검",
-        "category": "ops",
-        "source": "local",
-        "launcher": "run_javis_connect.bat",
-        "description": "Supabase·환경변수 동기화 및 연결 확인",
-        "icon": "fa-plug",
-    },
-    {
-        "id": "programs_check",
-        "name": "프로그램 점검",
-        "category": "ops",
-        "source": "local",
-        "launcher": "run_programs_check.bat",
-        "description": "Python·Ollama·Playwright·브리지 순차 점검",
-        "icon": "fa-stethoscope",
-    },
-    {
-        "id": "jarvis_ui",
-        "name": "JARVIS UI v3",
-        "category": "agent",
-        "source": "javis",
-        "launcher": "run_jarvis_ui_v3.bat",
-        "description": "JARVIS 메인 Qt/Streamlit 통합 UI",
-        "icon": "fa-robot",
-    },
-    {
-        "id": "jarvis_video",
-        "name": "동영상 스튜디오",
-        "category": "video",
-        "source": "javis",
-        "launcher": "run_video_studio.bat",
-        "description": "JARVIS 영상 제작·편집 스튜디오",
-        "icon": "fa-video",
-    },
-    {
-        "id": "jarvis_detail",
-        "name": "상세페이지 스튜디오",
-        "category": "studio",
-        "source": "javis",
-        "launcher": "run_detail_page_studio.bat",
-        "description": "스마트스토어 상세페이지 AI 스튜디오",
-        "icon": "fa-store",
-    },
-    {
-        "id": "jarvis_shorts",
-        "name": "숏츠 팩토리 (JARVIS)",
-        "category": "video",
-        "source": "javis",
-        "launcher": "run_shorts_factory.bat",
-        "description": "JARVIS 숏츠·쇼핑 영상 자동화",
-        "icon": "fa-clapperboard",
-    },
-    {
-        "id": "jarvis_blog",
-        "name": "블로그 자동 (JARVIS)",
-        "category": "blog",
-        "source": "javis",
-        "launcher": "run_블로그_자동.bat",
-        "description": "JARVIS 블로그 자동 발행 파이프라인",
-        "icon": "fa-blog",
-    },
-    {
-        "id": "jarvis_workspace",
-        "name": "워크스페이스",
-        "category": "agent",
-        "source": "javis",
-        "launcher": "run_workspace.bat",
-        "description": "JARVIS 멀티 에이전트 워크스페이스",
-        "icon": "fa-sitemap",
-    },
-    {
-        "id": "jarvis_unified",
-        "name": "통합 스튜디오",
-        "category": "studio",
-        "source": "javis",
-        "launcher": "run_unified_studio.bat",
-        "description": "영상·이미지·콘텐츠 통합 스튜디오",
-        "icon": "fa-cubes",
-    },
-    {
-        "id": "jarvis_naver",
-        "name": "네이버 하이브리드",
-        "category": "seo",
-        "source": "javis",
-        "launcher": "run_naver_hybrid.bat",
-        "description": "네이버 SEO·수익 하이브리드 파이프라인",
-        "icon": "fa-n",
-    },
-    {
-        "id": "jarvis_boot",
-        "name": "JARVIS 바로시작",
-        "category": "agent",
-        "source": "javis",
-        "launcher": "run_바로시작.bat",
-        "description": "JARVIS 핵심 모듈 빠른 기동",
-        "icon": "fa-bolt",
-    },
-]
+
+def _resolve_jarvis_root() -> Path:
+    bundled = _ROOT / "javis"
+    external = Path(os.environ.get("JARVIS_ROOT", r"D:\@code\javis"))
+    bundled_count = len(list(bundled.glob("run_*.bat"))) if bundled.is_dir() else 0
+    external_count = len(list(external.glob("run_*.bat"))) if external.is_dir() else 0
+    if external_count >= bundled_count and external_count > 0:
+        return external.resolve()
+    if bundled_count > 0:
+        return bundled.resolve()
+    for path in (external, bundled, Path(r"D:\@code\javis")):
+        if path.is_dir():
+            return path.resolve()
+    return external
+
+
+JARVIS_ROOT = _resolve_jarvis_root()
+
+
+def _load_catalog_raw() -> dict[str, Any]:
+    if not _CATALOG_PATH.is_file():
+        return {}
+    try:
+        with open(_CATALOG_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _load_catalog_programs() -> list[dict[str, Any]]:
+    data = _load_catalog_raw()
+    programs = data.get("programs") or []
+    return [p for p in programs if isinstance(p, dict) and p.get("launcher")]
 
 
 def _launcher_path(entry: dict[str, Any]) -> Path | None:
     rel = entry.get("launcher") or ""
     if not rel:
         return None
-    base = _ROOT if entry.get("source") == "local" else JARVIS_ROOT
+    source = entry.get("source", "local")
+    if source == "javis":
+        base = JARVIS_ROOT
+    else:
+        base = _ROOT
     path = base / rel
     return path if path.is_file() else None
 
@@ -185,35 +80,74 @@ def _bridge_health() -> dict[str, Any]:
         import urllib.request
 
         with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/javis/health", timeout=1) as resp:
-            data = resp.read().decode("utf-8")
+            resp.read()
         return {"ok": True, "port": port, "detail": "Autoblog 브리지 실행 중"}
     except Exception:
         return {"ok": False, "port": port, "detail": "Autoblog GUI 미실행 (run_gui.bat)"}
 
 
-def get_catalog() -> dict[str, Any]:
+def _filter_workspace(programs: list[dict[str, Any]], workspace: str | None) -> list[dict[str, Any]]:
+    ws = (workspace or "all").strip().lower()
+    if ws in ("", "all"):
+        return programs
+    return [p for p in programs if (p.get("workspace") or "").lower() == ws]
+
+
+def get_catalog(*, workspace: str | None = None) -> dict[str, Any]:
+    programs = _load_catalog_programs()
+    programs = _filter_workspace(programs, workspace)
+
+    on_cloud = is_vercel_runtime()
     items = []
-    for entry in PROGRAMS:
+    for entry in programs:
         path = _launcher_path(entry)
+        runtime = cloud_runtime(entry)
+        cloud_action = resolve_cloud_action(entry)
+        local_ok = path is not None
+        cloud_ok = cloud_action is not None and cloud_action != "local_hint"
+        if on_cloud:
+            available = cloud_ok or cloud_action == "local_hint"
+        else:
+            available = local_ok or cloud_ok
         items.append({
             **entry,
-            "category_label": CATEGORIES.get(entry["category"], entry["category"]),
-            "available": path is not None,
+            "category_label": CATEGORIES.get(entry.get("category", ""), entry.get("category", "")),
+            "available": available,
+            "runtime": runtime,
+            "cloud_action": cloud_action,
             "launcher_path": str(path) if path else None,
         })
+
+    bundled = (_ROOT / "javis").is_dir()
+    meta = _load_catalog_raw()
     return {
+        "workspace": workspace or "all",
         "jarvis_root": str(JARVIS_ROOT),
         "jarvis_installed": JARVIS_ROOT.is_dir(),
+        "jarvis_bundled": bundled,
+        "jarvis_remote": meta.get("jarvis_remote", "https://github.com/FatihMakes/Mark-XXXIX.git"),
+        "catalog_path": str(_CATALOG_PATH),
+        "catalog_count": len(_load_catalog_programs()),
         "categories": CATEGORIES,
         "programs": items,
         "bridge": _bridge_health(),
+        "cloud_mode": on_cloud,
+        "cloud_programs": sum(1 for p in items if p.get("runtime") == "cloud"),
+        "traffic_count": sum(1 for p in items if p.get("workspace") == "traffic"),
+        "javis_count": sum(1 for p in items if p.get("workspace") == "javis"),
     }
 
 
-def launch_program(program_id: str) -> dict[str, Any]:
-    entry = next((p for p in PROGRAMS if p["id"] == program_id), None)
+def launch_program(program_id: str, *, logger: Callable[[str], None] | None = None) -> dict[str, Any]:
+    programs = _load_catalog_programs()
+    entry = next((p for p in programs if p["id"] == program_id), None)
     if not entry:
         return {"success": False, "error": "알 수 없는 프로그램 ID"}
+
+    if is_vercel_runtime():
+        log = logger or (lambda _m: None)
+        return run_serverless_program(program_id, entry, log)
+
     path = _launcher_path(entry)
     if not path:
         root = _ROOT if entry.get("source") == "local" else JARVIS_ROOT
@@ -235,4 +169,5 @@ def launch_program(program_id: str) -> dict[str, Any]:
         "success": True,
         "message": f"{entry['name']} 실행 요청됨",
         "launcher": str(path),
+        "workspace": entry.get("workspace"),
     }

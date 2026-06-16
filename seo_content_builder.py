@@ -2,8 +2,15 @@ import json
 import os
 from datetime import datetime
 
+from app_resources import get_storage_dir
+
 CONFIG_PATH = "config.json"
-OUTPUT_DIR = "generated_content"
+
+
+def _output_dir():
+    path = os.path.join(get_storage_dir(), "generated_content")
+    os.makedirs(path, exist_ok=True)
+    return path
 
 WORKFLOW_TYPES = {
     "product_detail": "상품 상세페이지 (ABCD)",
@@ -153,11 +160,11 @@ def generate_content(workflow_type, keyword, product_name=None, brand=None):
 
 
 def save_content(result, product_id=None):
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    out = _output_dir()
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     wf = result.get("workflow", "content")
     pid = product_id or "general"
-    path = os.path.join(OUTPUT_DIR, f"{pid}_{wf}_{ts}.json")
+    path = os.path.join(out, f"{pid}_{wf}_{ts}.json")
     with open(path, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
     return path

@@ -27,7 +27,50 @@
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--bg-gradient); color: var(--text-main); min-height: 100vh; padding: 16px 14px 32px; }
-        .container { max-width: 800px; margin: 0 auto; }
+        .app-shell { display: flex; gap: 16px; max-width: 1180px; margin: 0 auto; align-items: flex-start; }
+        .sidebar {
+            width: 272px; flex-shrink: 0; position: sticky; top: 16px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .main-area { flex: 1; min-width: 0; }
+        .sidebar-section {
+            background: var(--panel-bg); border: 1px solid var(--panel-border); backdrop-filter: blur(12px);
+            border-radius: 16px; padding: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .sidebar-section h2 {
+            font-size: 0.82rem; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+            letter-spacing: 0.02em;
+        }
+        .sidebar-section.traffic-side h2 { color: #34d399; }
+        .sidebar-section.javis-side h2 { color: #c4b5fd; }
+        .sidebar-mini { font-size: 0.7rem; color: var(--text-sub); line-height: 1.45; margin-top: 8px; }
+        .sidebar-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .sidebar-actions .btn { padding: 10px 12px; font-size: 0.82rem; }
+        .sidebar-program {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06); margin-bottom: 6px;
+        }
+        .sidebar-program span { font-size: 0.78rem; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sidebar-program button {
+            border: none; border-radius: 8px; padding: 6px 10px; font-size: 0.72rem; font-weight: 700;
+            cursor: pointer; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; flex-shrink: 0;
+        }
+        .sidebar-program button:disabled { opacity: 0.35; cursor: not-allowed; }
+        .bg-pill {
+            display: inline-flex; align-items: center; gap: 5px; font-size: 0.68rem; padding: 4px 8px;
+            border-radius: 999px; background: rgba(16,185,129,0.12); color: var(--accent-green);
+            border: 1px solid rgba(16,185,129,0.25); margin-top: 6px;
+        }
+        .bg-pill.off { background: rgba(148,163,184,0.1); color: var(--text-sub); border-color: rgba(148,163,184,0.2); }
+        @media (max-width: 860px) {
+            .app-shell { flex-direction: column; }
+            .sidebar { width: 100%; position: static; display: grid; grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 520px) {
+            .sidebar { grid-template-columns: 1fr; }
+        }
+        .container { max-width: none; margin: 0; }
         header { text-align: center; margin-bottom: 20px; }
         header h1 { font-size: 1.6rem; font-weight: 700; background: linear-gradient(to right, #60a5fa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         header p { color: var(--text-sub); font-size: 0.85rem; margin-top: 4px; }
@@ -129,10 +172,68 @@
             background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff;
         }
         .program-card .btn-launch:disabled { opacity: 0.35; cursor: not-allowed; }
+        .tab-btn[data-ws] { display: inline-block; }
+        body.ws-javis .tab-btn[data-ws="traffic-only"] { display: none; }
+        body.ws-traffic .tab-btn[data-ws="javis-only"] { display: none; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="app-shell">
+        <aside class="sidebar">
+            <section class="sidebar-section traffic-side">
+                <h2><i class="fa-solid fa-chart-line"></i> Traffic</h2>
+                <div class="status-row">
+                    <div>
+                        <div style="font-size:0.72rem;color:var(--text-sub);">자동 추적</div>
+                        <div id="engineStatus" class="status-badge stopped">
+                            <div class="pulse-dot"></div>
+                            <span id="engineStatusText">중지됨</span>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.72rem;color:var(--text-sub);">최근 순위</div>
+                        <div id="currentRankVal" class="rank-big" style="font-size:1.4rem;">--</div>
+                    </div>
+                </div>
+                <div id="cronHint" class="sidebar-mini" style="display:none;"></div>
+                <div id="trafficBgPill" class="bg-pill off"><i class="fa-solid fa-circle"></i> 백그라운드 대기</div>
+                <div class="sidebar-actions">
+                    <div class="btn-grid" style="margin:0;">
+                        <button id="startBtn" class="btn btn-start" onclick="toggleScheduler(true)">
+                            <i class="fa-solid fa-play"></i> 24h 시작
+                        </button>
+                        <button id="stopBtn" class="btn btn-stop" onclick="toggleScheduler(false)" disabled>
+                            <i class="fa-solid fa-pause"></i> 중지
+                        </button>
+                    </div>
+                    <button class="btn btn-track" onclick="trackNow()">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i> 지금 추적
+                    </button>
+                    <button class="btn" id="cloudTrafficBtn" style="display:none;background:linear-gradient(135deg,#7c3aed,#a855f7);" onclick="runCloudTraffic()">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> 클라우드 트래픽 1회
+                    </button>
+                </div>
+            </section>
+
+            <section class="sidebar-section javis-side">
+                <h2><i class="fa-solid fa-robot"></i> JARVIS</h2>
+                <div id="javisEngineStatus" class="status-badge stopped" style="margin-bottom:6px;">
+                    <div class="pulse-dot"></div>
+                    <span id="javisEngineStatusText">확인 중</span>
+                </div>
+                <div id="javisHubStatus" class="hub-status" style="margin:0;">
+                    <span class="hub-pill">연동 확인 중...</span>
+                </div>
+                <div id="sidebarJavisPrograms" style="margin-top:10px;max-height:220px;overflow-y:auto;">
+                    <div class="sidebar-mini">프로그램 로딩 중...</div>
+                </div>
+                <button type="button" class="btn" style="margin-top:10px;background:linear-gradient(135deg,#4f46e5,#6366f1);width:100%;" onclick="openJavisWorkspace()">
+                    <i class="fa-solid fa-table-columns"></i> JARVIS 전체 보기
+                </button>
+            </section>
+        </aside>
+
+        <div class="main-area container">
         <div id="installBanner" class="install-banner">
             <div class="install-banner-text">
                 <h4>📱 홈 화면에 추가</h4>
@@ -142,10 +243,20 @@
         </div>
 
         <header>
-            <h1>나눔랩 SEO · JARVIS 허브</h1>
-            <p>순위 추적 · SEO · 블로그 · JARVIS 프로그램 런처</p>
+            <h1 id="hubTitle">나눔랩 SEO · Traffic 허브</h1>
+            <p id="hubSubtitle">순위 추적 · SEO · 블로그 · 로컬 트래픽 도구</p>
         </header>
 
+        <div class="workspace-switch">
+            <button type="button" class="ws-btn active" id="wsTrafficBtn" data-ws="traffic">
+                <i class="fa-solid fa-chart-line"></i> Traffic
+            </button>
+            <button type="button" class="ws-btn" id="wsJavisBtn" data-ws="javis">
+                <i class="fa-solid fa-robot"></i> JARVIS
+            </button>
+        </div>
+
+        <div id="trafficPanel" class="ws-panel active">
         <div class="glass-panel">
             <div class="status-row">
                 <div>
@@ -158,6 +269,7 @@
                 <div style="text-align:right;">
                     <div style="font-size:0.75rem;color:var(--text-sub);margin-bottom:4px;">최근 순위</div>
                     <div id="currentRankVal" class="rank-big">--</div>
+                    <div id="cronHint" style="font-size:0.7rem;color:#94a3b8;margin-top:4px;display:none;"></div>
                 </div>
             </div>
         </div>
@@ -181,15 +293,44 @@
                 <i class="fa-solid fa-clipboard-check"></i> 결과
             </button>
         </div>
+        <div class="btn-grid" id="cloudTrafficRow" style="display:none;margin-top:0;">
+            <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);grid-column:1/-1;" onclick="runCloudTraffic()">
+                <i class="fa-solid fa-cloud-arrow-up"></i> 클라우드 트래픽 1회
+            </button>
+        </div>
+        </div>
+
+        <div id="javisPanel" class="ws-panel">
+            <div class="glass-panel">
+                <div class="status-row">
+                    <div>
+                        <div style="font-size:0.75rem;color:var(--text-sub);margin-bottom:4px;">JARVIS 상태</div>
+                        <div id="javisEngineStatus" class="status-badge stopped">
+                            <div class="pulse-dot"></div>
+                            <span id="javisEngineStatusText">확인 중</span>
+                        </div>
+                    </div>
+                    <div style="text-align:right;font-size:0.78rem;color:var(--text-sub);">
+                        <div>로컬 PC에서 bat 실행</div>
+                        <div id="javisRootHint" style="margin-top:4px;color:#94a3b8;font-size:0.72rem;"></div>
+                    </div>
+                </div>
+                <div id="javisHubStatus" class="hub-status" style="margin-top:12px;">
+                    <span class="hub-pill">연동 상태 확인 중...</span>
+                </div>
+            </div>
+        </div>
 
         <div class="tabs">
-            <button class="tab-btn active" data-tab="tab-dashboard">대시보드</button>
-            <button class="tab-btn" data-tab="tab-chart">순위 그래프</button>
-            <button class="tab-btn" data-tab="tab-seo">SEO 체크</button>
-            <button class="tab-btn" data-tab="tab-blog">블로그</button>
-            <button class="tab-btn" data-tab="tab-javis">JARVIS</button>
-            <button class="tab-btn" data-tab="tab-report">일일 리포트</button>
-            <button class="tab-btn" data-tab="tab-logs">로그</button>
+            <button class="tab-btn active" data-tab="tab-dashboard" data-ws="traffic">대시보드</button>
+            <button class="tab-btn" data-tab="tab-chart" data-ws="traffic">순위 그래프</button>
+            <button class="tab-btn" data-tab="tab-seo" data-ws="traffic">SEO 체크</button>
+            <button class="tab-btn" data-tab="tab-blog" data-ws="traffic">블로그</button>
+            <button class="tab-btn" data-tab="tab-local" data-ws="traffic">로컬 실행</button>
+            <button class="tab-btn" data-tab="tab-report" data-ws="traffic">일일 리포트</button>
+            <button class="tab-btn" data-tab="tab-javis" data-ws="javis">프로그램</button>
+            <button class="tab-btn" data-tab="tab-javis-bridge" data-ws="javis">연동·점검</button>
+            <button class="tab-btn" data-tab="tab-logs" data-ws="both">로그</button>
         </div>
 
         <div id="tab-dashboard" class="tab-content active">
@@ -277,14 +418,39 @@
             </div>
         </div>
 
+        <div id="tab-local" class="tab-content">
+            <div class="glass-panel">
+                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-terminal"></i> Traffic · 로컬 프로그램</h3>
+                <p style="font-size:0.78rem;color:var(--text-sub);margin-bottom:12px;">anty traffic 저장소의 bat 런처 (순위·SEO·블로그·연동)</p>
+                <div id="trafficProgramList">
+                    <div class="empty-state">프로그램 목록 로딩 중...</div>
+                </div>
+            </div>
+        </div>
+
         <div id="tab-javis" class="tab-content">
             <div class="glass-panel">
-                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-robot"></i> JARVIS · 로컬 프로그램</h3>
-                <div id="javisHubStatus" class="hub-status">
-                    <span class="hub-pill">연동 상태 확인 중...</span>
-                </div>
+                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-robot"></i> JARVIS 프로그램</h3>
+                <p style="font-size:0.78rem;color:var(--text-sub);margin-bottom:12px;">
+                    Git 카탈로그 <span id="javisCatalogCount">—</span>개 · Vercel 클라우드 또는 PC 로컬 실행
+                </p>
                 <div id="javisProgramList">
                     <div class="empty-state">프로그램 목록 로딩 중...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-javis-bridge" class="tab-content">
+            <div class="glass-panel">
+                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-plug"></i> 연동 · 점검</h3>
+                <div id="javisBridgeBox" class="empty-state">연동 정보 로딩 중...</div>
+                <div class="btn-grid" style="margin-top:14px;">
+                    <button class="btn btn-audit" onclick="launchJavisProgram('traffic_javis_connect')">
+                        <i class="fa-solid fa-link"></i> JARVIS 연동
+                    </button>
+                    <button class="btn" style="background:#6366f1;" onclick="launchJavisProgram('traffic_programs_check')">
+                        <i class="fa-solid fa-stethoscope"></i> 전체 점검
+                    </button>
                 </div>
             </div>
         </div>
@@ -325,10 +491,42 @@
         let notifiedRank = null;
         let appConfig = null;
         let lastBlogAudit = null;
+        const WS_KEY = 'hubWorkspace';
+        let currentWorkspace = localStorage.getItem(WS_KEY) || 'traffic';
+
+        document.getElementById('wsTrafficBtn').addEventListener('click', () => setWorkspace('traffic'));
+        document.getElementById('wsJavisBtn').addEventListener('click', () => setWorkspace('javis'));
 
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn));
         });
+
+        function setWorkspace(ws) {
+            currentWorkspace = ws;
+            localStorage.setItem(WS_KEY, ws);
+            document.body.classList.remove('ws-traffic', 'ws-javis');
+            document.body.classList.add('ws-' + ws);
+            document.getElementById('wsTrafficBtn').classList.toggle('active', ws === 'traffic');
+            document.getElementById('wsJavisBtn').classList.toggle('active', ws === 'javis');
+            document.getElementById('trafficPanel').classList.toggle('active', ws === 'traffic');
+            document.getElementById('javisPanel').classList.toggle('active', ws === 'javis');
+            const title = document.getElementById('hubTitle');
+            const sub = document.getElementById('hubSubtitle');
+            if (ws === 'javis') {
+                title.textContent = '나눔랩 JARVIS 허브';
+                sub.textContent = 'JARVIS 프로그램 런처 · 연동 · 점검 (로컬 PC)';
+                const first = document.querySelector('.tab-btn[data-tab="tab-javis"]');
+                if (first) switchTab('tab-javis', first);
+                loadProgramHub('javis');
+            } else {
+                title.textContent = '나눔랩 SEO · Traffic 허브';
+                sub.textContent = '순위 추적 · SEO · 블로그 · 로컬 트래픽 도구';
+                const first = document.querySelector('.tab-btn[data-tab="tab-dashboard"]');
+                if (first) switchTab('tab-dashboard', first);
+                loadProgramHub('traffic');
+                updateStatus();
+            }
+        }
 
         function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -339,14 +537,21 @@
             if (tabId === 'tab-report') loadReport();
             if (tabId === 'tab-seo') loadLatestAudit();
             if (tabId === 'tab-blog') initBlogTab();
-            if (tabId === 'tab-javis') loadJavisHub();
+            if (tabId === 'tab-javis' || tabId === 'tab-javis-bridge') loadProgramHub('javis');
+            if (tabId === 'tab-local') loadProgramHub('traffic');
         }
 
         async function loadConfig() {
             if (appConfig) return appConfig;
-            const res = await fetch('/api/config');
-            appConfig = await res.json();
-            return appConfig;
+            try {
+                const res = await fetch('/api/config');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                appConfig = await res.json();
+                return appConfig;
+            } catch (e) {
+                showToast('설정 로드 실패 — 서버 API 확인');
+                return appConfig || { products: [], keywords: [], brand: '나눔랩', store_name: '나눔랩' };
+            }
         }
 
         async function initBlogTab() {
@@ -395,70 +600,120 @@
                 return;
             }
             showToast('블로그 초안 생성 중...');
-            const res = await fetch('/api/content/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    workflow,
-                    keyword,
-                    product_name: product.name,
-                    product_id: product.id,
-                    brand: config.brand || config.store_name,
-                }),
-            });
-            const data = await res.json();
-            const preview = document.getElementById('blogPreview');
-            const meta = document.getElementById('blogMeta');
-            if (!data.success) {
-                preview.innerHTML = `<div style="color:var(--accent-red);">${data.error || '생성 실패'}</div>`;
-                meta.innerHTML = '';
-                return;
+            try {
+                const res = await fetch('/api/content/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        workflow,
+                        keyword,
+                        product_name: product.name,
+                        product_id: product.id,
+                        brand: config.brand || config.store_name,
+                    }),
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                const preview = document.getElementById('blogPreview');
+                const meta = document.getElementById('blogMeta');
+                if (!data.success) {
+                    preview.innerHTML = `<div style="color:var(--accent-red);">${data.error || '생성 실패'}</div>`;
+                    meta.innerHTML = '';
+                    showToast(data.error || '생성 실패');
+                    return;
+                }
+                preview.innerHTML = md.render(contentToMarkdown(data));
+                meta.innerHTML = [
+                    data.workflow_label,
+                    data.keyword,
+                    product.name || '',
+                    data.saved_path ? '저장 완료' : (data.save_warning ? '미저장(서버)' : ''),
+                ].filter(Boolean).map(t => `<span class="blog-chip">${t}</span>`).join('');
+                showToast('블로그 초안이 생성되었습니다.');
+                updateLogs();
+            } catch (e) {
+                showToast('블로그 생성 실패 — 서버 연결 확인');
             }
-            preview.innerHTML = md.render(contentToMarkdown(data));
-            meta.innerHTML = [
-                data.workflow_label,
-                data.keyword,
-                product.name || '',
-                data.saved_path ? '저장 완료' : '',
-            ].filter(Boolean).map(t => `<span class="blog-chip">${t}</span>`).join('');
-            showToast('블로그 초안이 생성되었습니다.');
-            updateLogs();
         }
 
-        async function loadJavisHub() {
-            const statusBox = document.getElementById('javisHubStatus');
-            const listBox = document.getElementById('javisProgramList');
-            try {
-                const res = await fetch('/api/javis/programs');
-                const data = await res.json();
-                const pills = [];
-                pills.push(`<span class="hub-pill ${data.jarvis_installed ? 'ok' : 'warn'}">JARVIS ${data.jarvis_installed ? '설치됨' : '경로 없음'}</span>`);
-                pills.push(`<span class="hub-pill ${data.bridge?.ok ? 'ok' : 'warn'}">${data.bridge?.detail || '브리지'}</span>`);
-                pills.push(`<span class="hub-pill">${(data.programs || []).filter(p => p.available).length}개 실행 가능</span>`);
-                statusBox.innerHTML = pills.join('');
+        function renderProgramList(programs, listBox) {
+            const byCat = {};
+            (programs || []).forEach(p => {
+                if (!byCat[p.category]) byCat[p.category] = { label: p.category_label, items: [] };
+                byCat[p.category].items.push(p);
+            });
+            let html = '';
+            Object.values(byCat).forEach(group => {
+                html += `<div class="hub-cat-title">${group.label}</div><div class="program-grid">`;
+                group.items.forEach(p => {
+                    const isCloud = p.runtime === 'cloud' || (p.cloud_action && p.cloud_action !== 'local_hint');
+                    const isLocalOnly = p.runtime === 'local_only' || p.cloud_action === 'local_hint';
+                    let btnLabel = '실행';
+                    if (!p.available) btnLabel = '불가';
+                    else if (isCloud && isLocalOnly) btnLabel = '클라우드/PC';
+                    else if (isCloud) btnLabel = '클라우드 실행';
+                    else if (isLocalOnly) btnLabel = 'PC 전용';
+                    const badge = isCloud ? '<span class="hub-pill ok" style="font-size:0.65rem;margin-left:6px;">☁️</span>' : '';
+                    html += `<div class="program-card ${p.available ? '' : 'unavailable'}">
+                        <h4><i class="fa-solid ${p.icon || 'fa-play'}"></i> ${p.name}${badge}</h4>
+                        <p>${p.description}</p>
+                        <button class="btn-launch" ${p.available ? '' : 'disabled'} onclick="launchJavisProgram('${p.id}')">
+                            <i class="fa-solid fa-rocket"></i> ${btnLabel}
+                        </button>
+                    </div>`;
+                });
+                html += '</div>';
+            });
+            listBox.innerHTML = html || '<div class="empty-state">등록된 프로그램이 없습니다.</div>';
+        }
 
-                const byCat = {};
-                (data.programs || []).forEach(p => {
-                    if (!byCat[p.category]) byCat[p.category] = { label: p.category_label, items: [] };
-                    byCat[p.category].items.push(p);
-                });
-                let html = '';
-                Object.values(byCat).forEach(group => {
-                    html += `<div class="hub-cat-title">${group.label}</div><div class="program-grid">`;
-                    group.items.forEach(p => {
-                        html += `<div class="program-card ${p.available ? '' : 'unavailable'}">
-                            <h4><i class="fa-solid ${p.icon || 'fa-play'}"></i> ${p.name}</h4>
-                            <p>${p.description}</p>
-                            <button class="btn-launch" ${p.available ? '' : 'disabled'} onclick="launchJavisProgram('${p.id}')">
-                                <i class="fa-solid fa-rocket"></i> 실행
-                            </button>
+        async function loadProgramHub(workspace) {
+            const listId = workspace === 'traffic' ? 'trafficProgramList' : 'javisProgramList';
+            const listBox = document.getElementById(listId);
+            if (!listBox) return;
+            try {
+                const res = await fetch('/api/javis/programs?workspace=' + encodeURIComponent(workspace));
+                const data = await res.json();
+                if (workspace === 'javis') {
+                    const statusBox = document.getElementById('javisHubStatus');
+                    const pills = [];
+                    pills.push(`<span class="hub-pill ${data.jarvis_installed ? 'ok' : 'warn'}">JARVIS ${data.jarvis_installed ? '설치됨' : '경로 없음'}</span>`);
+                    if (data.jarvis_bundled) pills.push('<span class="hub-pill ok">Git 번들 javis/</span>');
+                    pills.push(`<span class="hub-pill ${data.bridge?.ok ? 'ok' : 'warn'}">${data.bridge?.detail || '브리지'}</span>`);
+                    pills.push(`<span class="hub-pill">${(data.programs || []).filter(p => p.available).length}개 실행 가능</span>`);
+                    if (data.cloud_mode) {
+                        pills.push(`<span class="hub-pill ok">☁️ 클라우드 ${data.cloud_programs || 0}개</span>`);
+                    }
+                    if (statusBox) statusBox.innerHTML = pills.join('');
+
+                    const eng = document.getElementById('javisEngineStatus');
+                    const engText = document.getElementById('javisEngineStatusText');
+                    if (eng && engText) {
+                        if (data.jarvis_installed) {
+                            eng.className = 'status-badge running';
+                            engText.textContent = '준비됨';
+                        } else {
+                            eng.className = 'status-badge stopped';
+                            engText.textContent = '미설치';
+                        }
+                    }
+                    const rootHint = document.getElementById('javisRootHint');
+                    if (rootHint) rootHint.textContent = data.jarvis_root || '';
+                    const cnt = document.getElementById('javisCatalogCount');
+                    if (cnt) cnt.textContent = data.catalog_count || data.javis_count || '0';
+
+                    const bridgeBox = document.getElementById('javisBridgeBox');
+                    if (bridgeBox) {
+                        bridgeBox.innerHTML = `<div style="font-size:0.85rem;line-height:1.6;color:var(--text-sub);">
+                            <p><strong style="color:var(--text-main);">JARVIS 루트</strong><br>${data.jarvis_root || '—'}</p>
+                            <p style="margin-top:10px;"><strong style="color:var(--text-main);">원격 저장소</strong><br>
+                            <a href="${data.jarvis_remote || '#'}" style="color:#93c5fd;" target="_blank" rel="noopener">FatihMakes/Mark-XXXIX</a></p>
+                            <p style="margin-top:10px;">로컬에 없으면: <code style="color:#93c5fd;">git submodule update --init javis</code></p>
                         </div>`;
-                    });
-                    html += '</div>';
-                });
-                listBox.innerHTML = html || '<div class="empty-state">등록된 프로그램이 없습니다.</div>';
+                    }
+                }
+                renderProgramList(data.programs, listBox);
             } catch (e) {
-                statusBox.innerHTML = '<span class="hub-pill warn">목록 로드 실패</span>';
                 listBox.innerHTML = '<div class="empty-state">서버 연결을 확인하세요.</div>';
             }
         }
@@ -508,23 +763,56 @@
         }
 
         async function toggleScheduler(start) {
-            const res = await fetch(start ? '/api/start' : '/api/stop', { method: 'POST' });
-            const data = await res.json();
-            showToast(data.message);
-            updateStatus();
+            try {
+                const res = await fetch(start ? '/api/start' : '/api/stop', { method: 'POST' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                showToast(data.message || (data.success ? '완료' : '실패'));
+                updateStatus();
+            } catch (e) {
+                showToast('서버 연결 실패 — API를 확인하세요');
+            }
+        }
+
+        async function runCloudTraffic() {
+            showToast('클라우드 트래픽 실행 중...');
+            try {
+                const res = await fetch('/api/traffic', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`트래픽 OK · ${data.result?.elapsed_sec || '?'}초`);
+                    updateLogs();
+                    updateStatus();
+                } else {
+                    showToast(data.error || data.result?.status_code || '트래픽 실패');
+                }
+            } catch (e) {
+                showToast('트래픽 오류: ' + e.message);
+            }
         }
 
         async function trackNow() {
             showToast('순위 추적 중...');
-            const res = await fetch('/api/track-now', { method: 'POST' });
-            const data = await res.json();
-            if (data.success) {
-                lastReport = data.report;
-                renderRecentResults(data.report);
-                showCompletionModal();
-                maybeNotify(data.report);
-                updateStatus();
-                updateLogs();
+            try {
+                const res = await fetch('/api/track-now', { method: 'POST' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                if (data.success) {
+                    lastReport = data.report;
+                    renderRecentResults(data.report);
+                    showCompletionModal();
+                    maybeNotify(data.report);
+                    updateStatus();
+                    updateLogs();
+                } else {
+                    showToast(data.error || '추적 실패');
+                }
+            } catch (e) {
+                showToast('순위 추적 실패 — 서버 연결을 확인하세요');
             }
         }
 
@@ -645,21 +933,37 @@
         }
 
         async function updateStatus() {
-            const res = await fetch('/api/status');
-            const data = await res.json();
+            try {
+                const res = await fetch('/api/status');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
             const badge = document.getElementById('engineStatus');
             const text = document.getElementById('engineStatusText');
             if (data.running) {
                 badge.className = 'status-badge running';
-                text.textContent = '추적 중';
+                text.textContent = data.serverless ? '24h Cron' : '추적 중';
                 document.getElementById('startBtn').disabled = true;
                 document.getElementById('stopBtn').disabled = false;
             } else {
                 badge.className = 'status-badge stopped';
-                text.textContent = '중지됨';
+                text.textContent = data.serverless ? 'Cron 꺼짐' : '중지됨';
                 document.getElementById('startBtn').disabled = false;
                 document.getElementById('stopBtn').disabled = true;
             }
+            const cronHint = document.getElementById('cronHint');
+            if (cronHint) {
+                if (data.serverless) {
+                    cronHint.style.display = 'block';
+                    const last = data.last_cron_at ? `마지막 Cron: ${data.last_cron_at}` : 'Cron 대기 중';
+                    const traffic = data.last_traffic_at ? ` · 트래픽: ${data.last_traffic_at}` : '';
+                    const store = data.persistence === 'supabase' ? ' · Supabase 저장' : ' · 임시 저장(Supabase 권장)';
+                    cronHint.textContent = `${data.cron_schedule || '매시 정각'} · ${last}${traffic}${store}`;
+                } else {
+                    cronHint.style.display = 'none';
+                }
+            }
+            const cloudRow = document.getElementById('cloudTrafficRow');
+            if (cloudRow) cloudRow.style.display = data.serverless ? 'grid' : 'none';
             const rank = data.last_rank;
             document.getElementById('currentRankVal').textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
             document.getElementById('totalTracksVal').textContent = data.total_tracks || 0;
@@ -674,6 +978,12 @@
             if (data.last_report) {
                 lastReport = data.last_report;
                 renderRecentResults(data.last_report);
+            }
+            } catch (e) {
+                const text = document.getElementById('engineStatusText');
+                if (text) text.textContent = '서버 오류';
+                const badge = document.getElementById('engineStatus');
+                if (badge) badge.className = 'status-badge stopped';
             }
         }
 
@@ -757,9 +1067,18 @@
             }
         }
 
-        setInterval(() => { updateStatus(); updateLogs(); }, 5000);
-        updateStatus();
-        updateLogs();
+        setInterval(() => {
+            if (currentWorkspace === 'traffic') {
+                updateStatus();
+                loadChart();
+            }
+            updateLogs();
+        }, 60000);
+        setInterval(() => {
+            if (currentWorkspace === 'traffic') updateStatus();
+            updateLogs();
+        }, 5000);
+        setWorkspace(currentWorkspace);
         loadLatestAudit();
         loadConfig();
 

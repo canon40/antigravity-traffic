@@ -1,7 +1,9 @@
 import os
+import sys
 import threading
 import time
 from datetime import datetime
+from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request, send_from_directory
 
@@ -17,6 +19,15 @@ from keyword_analyzer import analyze_keyword, suggest_keywords_for_product, anal
 from seo_content_builder import generate_content, list_workflows, save_content
 from rank_tracker import check_product_rank
 from javis_programs import get_catalog, launch_program
+from rank_persistence import load_hub_state, persistence_backend, save_hub_state
+
+_VT_ROOT = Path(__file__).resolve().parent / "vercel_traffic"
+if _VT_ROOT.is_dir() and str(_VT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_VT_ROOT))
+try:
+    from traffic_session import run_traffic_session
+except ImportError:
+    run_traffic_session = None
 
 app = Flask(__name__)
 
@@ -27,6 +38,25 @@ stop_event = threading.Event()
 last_completion_report = None
 
 
+def is_serverless():
+    return bool(os.environ.get("VERCEL"))
+
+
+def _bootstrap_from_persistence():
+    global last_completion_report, logs_queue
+    try:
+        state = load_hub_state()
+        if state.get("last_report"):
+            last_completion_report = state["last_report"]
+        if state.get("logs"):
+            logs_queue = list(state["logs"])[-150:]
+    except Exception:
+        pass
+
+
+_bootstrap_from_persistence()
+
+
 def add_log(msg):
     timestamp = datetime.now().strftime("%H:%M:%S")
     formatted_msg = f"[{timestamp}] {msg}"
@@ -34,6 +64,13 @@ def add_log(msg):
     logs_queue.append(formatted_msg)
     if len(logs_queue) > 150:
         logs_queue.pop(0)
+    if is_serverless() and len(logs_queue) % 5 == 0:
+        try:
+            state = load_hub_state()
+            state["logs"] = logs_queue[-100:]
+            save_hub_state(state)
+        except Exception:
+            pass
 
 
 def scheduler_loop():
@@ -123,21 +160,34 @@ def api_status():
     config = load_config()
     keywords = config.get("keywords") or []
     priority = config.get("priority_keywords") or []
-    on_vercel = bool(os.environ.get("VERCEL"))
+    on_vercel = is_serverless()
     track_count = len(priority) if (on_vercel and priority) else len(keywords)
     if on_vercel and not priority:
         track_count = min(len(keywords), int(config.get("priority_track_limit") or 10))
 
+    state = load_hub_state()
+    running = scheduler_running
+    if on_vercel:
+        running = bool(state.get("auto_enabled", True))
+
+    report = last_completion_report or state.get("last_report")
+
     return jsonify({
-        "running": scheduler_running,
+        "running": running,
         "last_rank": last_rank,
         "total_tracks": len(history),
         "keyword_count": len(keywords),
         "priority_count": len(priority) or min(len(keywords), int(config.get("priority_track_limit") or 10)),
         "track_batch_count": track_count,
         "serverless": on_vercel,
+        "auto_mode": "cron" if on_vercel else "local",
+        "last_cron_at": state.get("last_cron_at"),
+        "last_traffic_at": state.get("last_traffic_at"),
+        "traffic_target_url": _traffic_target_url() if on_vercel else None,
+        "persistence": persistence_backend(),
         "interval_minutes": config.get("track_interval_minutes", 60),
-        "last_report": last_completion_report,
+        "cron_schedule": "매시 정각 · 트래픽 20분마다 (0 * * * * / */20 * * * *)" if on_vercel else None,
+        "last_report": report,
     })
 
 
@@ -159,9 +209,13 @@ def api_config():
 def api_track_now():
     global last_completion_report
     add_log("📱 수동 순위 추적 요청")
-    results = track_all_keywords(logger=add_log)
+    results = track_all_keywords(logger=add_log, serverless=is_serverless())
     report = build_completion_report(results)
     last_completion_report = report
+    if is_serverless():
+        state = load_hub_state()
+        state["last_report"] = report
+        save_hub_state(state)
     add_log(f"✅ {report['summary']}")
     return jsonify({"success": True, "report": report})
 
@@ -183,6 +237,16 @@ def api_seo_audit_latest():
 @app.route("/api/start", methods=["POST"])
 def api_start():
     global scheduler_running, scheduler_thread, stop_event
+    if is_serverless():
+        state = load_hub_state()
+        state["auto_enabled"] = True
+        save_hub_state(state)
+        add_log("▶️ 24시간 Cron 자동 추적 활성화")
+        return jsonify({
+            "success": True,
+            "message": "24시간 자동 추적이 켜졌습니다. 매시 정각 Vercel Cron이 우선 키워드를 추적합니다.",
+            "mode": "cron",
+        })
     if not scheduler_running:
         stop_event.clear()
         scheduler_running = True
@@ -196,6 +260,16 @@ def api_start():
 @app.route("/api/stop", methods=["POST"])
 def api_stop():
     global scheduler_running, stop_event
+    if is_serverless():
+        state = load_hub_state()
+        state["auto_enabled"] = False
+        save_hub_state(state)
+        add_log("⏸️ 24시간 Cron 자동 추적 비활성화")
+        return jsonify({
+            "success": True,
+            "message": "자동 추적이 꺼졌습니다. 「지금 추적」으로 수동 실행은 가능합니다.",
+            "mode": "cron",
+        })
     if scheduler_running:
         stop_event.set()
         add_log("⏸️ 자동 추적 중지 요청")
@@ -267,8 +341,12 @@ def api_content_generate():
         data.get("brand"),
     )
     if result.get("success"):
-        path = save_content(result, data.get("product_id"))
-        result["saved_path"] = path
+        try:
+            path = save_content(result, data.get("product_id"))
+            result["saved_path"] = path
+        except OSError as exc:
+            result["saved_path"] = None
+            result["save_warning"] = str(exc)
         add_log(f"📝 콘텐츠 생성: {result.get('workflow_label')}")
     return jsonify(result)
 
@@ -288,23 +366,169 @@ def openapi_spec():
     return send_from_directory(".", "openapi.json")
 
 
+def _cron_authorized() -> bool:
+    secret = os.environ.get("CRON_SECRET", "").strip()
+    if not secret:
+        return True
+    auth = request.headers.get("Authorization", "")
+    if auth == f"Bearer {secret}":
+        return True
+    # Vercel Cron 내장 헤더 (CRON_SECRET 미전달 환경 대비)
+    if request.headers.get("x-vercel-cron") == "1":
+        return True
+    return False
+
+
+def _webhook_authorized() -> bool:
+    secret = os.environ.get("WEBHOOK_SECRET", "").strip()
+    if not secret:
+        return True
+    auth = request.headers.get("Authorization", "")
+    if auth == f"Bearer {secret}":
+        return True
+    return request.headers.get("X-Webhook-Secret") == secret
+
+
+def _traffic_target_url() -> str:
+    explicit = os.environ.get("TRAFFIC_TARGET_URL", "").strip()
+    if explicit:
+        return explicit
+    config = load_config()
+    products = config.get("products") or []
+    for product in products:
+        url = (product or {}).get("url", "")
+        if url:
+            return url
+    urls = config.get("product_urls") or []
+    for item in urls:
+        if isinstance(item, str) and item:
+            return item
+        if isinstance(item, dict) and item.get("url"):
+            return item["url"]
+    store = (config.get("store_name") or "nanumlab").replace(" ", "")
+    return f"https://smartstore.naver.com/{store}"
+
+
+@app.route("/api/health", methods=["GET"])
+@app.route("/api/traffic/health", methods=["GET"])
+def api_health():
+    return jsonify({
+        "status": "healthy",
+        "serverless": is_serverless(),
+        "persistence": persistence_backend(),
+        "traffic_available": run_traffic_session is not None,
+        "auto_mode": "cron" if is_serverless() else "local",
+    })
+
+
+@app.route("/api/traffic", methods=["POST"])
+def api_traffic():
+    if not _webhook_authorized():
+        return jsonify({"success": False, "error": "unauthorized"}), 401
+    if run_traffic_session is None:
+        return jsonify({"success": False, "error": "traffic_session 미설치"}), 500
+
+    data = request.get_json(silent=True) or {}
+    target_url = (data.get("target_url") or _traffic_target_url()).strip()
+    timeout_sec = min(float(data.get("timeout_sec") or 8), 9.0)
+
+    add_log(f"🚗 클라우드 트래픽: {target_url}")
+    try:
+        result = run_traffic_session(target_url, timeout_sec=timeout_sec)
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
+    except Exception as exc:
+        add_log(f"❌ 트래픽 실패: {exc}")
+        return jsonify({"success": False, "error": str(exc)}), 500
+
+    if result.get("ok"):
+        add_log(f"✅ 트래픽 OK {result.get('status_code')} · {result.get('elapsed_sec')}초")
+    else:
+        add_log(f"⚠️ 트래픽 응답 {result.get('status_code')}")
+
+    if is_serverless():
+        state = load_hub_state()
+        state["last_traffic_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        state["logs"] = logs_queue[-100:]
+        save_hub_state(state)
+
+    return jsonify({"success": bool(result.get("ok")), "result": result, "target_url": target_url})
+
+
+@app.route("/api/cron/traffic", methods=["GET", "POST"])
+def api_cron_traffic():
+    """Vercel Cron — 주기적 스마트스토어 httpx 방문."""
+    if not _cron_authorized():
+        return jsonify({"success": False, "error": "unauthorized"}), 401
+
+    state = load_hub_state()
+    if not state.get("auto_enabled", True):
+        add_log("⏭️ 트래픽 Cron 건너뜀 (자동 추적 꺼짐)")
+        return jsonify({"success": True, "skipped": True, "reason": "auto_disabled"})
+
+    if run_traffic_session is None:
+        return jsonify({"success": False, "error": "traffic_session 미설치"}), 500
+
+    target_url = _traffic_target_url()
+    add_log(f"⏰ Cron 트래픽: {target_url}")
+    try:
+        result = run_traffic_session(target_url, timeout_sec=8.0)
+    except Exception as exc:
+        add_log(f"❌ Cron 트래픽 실패: {exc}")
+        return jsonify({"success": False, "error": str(exc)}), 500
+
+    state["last_traffic_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    state["logs"] = logs_queue[-100:]
+    save_hub_state(state)
+    add_log(f"✅ Cron 트래픽 완료 ({result.get('status_code')})")
+    return jsonify({"success": True, "result": result, "target_url": target_url})
+
+
 @app.route("/api/cron/track", methods=["GET", "POST"])
 def api_cron_track():
-    """Vercel Cron — 우선 키워드만 순위 추적."""
-    secret = os.environ.get("CRON_SECRET", "")
-    if secret:
-        auth = request.headers.get("Authorization", "")
-        if auth != f"Bearer {secret}":
-            return jsonify({"success": False, "error": "unauthorized"}), 401
+    """Vercel Cron — 매시 우선 키워드 순위 추적."""
+    if not _cron_authorized():
+        return jsonify({"success": False, "error": "unauthorized"}), 401
+
+    state = load_hub_state()
+    if not state.get("auto_enabled", True):
+        add_log("⏭️ Cron 건너뜀 (자동 추적 꺼짐)")
+        return jsonify({"success": True, "skipped": True, "reason": "auto_disabled"})
+
     global last_completion_report
+    config = load_config()
+    priority = config.get("priority_keywords") or config.get("keywords") or []
+    batch_size = int(config.get("cron_batch_size") or 4)
+    offset = int(state.get("cron_keyword_offset") or 0)
+
     add_log("⏰ Cron 순위 추적 시작 (우선 키워드)")
-    results = track_all_keywords(logger=add_log, serverless=True)
+    results = track_all_keywords(
+        logger=add_log,
+        serverless=True,
+        keyword_offset=offset,
+        keyword_batch_size=batch_size,
+    )
+    if priority:
+        state["cron_keyword_offset"] = (offset + batch_size) % max(1, len(priority))
     report = build_completion_report(results)
     last_completion_report = report
+    state["last_cron_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    state["last_report"] = report
+    state["logs"] = logs_queue[-100:]
+    save_hub_state(state)
     add_log(f"✅ Cron 완료: {report['summary']}")
-    return jsonify({"success": True, "report": report, "tracked": len(results)})
+    return jsonify({
+        "success": True,
+        "report": report,
+        "tracked": len(results),
+        "persistence": persistence_backend(),
+    })
+
+
+@app.route("/api/javis/programs")
 def api_javis_programs():
-    return jsonify(get_catalog())
+    workspace = (request.args.get("workspace") or "all").strip().lower()
+    return jsonify(get_catalog(workspace=workspace))
 
 
 @app.route("/api/javis/launch", methods=["POST"])
@@ -313,9 +537,10 @@ def api_javis_launch():
     program_id = (data.get("id") or data.get("program_id") or "").strip()
     if not program_id:
         return jsonify({"success": False, "error": "program id 필요"}), 400
-    result = launch_program(program_id)
+    result = launch_program(program_id, logger=add_log)
     if result.get("success"):
-        add_log(f"🚀 JARVIS/로컬 프로그램 실행: {program_id}")
+        mode = "클라우드" if result.get("cloud") else "로컬"
+        add_log(f"🚀 JARVIS 프로그램 ({mode}): {program_id}")
     else:
         add_log(f"⚠️ 프로그램 실행 실패: {result.get('error', program_id)}")
     return jsonify(result)

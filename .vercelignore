@@ -1,0 +1,15 @@
+__pycache__
+*.pyc
+.venv
+venv
+.git
+blog_drafts
+docs/shorts
+data/shorts_factory/youtube_learned
+javis
+wiki
+*.bat
+accounts.json
+vertex-key.json
+.env
+.env.*

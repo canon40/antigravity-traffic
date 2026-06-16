@@ -19,7 +19,11 @@ EMBEDDED = {
 
 
 def get_storage_dir():
-    """쓰기 가능한 앱 저장소 (Android: FLET_APP_STORAGE_DATA)."""
+    """쓰기 가능한 앱 저장소 (Vercel: /tmp, Android: FLET_APP_STORAGE_DATA)."""
+    if os.environ.get("VERCEL"):
+        data = "/tmp/anty-traffic"
+        os.makedirs(data, exist_ok=True)
+        return data
     data = os.environ.get("FLET_APP_STORAGE_DATA")
     if data:
         os.makedirs(data, exist_ok=True)

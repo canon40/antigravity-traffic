@@ -46,7 +46,11 @@ if errorlevel 1 (
   echo        Playwright 브라우저 설치 생략 또는 실패 - 발행 전 다시 실행하세요.
 )
 
-echo  [5/5] Vercel 트래픽 연동 검증 ...
+echo  [5/6] SEO 허브 API 검증 ...
+"%PY%" "%~dp0scripts\verify_seo_hub.py"
+set "SH=%ERRORLEVEL%"
+
+echo  [6/6] Vercel 트래픽 연동 검증 ...
 "%PY%" "%~dp0scripts\verify_vercel_traffic.py"
 set "VC=%ERRORLEVEL%"
 
@@ -55,10 +59,12 @@ echo  프로그램 점검 (필수만) ...
 call "%~dp0run_programs_check.bat" --minimal
 
 echo.
-if "%VC%"=="0" (
-  echo  설치 완료. GUI: run_gui.bat  /  트래픽 1회: traffic_once.bat
+if "%VC%"=="0" if "%SH%"=="0" (
+  echo  설치 완료. GUI: run_gui.bat  /  허브 검증: run_seo_hub_verify.bat
+) else if "%SH%"=="0" (
+  echo  설치 완료 (Vercel 트래픽 검증 일부 실패). 허브: run_seo_hub_verify.bat
 ) else (
-  echo  설치 완료 (Vercel 검증 일부 실패 - 로컬 모드는 run_gui.bat 로 사용 가능)
+  echo  설치 완료 (SEO 허브 검증 실패 — scripts\verify_seo_hub.py 확인)
 )
 echo.
 pause

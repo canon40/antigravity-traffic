@@ -1,14 +1,21 @@
 # API Keys and Accounts Configuration
 import os
-from dotenv import load_dotenv
 
-# .env에서 환경변수 로드 (개인 PC용). 배포용 exe에는 실제 키/계정이 포함되지 않도록 모두 비워 둔다.
-load_dotenv()
-# JARVIS 등 공용 .env (login2 .env가 우선)
-_javis_env = os.environ.get("JARVIS_ROOT", r"D:\@code\javis")
-_javis_dotenv = os.path.join(_javis_env, ".env")
-if os.path.isfile(_javis_dotenv):
-    load_dotenv(_javis_dotenv, override=False)
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    def load_dotenv(*_args, **_kwargs):
+        return False
+
+# .env에서 환경변수 로드 (개인 PC용). Vercel은 대시보드 env만 사용.
+if not os.environ.get("VERCEL"):
+    load_dotenv()
+    _javis_env = os.environ.get("JARVIS_ROOT", r"D:\@code\javis")
+    _javis_dotenv = os.path.join(_javis_env, ".env")
+    if os.path.isfile(_javis_dotenv):
+        load_dotenv(_javis_dotenv, override=False)
+else:
+    _javis_env = os.environ.get("JARVIS_ROOT", "")
 
 
 def _apply_jarvis_claude_fable() -> None:
@@ -31,7 +38,8 @@ def _apply_jarvis_claude_fable() -> None:
         pass
 
 
-_apply_jarvis_claude_fable()
+if not os.environ.get("VERCEL"):
+    _apply_jarvis_claude_fable()
 
 # Google / Gemini API Key (둘 중 하나만 있어도 동작)
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
