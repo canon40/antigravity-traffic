@@ -1,0 +1,19 @@
+{
+  "short_name": "SEO Monitor",
+  "name": "퍼마코트 SEO 모니터",
+  "description": "네이버 쇼핑 순위 추적 및 SEO 체크리스트",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2885/2885417.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "display": "standalone",
+  "orientation": "portrait",
+  "categories": ["business", "productivity"]
+}

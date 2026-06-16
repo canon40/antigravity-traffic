@@ -1,0 +1,652 @@
+import sys
+if sys.platform == 'win32':
+    sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
+    sys.stderr.reconfigure(encoding='utf-8', line_buffering=True)
+
+import asyncio
+import random
+import subprocess
+import os
+import time
+import math
+import json
+import ollama
+import requests
+import pandas as pd
+from bs4 import BeautifulSoup
+from datetime import datetime
+from urllib.parse import quote
+from playwright.async_api import async_playwright
+from playwright_stealth import stealth_async
+
+# ================= [ 퍼마코트 마스터 설정 ] =================
+CONFIG = {
+    'keyword': '퍼마코트 자동차 코팅제',
+    'store_name': '나눔랩',
+    'target_url': 'https://smartstore.naver.com/nanumlab',
+    'target_products': [
+        'https://smartstore.naver.com/nanumlab/products/12639296730',
+        'https://smartstore.naver.com/nanumlab/products/12809532969'
+    ],
+    'blogs': [
+        'https://blog.naver.com/hymini1',
+        'https://blog.naver.com/selfcoat',
+        'https://hymini1.tistory.com/'
+    ],
+    'base_daily_hits': 85,     # [목표: 2페이지 진입] 일일 최소 80~100 유입 필요
+    'growth_rate': 1.1,        # 매일 유입량 10%씩 증가 (성장 곡선)
+    'start_date': datetime.now().strftime("%Y-%m-%d")
+}
+# ========================================================
+
+class PermacoatAutonomousEngine:
+    def __init__(self):
+        self.config = CONFIG.copy()
+        self.script_dir = "security_vault"
+        if not os.path.exists(self.script_dir): os.makedirs(self.script_dir)
+        self.daily_hits_count = 0
+        self.fail_hits_count = 0
+        self.current_date_str = datetime.now().strftime("%Y-%m-%d")
+        self.run_keyword = self.config['keyword']
+        self.config_data = {}
+
+    def load_dynamic_config(self):
+        try:
+            with open("config.json", "r", encoding="utf-8") as f:
+                config_data = json.load(f)
+            
+            # Update target products
+            products = config_data.get("products", [])
+            product_urls = [p["url"] for p in products if "url" in p]
+            if not product_urls:
+                product_urls = config_data.get("product_urls", [])
+            if product_urls:
+                self.config['target_products'] = product_urls
+                
+            # Update blogs
+            blogs = config_data.get("blog_urls", [])
+            if blogs:
+                self.config['blogs'] = blogs
+                
+            # Update store name
+            self.config['store_name'] = config_data.get("store_name", "나눔랩")
+            
+            self.config_data = config_data
+            print("⚙️ config.json 설정을 동적으로 반영했습니다.")
+        except Exception as e:
+            print(f"⚠️ config.json 로드 실패: {e}. 기본 설정을 사용합니다.")
+            self.config_data = {}
+
+    # [0] Llama 전략 수립
+    async def ask_llama_strategy(self, success_log):
+        print("🧠 [Llama 두뇌] 데이터 분석 및 전략 수립 중...")
+        prompt = f"""
+        당신은 네이버 쇼핑 상위 노출 전문가입니다. 
+        아래의 최근 유입 로그를 분석해서 '걸릴 확률 0%'를 위한 다음 작업 값을 정해주세요.
+        로그: {success_log}
+        
+        결과는 반드시 아래 JSON 형식으로만 답변하세요. 마크다운 기호 없이 순수 JSON만 반환하세요:
+        {{
+            "dwell_time": (60~120 사이 정수),
+            "scroll_speed": (1~5 사이 정수),
+            "mouse_jitter": (0.1~0.5 사이 실수),
+            "search_pattern": "직접검색" 또는 "연관검색어"
+        }}
+        """
+        try:
+            # ollama는 동기 라이브러리이므로 이벤트 루프 블로킹을 막기 위해 to_thread로 실행
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    ollama.chat, 
+                    model='llama3', 
+                    messages=[{'role': 'user', 'content': prompt}]
+                ),
+                timeout=30.0
+            )
+            
+            content = response['message']['content']
+            # 마크다운 ```json ... ``` 등이 포함될 수 있으므로 전처리
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+                
+            strategy = json.loads(content)
+            print(f"✅ [Llama 결정] 체류 시간: {strategy.get('dwell_time', 80)}초 | 스크롤 속도: {strategy.get('scroll_speed', 3)} | 마우스 지터: {strategy.get('mouse_jitter', 0.2)}")
+            return strategy
+        except Exception as e:
+            print(f"❌ 분석 실패, 기본값으로 진행합니다. 오류: {e}")
+            return {"dwell_time": 80, "scroll_speed": 3, "mouse_jitter": 0.2, "search_pattern": "직접검색"}
+
+    # [0.5] 네이버 쇼핑 순위 확인 (백그라운드 스레드)
+    async def check_naver_ranking(self, product_id=None):
+        def _check():
+            kw = getattr(self, 'run_keyword', self.config['keyword'])
+            store_name = self.config['store_name']
+            print(f"🔍 [{kw}] 순위 추적 시작...")
+            url = f"https://m.search.naver.com/search.naver?query={quote(kw)}&where=m_shop"
+            
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+            }
+            
+            try:
+                res = requests.get(url, headers=headers, timeout=10)
+                res.raise_for_status()
+                text = res.text
+                
+                # Check for product ID in search results first if provided
+                if product_id:
+                    pid_str = str(product_id).strip()
+                    if pid_str in text:
+                        try:
+                            from bs4 import BeautifulSoup
+                            soup = BeautifulSoup(text, 'html.parser')
+                            items = soup.select(".lst_item") or soup.select("div[class*='product_item']")
+                            for idx, item in enumerate(items, 1):
+                                if pid_str in str(item):
+                                    print(f"🚩 현재 순위: {idx}위 (상품 ID {pid_str} 발견!)")
+                                    return idx
+                        except Exception:
+                            pass
+                
+                # Fallback to store name matching
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(text, 'html.parser')
+                items = soup.select(".lst_item") or soup.select("div[class*='product_item']")
+                
+                if not items:
+                    print("⚠️ 쇼핑 리스트를 불러오지 못했습니다. (네트워크나 셀렉터 확인 필요)")
+                    return 100
+                
+                for idx, item in enumerate(items, 1):
+                    if store_name in item.text:
+                        print(f"🚩 현재 순위: {idx}위 (나눔랩 발견!)")
+                        return idx
+                
+                print("⚠️ 1페이지 내에 상품이 없습니다. (100위 밖으로 간주)")
+                return 100
+        
+            except Exception as e:
+                print(f"❌ 접속 오류: {e}")
+                return 100
+                
+        return await asyncio.to_thread(_check)
+
+    # [0.6] 히스토리 CSV 덤프 및 데이터베이스 기록
+    def log_activity(self, start_rank, end_rank, dwell_time, status="성공"):
+        new_data = {
+            "날짜": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            "키워드": getattr(self, 'run_keyword', self.config['keyword']),
+            "시작순위": start_rank,
+            "종료순위": end_rank,
+            "체류시간": dwell_time,
+            "결과": status
+        }
+        try:
+            df = pd.read_csv('permcoat_history.csv')
+            df = pd.concat([df, pd.DataFrame([new_data])], ignore_index=True)
+        except:
+            df = pd.DataFrame([new_data])
+            
+        df.to_csv('permcoat_history.csv', index=False, encoding='utf-8-sig')
+        print("💾 히스토리 누적 완료 (permcoat_history.csv)!")
+
+    # [0.65] 봇 탐지 검사 및 비상 대피 장치
+    async def check_bot_detection(self, page):
+        for retry in range(3):
+            try:
+                # Ensure the page is in load state before check
+                await page.wait_for_load_state("load", timeout=5000)
+                url = page.url.lower()
+                content = await page.content()
+                
+                # 봇 감지 페이지의 전형적인 주소 키워드
+                captcha_indicators = ["captcha", "sorry/index", "nid.naver.com/login", "robot"]
+                for ind in captcha_indicators:
+                    if ind in url:
+                        print(f"🚨 [보안 경고] 로봇/보안 문자 감지 페이지 발견 (URL: {page.url})")
+                        return True
+                        
+                # 봇 감지 및 차단 페이지의 전형적인 본문 텍스트 키워드
+                text_indicators = [
+                    "자동등록방지", "로봇이 아닙니다", "bot detection", "unusual traffic",
+                    "비정상적인 접근", "보안절차를 거쳐", "서비스 접속이 불가합니다",
+                    "시스템오류", "접속이 불가합니다"
+                ]
+                for ind in text_indicators:
+                    if ind in content:
+                        print(f"🚨 [보안 경고] 본문 내 로봇 감지 키워드 발견: '{ind}'")
+                        return True
+                        
+                return False
+            except Exception as e:
+                print(f"⚠️ 봇 탐지 검사 중 오류 (재시도 {retry+1}/3): {e}")
+                await asyncio.sleep(1)
+        
+        # 3번의 재시도가 모두 실패하면 안전을 위해 차단으로 판단하여 비상 탈출을 유도합니다.
+        print("🚨 [보안 경고] 봇 탐지 검사 연속 실패 - 안전을 위해 차단 상태로 간주하고 탈출합니다.")
+        return True
+        
+    # [0.7] Llama 오늘의 성과 요약 보고서
+    async def get_llama_report(self):
+        def _get_report():
+            try:
+                df = pd.read_csv('permcoat_history.csv').tail(5)
+                prompt = f"""
+                너는 나눔랩의 수석 마케팅 분석가야. 아래 작업 데이터를 보고 황영민 이사님께 드릴 
+                '오늘의 퍼마코트 엔진 성과 보고서'를 아주 친절한 한국어로 작성해줘.
+                
+                데이터:
+                {df.to_string()}
+                
+                보고서 포함 내용:
+                - 오늘 총 작업 횟수와 성공률
+                - 순위 변동 내역 (예: 15위 -> 12위 상승!)
+                - 이사님께 드리는 향후 전략 제언
+                """
+                response = ollama.chat(
+                    model='llama3', 
+                    messages=[{'role': 'user', 'content': prompt}]
+                )
+                print(f"\n💌 [Llama 일일 보고서]\n{response['message']['content']}\n")
+            except Exception as e:
+                pass
+        await asyncio.to_thread(_get_report)
+
+    # [1] 자동 트래픽 양 조절 계산기 (시간대별/날짜별)
+    def calculate_current_delay(self):
+        now = datetime.now()
+        # 날짜 경과에 따른 기본 유입량 계산
+        start_dt = datetime.strptime(self.config['start_date'], "%Y-%m-%d")
+        days_passed = (now - start_dt).days
+        daily_target = self.config['base_daily_hits'] * (self.config['growth_rate'] ** days_passed)
+        
+        
+        # 시간대별 가중치 (오후 2시 피크, 새벽 4시 최저)
+        # Sine 함수를 이용해 자연스러운 흐름 생성
+        hour_weight = (math.sin((now.hour - 8) * math.pi / 12) + 1.2) / 2
+        hourly_target = (daily_target / 24) * hour_weight
+        
+        if hourly_target < 1: 
+            return int(daily_target), random.randint(1800, 3600) # 유입 적은 시간엔 긴 대기
+        return int(daily_target), int(3600 / hourly_target) # 다음 유입까지의 초(second) 계산
+
+    # [2] IP 및 환경 리셋 (ADB)
+    async def reset_env(self):
+        print(f"🔄 [{datetime.now().strftime('%H:%M')}] IP 세탁 및 신분 재생성 중...")
+        try:
+            # 비동기 서브프로세스 실행으로 이벤트 루프 블로킹 방지
+            proc1 = await asyncio.create_subprocess_exec("adb", "shell", "settings", "put", "global", "airplane_mode_on", "1")
+            await proc1.wait()
+            proc_b1 = await asyncio.create_subprocess_exec("adb", "shell", "am", "broadcast", "-a", "android.intent.action.AIRPLANE_MODE", "--ez", "state", "true")
+            await proc_b1.wait()
+            await asyncio.sleep(3)
+            
+            proc2 = await asyncio.create_subprocess_exec("adb", "shell", "settings", "put", "global", "airplane_mode_on", "0")
+            await proc2.wait()
+            proc_b2 = await asyncio.create_subprocess_exec("adb", "shell", "am", "broadcast", "-a", "android.intent.action.AIRPLANE_MODE", "--ez", "state", "false")
+            await proc_b2.wait()
+            print("⏳ 네트워크 안정화 대기 (15초)...")
+            await asyncio.sleep(15)
+        except Exception as e: print(f"⚠️ ADB 연결을 확인하세요: {e}")
+
+    # [3] 보안 스틸 및 변조 인터셉터
+    async def interceptor(self, route):
+        url = route.request.url
+        if any(x in url for x in ["sensor.js", "wlog", "analytics"]):
+            try:
+                response = await route.fetch()
+                headers = response.headers
+                content_type = headers.get("content-type", "")
+                
+                # 텍스트 기반 응답일 때만 body 디코딩 (이미지/바이너리 에러 방지)
+                if "text" in content_type or "json" in content_type or "javascript" in content_type:
+                    body = await response.text()
+                    modified = body.replace("navigator.webdriver", "undefined").replace("isBot=true", "isBot=false")
+                    await route.fulfill(response=response, body=modified)
+                else:
+                    await route.fulfill(response=response)
+            except Exception:
+                await route.continue_()
+        else:
+            await route.continue_()
+
+    # [4] 인간 행동 모사 (베지어 스크롤)
+    async def human_action(self, page, strategy=None):
+        if strategy is None:
+            strategy = {"scroll_speed": 3, "mouse_jitter": 0.2}
+            
+        # 스크롤 속도에 반비례하도록 대기 시간 설정 (speed가 커지면 대기가 짧아짐)
+        base_sleep = 15.0 / strategy.get('scroll_speed', 3) 
+        jitter_prob = strategy.get('mouse_jitter', 0.2)
+        
+        for _ in range(random.randint(6, 12)):
+            await page.mouse.wheel(0, random.randint(400, 900))
+            await asyncio.sleep(random.uniform(base_sleep * 0.5, base_sleep * 1.5))
+            
+            if random.random() < jitter_prob:
+                await page.mouse.move(random.randint(50, 300), random.randint(100, 600))
+
+    # [5] 메인 작업 실행
+    async def run_task(self):
+        self.load_dynamic_config()
+        
+        # Pick a target product
+        target_product = random.choice(self.config['target_products'])
+        product_id = target_product.split('/')[-1]
+        
+        # Find keyword for this product
+        keywords_for_product = []
+        if hasattr(self, 'config_data') and self.config_data:
+            for kw_item in self.config_data.get("keywords", []):
+                if str(kw_item.get("product_id")) == str(product_id):
+                    keywords_for_product.append(kw_item.get("keyword"))
+        
+        if keywords_for_product:
+            self.run_keyword = random.choice(keywords_for_product)
+        else:
+            # Fallback to product name
+            product_name = None
+            if hasattr(self, 'config_data') and self.config_data:
+                for p in self.config_data.get("products", []):
+                    if str(p.get("id")) == str(product_id):
+                        product_name = p.get("name")
+                        break
+            self.run_keyword = product_name if product_name else "나눔랩"
+            
+        print(f"🔑 선택된 키워드: {self.run_keyword} (상품 ID: {product_id})")
+        
+        start_rank = await self.check_naver_ranking(product_id=product_id)
+        
+        await self.reset_env()
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=False)
+            # [핵심] 여러 대의 PC 및 스마트폰으로 위장하여 핑거프린팅 추적 분산
+            user_agents = [
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+            ]
+            chosen_ua = random.choice(user_agents)
+            is_mobile = "iPhone" in chosen_ua
+            
+            context = await browser.new_context(
+                viewport={'width': 390 if is_mobile else random.randint(1366, 1920), 
+                          'height': 844 if is_mobile else random.randint(768, 1080)},
+                user_agent=chosen_ua,
+                is_mobile=is_mobile
+            )
+            page = await context.new_page()
+            
+            # [핵심] 네이버 감시망 우회 자바스크립트 주입 (Canvas Fingerprinting 방지 목적)
+            await page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+                // 그래픽카드 정보 노이즈 주입
+                const getParameter = WebGLRenderingContext.prototype.getParameter;
+                WebGLRenderingContext.prototype.getParameter = function(parameter) {
+                    if (parameter === 37445) return 'Intel Inc.';
+                    if (parameter === 37446) return 'Intel(R) UHD Graphics 630';
+                    return getParameter.apply(this, arguments);
+                };
+            """)
+            
+            await stealth_async(page)
+            await page.route("**/*", self.interceptor)
+
+            try:
+                # 1. DB (CSV)에서 최근 로그 불러오기
+                try:
+                    df = pd.read_csv('permcoat_history.csv').tail(3)
+                    db_log = df.to_string()
+                except:
+                    db_log = "이전 데이터 없음"
+                    
+                current_log = f"현재 일일 성공: {self.daily_hits_count}건, 실패: {self.fail_hits_count}건. 최근 DB 로그:\n{db_log}"
+                strategy = await self.ask_llama_strategy(current_log)
+
+                target_product = random.choice(self.config['target_products'])
+                # Google의 강력한 봇 감지로 인해 ADB IP 변경이 불가능한 환경에서는 네이버 모바일 검색만 100% 사용하도록 설정합니다.
+                path = 0.0
+                
+                print("\n" + "="*50)
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] 🎬 새로운 트래픽 작업을 준비 중입니다...")
+                print(f"🎯 이번 타겟 상품: {product_id}")
+                print("="*50)
+
+                if path < 0.5: # 50% 네이버 검색
+                    print(f"➡️ [유입 경로] 네이버 모바일(m.naver.com) 검색을 통한 경유를 시도합니다. (검색어: {self.run_keyword})")
+
+                    await page.goto("https://m.naver.com")
+                    if await self.check_bot_detection(page):
+                        print("🚨 [비상대피] 네이버 진입 시 봇이 감지되어 작업을 취소하고 즉시 탈출합니다.")
+                        await browser.close()
+                        return
+
+                    await asyncio.sleep(random.uniform(1, 2))
+                    if await page.locator("#MM_SEARCH_FAKE").is_visible():
+                        await page.locator("#MM_SEARCH_FAKE").click()
+                        await asyncio.sleep(random.uniform(0.5, 1.5))
+                        
+                    print("⌨️ 사람처럼 검색어를 천천히 타이핑 중입니다...")
+                    search_input = page.locator('#query')
+                    try:
+                        await search_input.focus(timeout=3000)
+                    except:
+                        try:
+                            await search_input.click(force=True, timeout=2000)
+                        except:
+                            await page.evaluate("document.getElementById('query').focus()")
+                    
+                    # 라마가 정해준 지터(불규칙성) 값을 기반으로 타이핑 속도 랜덤화
+                    jitter = strategy.get('mouse_jitter', 0.2)
+                    for char in self.run_keyword:
+                        await page.keyboard.type(char)
+                        # jitter(0.1~0.5)를 활용해 약간의 불규칙한 딜레이(0.05~0.75초) 생성
+                        await asyncio.sleep(random.uniform(jitter * 0.5, jitter * 1.5))
+                    
+                    await search_input.press("Enter")
+                    # Enter로 안 넘어가는 경우 강제 서브밋 트리거
+                    await asyncio.sleep(1.5)
+                    if "search" not in page.url:
+                        try: await page.locator('.sch_submit, .btn_search').first.click(timeout=2000)
+                        except: 
+                            try: await page.evaluate("document.forms[0].submit()")
+                            except: pass
+
+                    try:
+                        await page.wait_for_load_state("networkidle", timeout=5000)
+                    except: pass
+
+                    if await self.check_bot_detection(page):
+                        print("🚨 [비상대피] 네이버 검색 결과 로딩 중 봇이 감지되어 작업을 취소하고 즉시 탈출합니다.")
+                        await browser.close()
+                        return
+
+                    await asyncio.sleep(random.uniform(1, 2))
+                    
+                    target_blog = random.choice(self.config['blogs']).rstrip('/')
+                    post_id = target_blog.split('/')[-1] # 포스팅 고유 번호 또는 블로그 아이디
+                    print(f"🔍 [크로스 검증 1단계] 네이버 검색 결과에서 블로그({post_id}) 관련 포스팅을 찾는 중입니다...")
+                    
+                    found_post = page.locator(f'a[href*="{post_id}"]')
+                    if await found_post.count() > 0:
+                        print("✅ 검색 결과에서 포스팅 발견! 해당 딥 링크로 진입합니다.")
+                        # 검색 결과의 실제 링크 추출 후 이동 (자동으로 모바일 링크를 잡아옴)
+                        href = await found_post.first.get_attribute("href")
+                        await page.goto(href if href else target_blog)
+                    else:
+                        print("⚠️ 검색 1페이지에서 관련 포스팅을 찾지 못했습니다. 딥 링크로 진입합니다.")
+                        # Mobile User Agent로 PC 버전 url 접속시 네이버 접속 오류 발생 방지
+                        mobile_blog = target_blog.replace("blog.naver.com", "m.blog.naver.com")
+                        await page.goto(mobile_blog)
+                    
+                    if await self.check_bot_detection(page):
+                        print("🚨 [비상대피] 블로그 페이지 로딩 중 봇이 감지되어 작업을 취소하고 즉시 탈출합니다.")
+                        await browser.close()
+                        return
+                    
+                    print("⏳ 블로그/티스토리 컨텐츠를 정독 중입니다... (네이버 AI 신뢰도 확보)")
+                    await self.human_action(page, strategy)
+                    
+                    print(f"➡️ [최종 진입] 정독 후, 블로그 내 링크를 통해 타겟 상품({target_product.split('/')[-1]})으로 이동합니다.")
+                    await page.evaluate(f"window.location.href = '{target_product}'")
+                    try:
+                        await page.wait_for_load_state("networkidle", timeout=10000)
+                    except Exception:
+                        pass
+                    if await self.check_bot_detection(page):
+                        print("🚨 [비상대피] 상품 상세페이지 로딩 중 봇이 감지되어 작업을 취소하고 즉시 탈출합니다.")
+                        await browser.close()
+                        return
+                    
+                else: # 50% 구글 검색
+                    print(f"➡️ [유입 경로] 구글 한국(google.co.kr) 검색을 통한 경유를 시도합니다. (검색어: {self.run_keyword})")
+
+                    await page.goto("https://www.google.co.kr")
+                    await asyncio.sleep(random.uniform(1, 2))
+                    
+                    print("⌨️ 사람처럼 검색어를 천천히 타이핑 중입니다...")
+                    search_box = page.locator('textarea[name="q"], input[name="q"]').first
+                    try:
+                        await search_box.focus(timeout=3000)
+                    except:
+                        try:
+                            await search_box.click(force=True, timeout=2000)
+                        except:
+                            await page.evaluate("document.querySelector('textarea[name=\"q\"], input[name=\"q\"]').focus()")
+                    
+                    # 라마가 정해준 지터(불규칙성) 값을 기반으로 타이핑 속도 랜덤화
+                    jitter = strategy.get('mouse_jitter', 0.2)
+                    for char in self.run_keyword:
+                        await page.keyboard.type(char)
+                        # jitter(0.1~0.5)를 활용해 약간의 불규칙한 딜레이(0.05~0.75초) 생성
+                        await asyncio.sleep(random.uniform(jitter * 0.5, jitter * 1.5))
+                        
+                    await search_box.press("Enter")
+                    
+                    await asyncio.sleep(1.5)
+                    if "search" not in page.url:
+                        try: await page.evaluate("document.forms[0].submit()")
+                        except: pass
+                        
+                    try:
+                        await page.wait_for_load_state("networkidle", timeout=5000)
+                    except: pass
+                    
+                    if await self.check_bot_detection(page):
+                        print("🚨 [비상대피] 구글 검색 결과 로딩 중 봇이 감지되어 작업을 취소하고 즉시 탈출합니다.")
+                        await browser.close()
+                        return
+                    
+                    if "sorry/index" in page.url or "captcha" in page.url.lower():
+                        print("🚨 [통제 구역] 실패: 구글 보안문자/로봇 감지 발동!")
+                        print("⚠️ 현재 VPN/IP가 구글 블랙리스트에 걸렸습니다. IP를 변경해야 합니다.")
+                        await browser.close()
+                        return
+
+                    target_blog = random.choice(self.config['blogs']).rstrip('/')
+                    post_id = target_blog.split('/')[-1] # 포스팅 고유 번호 또는 블로그 아이디
+                    print(f"🔍 [크로스 검증 1단계] 구글 검색 결과에서 블로그({post_id}) 관련 포스팅을 찾는 중입니다...")
+                    
+                    found_post = page.locator(f'a[href*="{post_id}"]')
+                    if await found_post.count() > 0:
+                        print("✅ 검색 결과에서 포스팅 발견! 해당 딥 링크로 진입합니다.")
+                        href = await found_post.first.get_attribute("href")
+                        await page.goto(href if href else target_blog)
+                    else:
+                        print("⚠️ 검색 1페이지에서 관련 포스팅을 찾지 못했습니다. 딥 링크로 진입합니다.")
+                        # Mobile User Agent로 PC 버전 url 접속시 네이버 접속 오류 발생 방지
+                        mobile_blog = target_blog.replace("blog.naver.com", "m.blog.naver.com")
+                        await page.goto(mobile_blog)
+                    
+                    print("⏳ 구글에서 넘어온 유저로서 블로그 컨텐츠를 정독 중입니다... (고품질 외부 스코어 쌓기)")
+                    await self.human_action(page, strategy)
+                    
+                    print(f"➡️ [최종 진입] 정독 후, 블로그에 있는 스토어 링크를 눌러 타겟 상품({target_product.split('/')[-1]})으로 이동합니다.")
+                    await page.evaluate(f"window.location.href = '{target_product}'")
+
+                # 목적지(상품 상세페이지) 체류 시작
+                print(f"🎯 상품 페이지 로딩 대기 중... (실제 고객이 구경하는 것처럼 모사 중)")
+                try:
+                    await page.wait_for_load_state("networkidle", timeout=10000)
+                except Exception:
+                    pass
+                await asyncio.sleep(5)
+                
+                # 디테일한 인간 모사 체류 행동
+                print("⏳ 페이지 위아래로 스크롤하며 체류 시간을 확보하고 있습니다 (15~30초 랜덤 소요)")
+                await self.human_action(page, strategy)
+                
+                # 랜덤으로 탭 전환 액션 흉내
+                await page.mouse.wheel(0, random.randint(-400, 400))
+                
+                dwell_time = strategy.get('dwell_time', 80)
+                await asyncio.sleep(dwell_time)
+                print("✨ [1회차 완료] 트래픽 1회 완벽하게 주입 성공!")
+                
+                # 순위 변화 로깅
+                end_rank = await self.check_naver_ranking(product_id=product_id)
+                self.log_activity(start_rank, end_rank, dwell_time, "성공")
+
+            except Exception as e: 
+                self.fail_hits_count += 1
+                print(f"❌ 작업 중단: {e}")
+                self.log_activity(start_rank, start_rank, 0, f"실패")
+            finally: 
+                print("🔒 [안전장치 발동] 네이버의 로봇 추적을 피하기 위해 브라우저를 완전히 종료하고 흔적을 지웁니다.")
+                await browser.close()
+
+    # [6] 24시간 무한 자동 엔진 루프
+    async def start_engine(self):
+        print("\n" + "#"*60)
+        print(f"🚀 퍼마코트 랭킹 자동 적응형 엔진 가동")
+        print(f"   - 타겟 목표: ★오늘 목표: 2페이지 안착★ (필요 예상 유입: 80~100건)")
+        print(f"   - 엔진 최초 시작일: {self.config['start_date']}")
+        print(f"   - 타겟 스토어: {self.config['store_name']}")
+        print(f"   - 메인 키워드: {self.config['keyword']}")
+        print("#"*60 + "\n")
+        
+        while True:
+            # 날짜가 바뀌었으면 카운트 리셋
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            if self.current_date_str != today_str:
+                # 다음 날로 넘어가기 전 오늘의 Llama 보고서 출력
+                await self.get_llama_report()
+                
+                self.current_date_str = today_str
+                self.daily_hits_count = 0
+                self.fail_hits_count = 0
+                print(f"🌅 새로운 날짜({today_str})가 되어 유입량 카운터를 초기화합니다.")
+
+            daily_target, next_delay = self.calculate_current_delay()
+            
+            print(f"📊 [오늘의 트래픽 현황] 현재 유입 횟수: {self.daily_hits_count} / 목표 유입량: {daily_target} 회")
+            
+            try:
+                # 전체 과정을 7.5분(450초) 이내에 끝내도록 강제 제한 (파이썬 하위 버전을 고려해 wait_for 사용)
+                await asyncio.wait_for(self.run_task(), timeout=450)
+            except (asyncio.TimeoutError, TimeoutError):
+                print("⏰ 시간이 너무 오래 걸려 작업을 강제 종료합니다. (타임아웃 방어 발동)")
+                self.fail_hits_count += 1
+                self.log_activity(100, 100, 0, "실패: 타임아웃")
+            except Exception as e:
+                print(f"❌ 엔진 구동 중 에러 발생: {e}")
+                self.fail_hits_count += 1
+                self.log_activity(100, 100, 0, f"실패: {str(e)[:20]}")
+                
+            self.daily_hits_count += 1
+            
+            # 계산된 지연 시간만큼 대기 (랜덤 오차 20% 부여)
+            final_delay = int(next_delay * random.uniform(0.8, 1.2))
+            
+            # 대기 시간 사람이 보기 편하게 분/초로 환산 (테스트를 원하시면 10초 대기로 바꿀 수 있습니다)
+            wait_m, wait_s = divmod(final_delay, 60)
+            print(f"😴 다음 트래픽 작업까지 약 {wait_m}분 {wait_s}초 대기합니다...")
+            print("💡 (안내: 화면이 갑자기 꺼진 것은 에러가 아닙니다. 로봇 의심을 피하기 위해 다음 타임을 기다리는 자연스러운 현상입니다.)")
+            print("-"*60)
+            await asyncio.sleep(final_delay)
+
+if __name__ == "__main__":
+    engine = PermacoatAutonomousEngine()
+    asyncio.run(engine.start_engine())

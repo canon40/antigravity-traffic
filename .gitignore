@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+security_vault/
+*.csv
+*report.json
+seo_audit_history.json
+*.zip
+build/
+dist/
+*.html
+!templates/*.html

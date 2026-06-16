@@ -1,0 +1,189 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Nanumlab SEO Traffic Manager API",
+    "description": "API endpoints for monitoring Naver Shopping product ranks and controlling automated traffic/SEO scripts.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local server"
+    }
+  ],
+  "paths": {
+    "/api/status": {
+      "get": {
+        "summary": "Get Current Status",
+        "description": "Returns whether the scheduler is running, the last tracked rank, total tracks, and the last completion report.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "running": { "type": "boolean" },
+                    "last_rank": { "type": "integer" },
+                    "total_tracks": { "type": "integer" },
+                    "keyword_count": { "type": "integer" },
+                    "interval_minutes": { "type": "integer" },
+                    "last_report": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/track-now": {
+      "post": {
+        "summary": "Track Ranks Now",
+        "description": "Triggers an immediate ranking check for all keywords and products registered in configuration.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "report": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/start": {
+      "post": {
+        "summary": "Start Automatic Scheduler",
+        "description": "Starts the background rank tracking scheduler loop.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stop": {
+      "post": {
+        "summary": "Stop Automatic Scheduler",
+        "description": "Stops the background rank tracking scheduler loop.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/logs": {
+      "get": {
+        "summary": "Get Recent Logs",
+        "description": "Retrieves the recent runtime logs from the server queue.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "logs": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history": {
+      "get": {
+        "summary": "Get Rank History",
+        "description": "Retrieves the historical rank log rows from the CSV file.",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "type": "object" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/product/rank": {
+      "post": {
+        "summary": "Query Specific Product Rank",
+        "description": "Queries the current rank for a specific keyword and product ID on Naver Shopping.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "keyword": { "type": "string" },
+                  "product_id": { "type": "string" }
+                },
+                "required": ["keyword", "product_id"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "rank": { "type": "integer" },
+                    "display": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

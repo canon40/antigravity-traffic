@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>퍼마코트 SEO 모니터</title>
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2885/2885417.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --accent-yellow: #f59e0b;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-gradient); color: var(--text-main); min-height: 100vh; padding: 16px 14px 32px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 20px; }
+        header h1 { font-size: 1.6rem; font-weight: 700; background: linear-gradient(to right, #60a5fa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        header p { color: var(--text-sub); font-size: 0.85rem; margin-top: 4px; }
+        .glass-panel { background: var(--panel-bg); border: 1px solid var(--panel-border); backdrop-filter: blur(12px); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+        .status-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 50px; font-size: 0.8rem; font-weight: 600; }
+        .status-badge.running { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.3); }
+        .status-badge.stopped { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
+        .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.8s infinite; }
+        @keyframes pulse { 0%,100%{opacity:.6;transform:scale(.9)} 50%{opacity:1;transform:scale(1.2)} }
+        .rank-big { font-size: 1.8rem; font-weight: 700; color: #60a5fa; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .btn-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .btn { border: none; padding: 13px 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 600; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+        .btn-start { background: linear-gradient(135deg, #059669, #10b981); }
+        .btn-stop { background: linear-gradient(135deg, #dc2626, #ef4444); }
+        .btn-track { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+        .btn-audit { background: linear-gradient(135deg, #d97706, #f59e0b); }
+        .tabs { display: flex; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 14px; gap: 4px; -webkit-overflow-scrolling: touch; }
+        .tab-btn { background: none; border: none; color: var(--text-sub); padding: 10px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; position: relative; flex-shrink: 0; }
+        .tab-btn.active { color: var(--text-main); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent-blue); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .log-terminal { background: #090d16; border-radius: 12px; height: 200px; padding: 12px; font-family: 'Courier New', monospace; font-size: 0.78rem; overflow-y: auto; color: #38bdf8; line-height: 1.5; }
+        .log-line { margin-bottom: 5px; word-break: break-all; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+        .stat-card { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 14px; text-align: center; }
+        .stat-card .value { font-size: 1.5rem; font-weight: 700; }
+        .stat-card .label { font-size: 0.72rem; color: var(--text-sub); margin-top: 4px; }
+        .result-card { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 14px; margin-bottom: 10px; border-left: 3px solid var(--accent-blue); }
+        .result-card.up { border-left-color: var(--accent-green); }
+        .result-card.down { border-left-color: var(--accent-red); }
+        .result-card .kw { font-weight: 700; font-size: 0.95rem; }
+        .result-card .detail { font-size: 0.82rem; color: var(--text-sub); margin-top: 4px; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; }
+        .badge-up { background: rgba(16,185,129,0.2); color: var(--accent-green); }
+        .badge-down { background: rgba(239,68,68,0.2); color: var(--accent-red); }
+        .badge-same { background: rgba(148,163,184,0.2); color: var(--text-sub); }
+        .check-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+        .check-item:last-child { border-bottom: none; }
+        .check-pass { color: var(--accent-green); }
+        .check-fail { color: var(--accent-red); }
+        .grade-badge { font-size: 1.4rem; font-weight: 700; padding: 8px 16px; border-radius: 10px; background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .install-banner { display: none; background: linear-gradient(90deg, #1e3a8a, #3b82f6); border-radius: 12px; padding: 14px; margin-bottom: 16px; align-items: center; justify-content: space-between; }
+        .install-banner-text h4 { font-size: 0.9rem; }
+        .install-banner-text p { font-size: 0.72rem; color: rgba(255,255,255,0.8); }
+        .btn-install { background: #fff; color: #1e3a8a; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: flex-end; justify-content: center; padding: 16px; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: #1e293b; border-radius: 20px 20px 16px 16px; padding: 24px 20px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .modal h2 { font-size: 1.1rem; margin-bottom: 12px; }
+        .modal-close { width: 100%; margin-top: 16px; padding: 12px; border: none; border-radius: 10px; background: var(--accent-blue); color: #fff; font-weight: 600; cursor: pointer; }
+        .report-content { font-size: 0.88rem; line-height: 1.7; color: #e2e8f0; }
+        .report-content h3 { font-size: 1rem; color: #38bdf8; margin: 12px 0 6px; }
+        .empty-state { text-align: center; padding: 30px 10px; color: var(--text-sub); font-size: 0.85rem; }
+        .blog-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+        .blog-field label { display: block; font-size: 0.75rem; color: var(--text-sub); margin-bottom: 6px; }
+        .blog-field input, .blog-field select, .blog-field textarea {
+            width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(15,23,42,0.8); color: var(--text-main); font-size: 0.88rem;
+        }
+        .blog-field textarea { min-height: 88px; resize: vertical; }
+        .blog-preview {
+            background: rgba(15,23,42,0.85); border: 1px solid rgba(96,165,250,0.25); border-radius: 12px;
+            padding: 16px; min-height: 180px; max-height: 420px; overflow-y: auto; font-size: 0.88rem; line-height: 1.7;
+        }
+        .blog-preview h1, .blog-preview h2, .blog-preview h3 { color: #93c5fd; margin: 12px 0 8px; }
+        .blog-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .blog-chip {
+            padding: 6px 10px; border-radius: 999px; font-size: 0.72rem; background: rgba(59,130,246,0.15);
+            color: #93c5fd; border: 1px solid rgba(59,130,246,0.25);
+        }
+        .blog-url-card {
+            background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px; margin-bottom: 10px;
+            border-left: 3px solid #a855f7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="installBanner" class="install-banner">
+            <div class="install-banner-text">
+                <h4>📱 홈 화면에 추가</h4>
+                <p>앱처럼 바로 순위를 확인하세요</p>
+            </div>
+            <button id="installBtn" class="btn-install">설치</button>
+        </div>
+
+        <header>
+            <h1>PERMACOAT SEO MONITOR</h1>
+            <p>네이버 쇼핑 순위 추적 · SEO 체크리스트 · 모바일 리포트</p>
+        </header>
+
+        <div class="glass-panel">
+            <div class="status-row">
+                <div>
+                    <div style="font-size:0.75rem;color:var(--text-sub);margin-bottom:4px;">자동 추적</div>
+                    <div id="engineStatus" class="status-badge stopped">
+                        <div class="pulse-dot"></div>
+                        <span id="engineStatusText">중지됨</span>
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.75rem;color:var(--text-sub);margin-bottom:4px;">최근 순위</div>
+                    <div id="currentRankVal" class="rank-big">--</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-grid">
+            <button id="startBtn" class="btn btn-start" onclick="toggleScheduler(true)">
+                <i class="fa-solid fa-play"></i> 자동 추적
+            </button>
+            <button id="stopBtn" class="btn btn-stop" onclick="toggleScheduler(false)" disabled>
+                <i class="fa-solid fa-pause"></i> 중지
+            </button>
+        </div>
+        <div class="btn-grid btn-grid-3">
+            <button class="btn btn-track" onclick="trackNow()">
+                <i class="fa-solid fa-magnifying-glass-chart"></i> 지금 추적
+            </button>
+            <button class="btn btn-audit" onclick="runSeoAudit()">
+                <i class="fa-solid fa-list-check"></i> SEO 점검
+            </button>
+            <button class="btn" style="background:#6366f1;" onclick="showCompletionModal()">
+                <i class="fa-solid fa-clipboard-check"></i> 결과
+            </button>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="tab-dashboard">대시보드</button>
+            <button class="tab-btn" data-tab="tab-chart">순위 그래프</button>
+            <button class="tab-btn" data-tab="tab-seo">SEO 체크</button>
+            <button class="tab-btn" data-tab="tab-blog">블로그</button>
+            <button class="tab-btn" data-tab="tab-report">일일 리포트</button>
+            <button class="tab-btn" data-tab="tab-logs">로그</button>
+        </div>
+
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="glass-panel">
+                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-ranking-star"></i> 최근 작업 결과</h3>
+                <div id="recentResults">
+                    <div class="empty-state">아직 기록이 없습니다.<br>'지금 추적'을 눌러보세요.</div>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="value" id="totalTracksVal">0</div>
+                    <div class="label">총 추적 횟수</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="keywordCountVal">0</div>
+                    <div class="label">추적 키워드</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-chart" class="tab-content">
+            <div class="glass-panel">
+                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-chart-line"></i> 순위 변동 (낮을수록 상위)</h3>
+                <div style="height:260px;"><canvas id="rankingChart"></canvas></div>
+            </div>
+        </div>
+
+        <div id="tab-seo" class="tab-content">
+            <div class="glass-panel" id="seoAuditBox">
+                <div class="empty-state">SEO 점검 버튼을 눌러 상품·블로그 페이지를 점검하세요.</div>
+            </div>
+        </div>
+
+        <div id="tab-blog" class="tab-content">
+            <div class="glass-panel">
+                <h3 style="font-size:0.95rem;margin-bottom:14px;"><i class="fa-solid fa-pen-nib"></i> 블로그 콘텐츠 스튜디오</h3>
+                <div class="blog-form">
+                    <div class="blog-field">
+                        <label>워크플로우</label>
+                        <select id="blogWorkflow">
+                            <option value="blog_review">블로그 체험 후기</option>
+                            <option value="howto">사용법 튜토리얼</option>
+                            <option value="comparison">비교·선택 가이드</option>
+                            <option value="faq">FAQ 블록</option>
+                            <option value="seasonal">시즌 캠페인</option>
+                            <option value="benefit">핵심 혜택 요약</option>
+                        </select>
+                    </div>
+                    <div class="blog-field">
+                        <label>연결 상품</label>
+                        <select id="blogProduct"></select>
+                    </div>
+                    <div class="blog-field">
+                        <label>타겟 키워드</label>
+                        <input id="blogKeyword" type="text" value="퍼마코트 자동차 코팅제" placeholder="예: 셀프 유리막 코팅">
+                    </div>
+                    <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);" onclick="generateBlogContent()">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 블로그 초안 생성
+                    </button>
+                </div>
+                <div id="blogPreview" class="blog-preview">
+                    <div class="empty-state">키워드를 입력하고 「블로그 초안 생성」을 누르세요.</div>
+                </div>
+                <div id="blogMeta" class="blog-chip-row"></div>
+            </div>
+            <div class="glass-panel" style="margin-top:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <h3 style="font-size:0.95rem;"><i class="fa-solid fa-link"></i> 등록 블로그 SEO</h3>
+                    <button class="btn btn-audit" style="padding:8px 12px;font-size:0.78rem;" onclick="auditBlogOnly()">
+                        <i class="fa-solid fa-rotate"></i> 점검
+                    </button>
+                </div>
+                <div id="blogSeoBox">
+                    <div class="empty-state">config.json의 blog_urls 기준으로 점검합니다.</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-report" class="tab-content">
+            <div class="glass-panel">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <h3 style="font-size:0.95rem;"><i class="fa-solid fa-file-lines"></i> 일일 리포트</h3>
+                    <button class="btn" style="padding:6px 12px;font-size:0.75rem;background:var(--accent-blue);" onclick="loadReport()">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+                <div id="reportBox" class="report-content">리포트 로딩 중...</div>
+            </div>
+        </div>
+
+        <div id="tab-logs" class="tab-content">
+            <div class="glass-panel" style="padding:14px;">
+                <div id="logTerminal" class="log-terminal">
+                    <div class="log-line">대기 중...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="completionModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+            <h2><i class="fa-solid fa-circle-check"></i> 작업 완료 리포트</h2>
+            <div id="modalContent"></div>
+            <button class="modal-close" onclick="closeModal()">확인</button>
+        </div>
+    </div>
+
+    <script>
+        let chart = null;
+        const md = window.markdownit();
+        let lastReport = null;
+        let notifiedRank = null;
+        let appConfig = null;
+        let lastBlogAudit = null;
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn));
+        });
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            if (tabId === 'tab-chart') loadChart();
+            if (tabId === 'tab-report') loadReport();
+            if (tabId === 'tab-seo') loadLatestAudit();
+            if (tabId === 'tab-blog') initBlogTab();
+        }
+
+        async function loadConfig() {
+            if (appConfig) return appConfig;
+            const res = await fetch('/api/config');
+            appConfig = await res.json();
+            return appConfig;
+        }
+
+        async function initBlogTab() {
+            const config = await loadConfig();
+            const sel = document.getElementById('blogProduct');
+            if (!sel.options.length) {
+                (config.products || []).forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = `${p.name} (${p.id})`;
+                    sel.appendChild(opt);
+                });
+            }
+            if (lastBlogAudit) renderBlogSeo(lastBlogAudit);
+        }
+
+        function contentToMarkdown(result) {
+            const c = result.content || {};
+            const lines = [`# ${c.title || result.workflow_label || '블로그 초안'}`, ''];
+            if (c.body) lines.push(c.body);
+            if (c.sections) {
+                Object.entries(c.sections).forEach(([k, v]) => {
+                    lines.push(`## ${k}`, '', v, '');
+                });
+            }
+            if (c.steps) {
+                lines.push('## 단계별 가이드', '');
+                c.steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
+            }
+            if (c.items) {
+                c.items.forEach(item => lines.push(`**Q.** ${item.q}\n\n**A.** ${item.a}\n`));
+            }
+            if (c.meta_description) lines.push('', `> ${c.meta_description}`);
+            lines.push('', `---`, `생성: ${result.generated_at || ''}`, `저장: ${result.saved_path || ''}`);
+            return lines.join('\n');
+        }
+
+        async function generateBlogContent() {
+            const keyword = (document.getElementById('blogKeyword').value || '').trim();
+            const workflow = document.getElementById('blogWorkflow').value;
+            const productId = document.getElementById('blogProduct').value;
+            const config = await loadConfig();
+            const product = (config.products || []).find(p => String(p.id) === String(productId)) || {};
+            if (!keyword) {
+                showToast('키워드를 입력하세요.');
+                return;
+            }
+            showToast('블로그 초안 생성 중...');
+            const res = await fetch('/api/content/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    workflow,
+                    keyword,
+                    product_name: product.name,
+                    product_id: product.id,
+                    brand: config.brand || config.store_name,
+                }),
+            });
+            const data = await res.json();
+            const preview = document.getElementById('blogPreview');
+            const meta = document.getElementById('blogMeta');
+            if (!data.success) {
+                preview.innerHTML = `<div style="color:var(--accent-red);">${data.error || '생성 실패'}</div>`;
+                meta.innerHTML = '';
+                return;
+            }
+            preview.innerHTML = md.render(contentToMarkdown(data));
+            meta.innerHTML = [
+                data.workflow_label,
+                data.keyword,
+                product.name || '',
+                data.saved_path ? '저장 완료' : '',
+            ].filter(Boolean).map(t => `<span class="blog-chip">${t}</span>`).join('');
+            showToast('블로그 초안이 생성되었습니다.');
+            updateLogs();
+        }
+
+        function renderBlogSeo(audit) {
+            const box = document.getElementById('blogSeoBox');
+            if (!audit || !audit.blogs || !audit.blogs.length) {
+                box.innerHTML = '<div class="empty-state">등록된 블로그 URL이 없습니다.</div>';
+                return;
+            }
+            box.innerHTML = audit.blogs.map(page => {
+                if (!page.success) {
+                    return `<div class="blog-url-card"><strong>${page.url}</strong><div class="detail" style="color:var(--accent-red);margin-top:6px;">접근 실패</div></div>`;
+                }
+                const checks = page.checks.map(c =>
+                    `<div class="check-item"><span class="${c.passed ? 'check-pass' : 'check-fail'}">${c.passed ? '✓' : '✗'}</span><span><strong>${c.name}</strong><br><span style="color:var(--text-sub);font-size:0.78rem;">${c.message}</span></span></div>`
+                ).join('');
+                return `<div class="blog-url-card">
+                    <div style="font-size:0.85rem;font-weight:600;">📝 ${page.url}</div>
+                    <div style="color:#c4b5fd;margin:6px 0;">${page.percent}점 · ${page.grade}</div>
+                    ${checks}
+                </div>`;
+            }).join('');
+        }
+
+        async function auditBlogOnly() {
+            showToast('블로그 SEO 점검 중...');
+            const res = await fetch('/api/seo-audit', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                lastBlogAudit = data.audit;
+                renderBlogSeo(data.audit);
+                showToast(`블로그 ${data.audit.blogs.length}개 점검 완료`);
+            }
+        }
+
+        async function toggleScheduler(start) {
+            const res = await fetch(start ? '/api/start' : '/api/stop', { method: 'POST' });
+            const data = await res.json();
+            showToast(data.message);
+            updateStatus();
+        }
+
+        async function trackNow() {
+            showToast('순위 추적 중...');
+            const res = await fetch('/api/track-now', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                lastReport = data.report;
+                renderRecentResults(data.report);
+                showCompletionModal();
+                maybeNotify(data.report);
+                updateStatus();
+                updateLogs();
+            }
+        }
+
+        async function runSeoAudit() {
+            showToast('SEO 점검 중...');
+            const res = await fetch('/api/seo-audit', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                renderSeoAudit(data.audit);
+                switchTab('tab-seo', document.querySelector('[data-tab="tab-seo"]'));
+                showToast(`SEO 평균 ${data.audit.summary.average_score}점`);
+            }
+        }
+
+        function renderRecentResults(report) {
+            const box = document.getElementById('recentResults');
+            if (!report || !report.items || !report.items.length) {
+                box.innerHTML = '<div class="empty-state">기록 없음</div>';
+                return;
+            }
+            box.innerHTML = report.items.map(item => {
+                if (item.status === '실패') {
+                    return `<div class="result-card"><div class="kw">${item.keyword}</div><div class="detail">조회 실패</div></div>`;
+                }
+                const cls = item.status === '상승' ? 'up' : (item.status === '하락' ? 'down' : '');
+                const badgeCls = item.status === '상승' ? 'badge-up' : (item.status === '하락' ? 'badge-down' : 'badge-same');
+                return `<div class="result-card ${cls}">
+                    <div class="kw">${item.keyword} <span class="badge ${badgeCls}">${item.status}</span></div>
+                    <div class="detail">${item.prev_text} → <strong>${item.rank_text}</strong></div>
+                    <div class="detail">작업: ${(item.tasks || []).join(', ')}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function showCompletionModal() {
+            const report = lastReport;
+            const modal = document.getElementById('completionModal');
+            const content = document.getElementById('modalContent');
+            if (!report || !report.items) {
+                fetch('/api/completion').then(r => r.json()).then(d => {
+                    lastReport = d.report;
+                    fillModal(d.report);
+                });
+            } else {
+                fillModal(report);
+            }
+            modal.classList.add('show');
+        }
+
+        function fillModal(report) {
+            const content = document.getElementById('modalContent');
+            if (!report || !report.items || !report.items.length) {
+                content.innerHTML = '<p style="color:var(--text-sub);">아직 완료된 작업이 없습니다.</p>';
+                return;
+            }
+            let html = `<p style="margin-bottom:12px;font-size:0.9rem;">${report.summary}</p>`;
+            html += `<p style="font-size:0.75rem;color:var(--text-sub);margin-bottom:12px;">${report.completed_at || ''}</p>`;
+            report.items.forEach(item => {
+                if (item.status === '실패') {
+                    html += `<div class="result-card"><div class="kw">${item.keyword}</div><div class="detail">순위 조회 실패</div></div>`;
+                } else {
+                    const cls = item.status === '상승' ? 'up' : (item.status === '하락' ? 'down' : '');
+                    html += `<div class="result-card ${cls}">
+                        <div class="kw">${item.keyword}</div>
+                        <div class="detail">${item.prev_text} → <strong>${item.rank_text}</strong> (${item.status})</div>
+                        <div class="detail">수행 작업: ${(item.tasks || ['순위 추적']).join(', ')}</div>
+                    </div>`;
+                }
+            });
+            content.innerHTML = html;
+        }
+
+        function closeModal() {
+            document.getElementById('completionModal').classList.remove('show');
+        }
+
+        function renderSeoAudit(audit) {
+            const box = document.getElementById('seoAuditBox');
+            if (!audit) {
+                box.innerHTML = '<div class="empty-state">점검 기록 없음</div>';
+                return;
+            }
+            const s = audit.summary;
+            let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div><div style="font-size:0.8rem;color:var(--text-sub);">평균 SEO 점수</div>
+                <div style="font-size:1.6rem;font-weight:700;">${s.average_score}점</div></div>
+                <div class="grade-badge">${s.average_score >= 80 ? 'A' : s.average_score >= 60 ? 'B' : 'C'}</div>
+            </div>`;
+
+            [...audit.products, ...audit.blogs].forEach(page => {
+                if (!page.success) {
+                    html += `<div style="margin-bottom:14px;"><strong style="font-size:0.85rem;">${page.url}</strong><div class="detail" style="color:var(--accent-red);">접근 실패</div></div>`;
+                    return;
+                }
+                html += `<div style="margin-bottom:16px;">
+                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">${page.page_type === 'product' ? '🛒' : '📝'} ${page.url} <span style="color:var(--accent-blue);">${page.percent}점 (${page.grade})</span></div>`;
+                page.checks.forEach(c => {
+                    html += `<div class="check-item">
+                        <span class="${c.passed ? 'check-pass' : 'check-fail'}">${c.passed ? '✓' : '✗'}</span>
+                        <span><strong>${c.name}</strong><br><span style="color:var(--text-sub);font-size:0.78rem;">${c.message}</span></span>
+                    </div>`;
+                });
+                html += '</div>';
+            });
+
+            if (s.recommendations && s.recommendations.length) {
+                html += '<h4 style="font-size:0.9rem;margin:12px 0 8px;">개선 권장</h4><ul style="font-size:0.82rem;color:var(--text-sub);padding-left:18px;">';
+                s.recommendations.slice(0, 8).forEach(r => { html += `<li style="margin-bottom:4px;">${r}</li>`; });
+                html += '</ul>';
+            }
+            box.innerHTML = html;
+        }
+
+        async function loadLatestAudit() {
+            const res = await fetch('/api/seo-audit/latest');
+            const data = await res.json();
+            if (data.audit) renderSeoAudit(data.audit);
+        }
+
+        async function updateStatus() {
+            const res = await fetch('/api/status');
+            const data = await res.json();
+            const badge = document.getElementById('engineStatus');
+            const text = document.getElementById('engineStatusText');
+            if (data.running) {
+                badge.className = 'status-badge running';
+                text.textContent = '추적 중';
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+            } else {
+                badge.className = 'status-badge stopped';
+                text.textContent = '중지됨';
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+            }
+            const rank = data.last_rank;
+            document.getElementById('currentRankVal').textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
+            document.getElementById('totalTracksVal').textContent = data.total_tracks || 0;
+            document.getElementById('keywordCountVal').textContent = data.keyword_count || 0;
+            if (data.last_report) {
+                lastReport = data.last_report;
+                renderRecentResults(data.last_report);
+            }
+        }
+
+        async function updateLogs() {
+            const res = await fetch('/api/logs');
+            const data = await res.json();
+            const term = document.getElementById('logTerminal');
+            if (data.logs && data.logs.length) {
+                term.innerHTML = data.logs.map(l => `<div class="log-line">${l}</div>`).join('');
+                term.scrollTop = term.scrollHeight;
+            }
+        }
+
+        async function loadChart() {
+            const res = await fetch('/api/history');
+            const data = await res.json();
+            const labels = data.map(r => (r.날짜 || '').split(' ')[1] || r.날짜);
+            const ranks = data.map(r => parseInt(r.순위) || 100);
+            const ctx = document.getElementById('rankingChart').getContext('2d');
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: '순위',
+                        data: ranks,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59,130,246,0.1)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#e2e8f0', font: { size: 10 } } } },
+                    scales: {
+                        y: { reverse: true, min: 1, max: 100, ticks: { color: '#94a3b8', stepSize: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { ticks: { color: '#94a3b8', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        async function loadReport() {
+            const box = document.getElementById('reportBox');
+            box.innerHTML = '로딩 중...';
+            const res = await fetch('/api/report');
+            const data = await res.json();
+            box.innerHTML = md.render(data.report);
+        }
+
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.textContent = msg;
+            t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 20px;border-radius:10px;font-size:0.85rem;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2500);
+        }
+
+        function maybeNotify(report) {
+            if (!('Notification' in window)) return;
+            const improved = report.items.filter(i => i.status === '상승');
+            if (!improved.length) return;
+            const msg = improved.map(i => `${i.keyword}: ${i.rank_text}`).join(', ');
+            if (Notification.permission === 'granted') {
+                new Notification('순위 상승!', { body: msg });
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(p => {
+                    if (p === 'granted') new Notification('순위 상승!', { body: msg });
+                });
+            }
+        }
+
+        setInterval(() => { updateStatus(); updateLogs(); }, 5000);
+        updateStatus();
+        updateLogs();
+        loadLatestAudit();
+        loadConfig();
+
+        let deferredPrompt;
+        const installBanner = document.getElementById('installBanner');
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                installBanner.style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBanner.style.display = 'flex';
+        });
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+        if ('Notification' in window && Notification.permission === 'default') {
+            setTimeout(() => Notification.requestPermission(), 3000);
+        }
+    </script>
+</body>
+</html>
