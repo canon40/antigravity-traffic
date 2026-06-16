@@ -1,0 +1,386 @@
+{
+  "store_name": "나눔랩",
+  "brand": "나눔랩",
+  "track_interval_minutes": 60,
+  "priority_track_limit": 10,
+  "priority_keywords": [
+    { "keyword": "퍼마코트 자동차 코팅제", "store_name": "나눔랩", "product_id": "12639296730" },
+    { "keyword": "셀프 유리막 코팅", "store_name": "나눔랩", "product_id": "12639296730" },
+    { "keyword": "퍼마코트 사용 후기", "store_name": "나눔랩", "product_id": "12639296730" },
+    { "keyword": "듀라코트 리빙코트", "store_name": "나눔랩", "product_id": "10713170202" },
+    { "keyword": "가구코팅 추천", "store_name": "나눔랩", "product_id": "10713170202" },
+    { "keyword": "나눔랩 코팅제", "store_name": "나눔랩", "product_id": "12808820913" },
+    { "keyword": "유리막코팅제", "store_name": "나눔랩", "product_id": "12808820913" },
+    { "keyword": "나눔랩 세정제", "store_name": "나눔랩", "product_id": "12808787263" }
+  ],
+  "products": [
+    {
+      "id": "10713170202",
+      "name": "듀라코트 리빙코트",
+      "url": "https://smartstore.naver.com/nanumlab/products/10713170202"
+    },
+    {
+      "id": "12639296730",
+      "name": "퍼마코트 자동차 코팅제",
+      "url": "https://smartstore.naver.com/nanumlab/products/12639296730"
+    },
+    {
+      "id": "12634187514",
+      "name": "나눔랩 코팅 상품",
+      "url": "https://smartstore.naver.com/nanumlab/products/12634187514"
+    },
+    {
+      "id": "12808787263",
+      "name": "나눔랩 세정·관리제",
+      "url": "https://smartstore.naver.com/nanumlab/products/12808787263"
+    },
+    {
+      "id": "12808820913",
+      "name": "나눔랩 코팅제 A",
+      "url": "https://smartstore.naver.com/nanumlab/products/12808820913"
+    },
+    {
+      "id": "12809519826",
+      "name": "나눔랩 코팅제 B",
+      "url": "https://smartstore.naver.com/nanumlab/products/12809519826"
+    },
+    {
+      "id": "12809532969",
+      "name": "나눔랩 코팅제 C",
+      "url": "https://smartstore.naver.com/nanumlab/products/12809532969"
+    },
+    {
+      "id": "12809541448",
+      "name": "나눔랩 코팅제 D",
+      "url": "https://smartstore.naver.com/nanumlab/products/12809541448"
+    },
+    {
+      "id": "12639326305",
+      "name": "나눔랩 관련 상품 E",
+      "url": "https://smartstore.naver.com/nanumlab/products/12639326305"
+    }
+  ],
+  "keywords": [
+    {
+      "keyword": "자동차코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "셀프 유리막 코팅",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "듀라코트 리빙코트",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "리빙코트",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "나눔랩 코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12808820913"
+    },
+    {
+      "keyword": "유리막코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12808820913"
+    },
+    {
+      "keyword": "나눔랩 세정제",
+      "store_name": "나눔랩",
+      "product_id": "12808787263"
+    },
+    {
+      "keyword": "세차 관리제",
+      "store_name": "나눔랩",
+      "product_id": "12808787263"
+    },
+    {
+      "keyword": "나눔랩 코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12809532969"
+    },
+    {
+      "keyword": "자동차 유리막코팅",
+      "store_name": "나눔랩",
+      "product_id": "12809532969"
+    },
+    {
+      "keyword": "나눔랩 코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12809541448"
+    },
+    {
+      "keyword": "셀프 유리막코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12809541448"
+    },
+    {
+      "keyword": "나눔랩 코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12809519826"
+    },
+    {
+      "keyword": "유리막코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12809519826"
+    },
+    {
+      "keyword": "나눔랩 코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "차량용 유리막코팅",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "리빙코트 처음 사용법",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "리빙코트 원목",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "나무 가구 실내코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "가구 리빙코트 방법",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "가구코팅 가성비",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "원목 리빙코트",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "가구코팅 광택",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "실내코팅 비추천 이유",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "가구코팅 DIY",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "가구코팅 주방",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "가구코팅 추천",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "가구코팅 가격 비교",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "욕실 가구코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "실내코팅 원목",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "가구코팅 욕실",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "셀프 퍼마코트 순서",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "신차 자동차코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "유리막코팅 지속 기간",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "퍼마코트 가격 비교",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "퍼마코트 직접 해봤어요",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "자동차코팅제 직접",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "중고차 퍼마코트",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "퍼마코트 사용 후기",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "쉬운 자동차코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "쉬운 자동차 코팅제 추천",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "유리막코팅 가격 비교",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "효과 자동차 코팅제 추천",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "자동차코팅제 직접 해봤어요",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "유리막코팅 가성비",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "자동차코팅제 가성비",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "신차 자동차코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "중고차 차량코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "셀프 차 코팅",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "쉬운 차량코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "유리막코팅제 가격 비교",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "자동차코팅제 직접",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "차량코팅제 직접",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "쉬운 자동차코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "신차 차 코팅",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "후기 유리막코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "차량코팅제 어떤게 좋아요",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "유리막코팅제 브랜드 비교",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "자동차코팅제 직접 해봤어요",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "자동차코팅제 효과 좋은",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    },
+    {
+      "keyword": "유리막코팅제 장마철",
+      "store_name": "나눔랩",
+      "product_id": "12634187514"
+    }
+  ],
+  "product_urls": [
+    "https://smartstore.naver.com/nanumlab/products/10713170202",
+    "https://smartstore.naver.com/nanumlab/products/12639296730",
+    "https://smartstore.naver.com/nanumlab/products/12634187514",
+    "https://smartstore.naver.com/nanumlab/products/12808787263",
+    "https://smartstore.naver.com/nanumlab/products/12808820913",
+    "https://smartstore.naver.com/nanumlab/products/12809519826",
+    "https://smartstore.naver.com/nanumlab/products/12809532969",
+    "https://smartstore.naver.com/nanumlab/products/12809541448",
+    "https://smartstore.naver.com/nanumlab/products/12639326305"
+  ],
+  "blog_urls": [
+    "https://blog.naver.com/hymini1",
+    "https://blog.naver.com/selfcoat",
+    "https://hymini1.tistory.com/"
+  ]
+}

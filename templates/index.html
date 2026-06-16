@@ -196,7 +196,11 @@
             <div class="glass-panel">
                 <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-ranking-star"></i> 최근 작업 결과</h3>
                 <div id="recentResults">
-                    <div class="empty-state">아직 기록이 없습니다.<br>'지금 추적'을 눌러보세요.</div>
+                    <div class="empty-state" id="dashboardEmpty">
+                        아직 기록이 없습니다.<br>
+                        <strong>「지금 추적」</strong>으로 첫 순위를 기록하세요.<br>
+                        <span id="kwHint" style="font-size:0.78rem;margin-top:8px;display:block;color:#94a3b8;"></span>
+                    </div>
                 </div>
             </div>
             <div class="stats-grid">
@@ -215,6 +219,10 @@
             <div class="glass-panel">
                 <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-chart-line"></i> 순위 변동 (낮을수록 상위)</h3>
                 <div style="height:260px;"><canvas id="rankingChart"></canvas></div>
+                <div id="chartEmpty" class="empty-state" style="display:none;margin-top:12px;">
+                    순위 그래프는 「지금 추적」 후 표시됩니다.<br>
+                    PC에서는 <code style="color:#93c5fd;">python scripts/rank_daily.py</code>로 전체 키워드 일괄 추적 가능
+                </div>
             </div>
         </div>
 
@@ -534,7 +542,7 @@
         function renderRecentResults(report) {
             const box = document.getElementById('recentResults');
             if (!report || !report.items || !report.items.length) {
-                box.innerHTML = '<div class="empty-state">기록 없음</div>';
+                box.innerHTML = `<div class="empty-state" id="dashboardEmpty">아직 기록이 없습니다.<br><strong>「지금 추적」</strong>으로 첫 순위를 기록하세요.<br><span id="kwHint" style="font-size:0.78rem;margin-top:8px;display:block;color:#94a3b8;"></span></div>`;
                 return;
             }
             box.innerHTML = report.items.map(item => {
@@ -656,6 +664,13 @@
             document.getElementById('currentRankVal').textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
             document.getElementById('totalTracksVal').textContent = data.total_tracks || 0;
             document.getElementById('keywordCountVal').textContent = data.keyword_count || 0;
+            const hint = document.getElementById('kwHint');
+            if (hint) {
+                const batch = data.track_batch_count || data.keyword_count || 0;
+                hint.textContent = data.serverless
+                    ? `웹(서버리스): 우선 ${batch}개 키워드 추적 · 전체 ${data.keyword_count || 0}개는 PC에서`
+                    : `등록 키워드 ${data.keyword_count || 0}개 · 우선 ${data.priority_count || batch}개`;
+            }
             if (data.last_report) {
                 lastReport = data.last_report;
                 renderRecentResults(data.last_report);
@@ -675,6 +690,13 @@
         async function loadChart() {
             const res = await fetch('/api/history');
             const data = await res.json();
+            const chartEmpty = document.getElementById('chartEmpty');
+            if (!data || !data.length) {
+                if (chart) chart.destroy();
+                if (chartEmpty) chartEmpty.style.display = 'block';
+                return;
+            }
+            if (chartEmpty) chartEmpty.style.display = 'none';
             const labels = data.map(r => (r.날짜 || '').split(' ')[1] || r.날짜);
             const ranks = data.map(r => parseInt(r.순위) || 100);
             const ctx = document.getElementById('rankingChart').getContext('2d');

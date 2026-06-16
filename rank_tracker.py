@@ -11,6 +11,9 @@ from app_resources import get_storage_dir
 
 HISTORY_HEADERS = ["날짜", "키워드", "스토어명", "순위", "이전순위", "변동", "작업유형", "상세"]
 
+_BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
+_DEFAULT_CONFIG_PATH = os.path.join(_BUNDLE_DIR, "config.defaults.json")
+
 # Android Chrome UA — 모바일 앱·실기기에서 네이버 응답 안정화
 MOBILE_UA = (
     "Mozilla/5.0 (Linux; Android 14; SM-S918N) AppleWebKit/537.36 "
@@ -82,16 +85,20 @@ def test_naver_connection():
 
 def load_config():
     path = _config_path()
-    if not os.path.exists(path):
-        return {
-            "store_name": "나눔랩",
-            "track_interval_minutes": 60,
-            "keywords": [],
-            "product_urls": [],
-            "blog_urls": [],
-        }
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    if os.path.exists(_DEFAULT_CONFIG_PATH):
+        with open(_DEFAULT_CONFIG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {
+        "store_name": "나눔랩",
+        "track_interval_minutes": 60,
+        "priority_track_limit": 10,
+        "keywords": [],
+        "product_urls": [],
+        "blog_urls": [],
+    }
 
 
 def save_config(config):
@@ -346,9 +353,23 @@ def check_naver_shopping_rank(keyword, store_name, logger=None):
         return None
 
 
-def track_all_keywords(logger=None):
+def _keywords_for_run(config=None, *, serverless=False):
+    """Vercel 등 서버리스에서는 우선 키워드만 추적."""
+    config = config or load_config()
+    if serverless or os.environ.get("VERCEL"):
+        priority = config.get("priority_keywords") or []
+        if priority:
+            return priority
+        limit = int(config.get("priority_track_limit") or 10)
+        return (config.get("keywords") or [])[:limit]
+    return config.get("keywords") or []
+
+
+def track_all_keywords(logger=None, *, serverless=None):
     config = load_config()
-    keywords = config.get("keywords") or []
+    if serverless is None:
+        serverless = bool(os.environ.get("VERCEL"))
+    keywords = _keywords_for_run(config, serverless=serverless)
     if not keywords:
         kw = config.get("default_keyword")
         if kw:
@@ -357,6 +378,8 @@ def track_all_keywords(logger=None):
         if logger:
             logger("⚠️ 추적할 키워드가 없습니다. config.json을 설정하세요.")
         return []
+    if logger and serverless:
+        logger(f"📌 서버리스 우선 추적: {len(keywords)}개 키워드")
 
     results = []
     for item in keywords:

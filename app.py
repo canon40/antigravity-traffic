@@ -121,11 +121,21 @@ def api_status():
             last_rank = 100
 
     config = load_config()
+    keywords = config.get("keywords") or []
+    priority = config.get("priority_keywords") or []
+    on_vercel = bool(os.environ.get("VERCEL"))
+    track_count = len(priority) if (on_vercel and priority) else len(keywords)
+    if on_vercel and not priority:
+        track_count = min(len(keywords), int(config.get("priority_track_limit") or 10))
+
     return jsonify({
         "running": scheduler_running,
         "last_rank": last_rank,
         "total_tracks": len(history),
-        "keyword_count": len(config.get("keywords", [])),
+        "keyword_count": len(keywords),
+        "priority_count": len(priority) or min(len(keywords), int(config.get("priority_track_limit") or 10)),
+        "track_batch_count": track_count,
+        "serverless": on_vercel,
         "interval_minutes": config.get("track_interval_minutes", 60),
         "last_report": last_completion_report,
     })
@@ -278,7 +288,21 @@ def openapi_spec():
     return send_from_directory(".", "openapi.json")
 
 
-@app.route("/api/javis/programs")
+@app.route("/api/cron/track", methods=["GET", "POST"])
+def api_cron_track():
+    """Vercel Cron — 우선 키워드만 순위 추적."""
+    secret = os.environ.get("CRON_SECRET", "")
+    if secret:
+        auth = request.headers.get("Authorization", "")
+        if auth != f"Bearer {secret}":
+            return jsonify({"success": False, "error": "unauthorized"}), 401
+    global last_completion_report
+    add_log("⏰ Cron 순위 추적 시작 (우선 키워드)")
+    results = track_all_keywords(logger=add_log, serverless=True)
+    report = build_completion_report(results)
+    last_completion_report = report
+    add_log(f"✅ Cron 완료: {report['summary']}")
+    return jsonify({"success": True, "report": report, "tracked": len(results)})
 def api_javis_programs():
     return jsonify(get_catalog())
 
