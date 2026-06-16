@@ -34,8 +34,11 @@ app = Flask(__name__)
 logs_queue = []
 scheduler_running = False
 scheduler_thread = None
+traffic_loop_running = False
+traffic_thread = None
 stop_event = threading.Event()
 last_completion_report = None
+_boot_auto_started = False
 
 
 def is_serverless():
@@ -110,6 +113,70 @@ def scheduler_loop():
     add_log("🛑 순위 추적 스케줄러가 중지되었습니다.")
 
 
+def traffic_loop():
+    """로컬 서버 — 브라우저 없이 주기적 스마트스토어 방문 (Vercel Cron과 동일 20분)."""
+    global traffic_loop_running
+    if run_traffic_session is None:
+        traffic_loop_running = False
+        return
+    add_log("🚗 로컬 트래픽 루프 시작 (20분 간격)")
+    interval_sec = max(300, int(os.environ.get("TRAFFIC_INTERVAL_SEC", "1200")))
+
+    while not stop_event.is_set():
+        target_url = _traffic_target_url()
+        add_log(f"🚗 자동 트래픽: {target_url}")
+        try:
+            result = run_traffic_session(target_url, timeout_sec=8.0)
+            if result.get("ok"):
+                add_log(f"✅ 트래픽 OK {result.get('status_code')} · {result.get('elapsed_sec')}초")
+            else:
+                add_log(f"⚠️ 트래픽 응답 {result.get('status_code')}")
+        except Exception as exc:
+            add_log(f"❌ 트래픽 실패: {exc}")
+
+        waited = 0
+        while waited < interval_sec and not stop_event.is_set():
+            time.sleep(10)
+            waited += 10
+
+    traffic_loop_running = False
+    add_log("🛑 로컬 트래픽 루프가 중지되었습니다.")
+
+
+def ensure_background_services(*, log_boot: bool = False) -> None:
+    """서버 기동 시 순위 추적·트래픽을 자동 시작 (웹 UI 없이 24시간 동작)."""
+    global scheduler_running, scheduler_thread, traffic_loop_running, traffic_thread
+    global stop_event, _boot_auto_started
+
+    if is_serverless():
+        state = load_hub_state()
+        if state.get("auto_enabled") is None:
+            state["auto_enabled"] = True
+            save_hub_state(state)
+            if log_boot:
+                add_log("▶️ Vercel Cron 24시간 자동 추적·트래픽 (기본 켜짐)")
+        _boot_auto_started = True
+        return
+
+    started = False
+    if not scheduler_running:
+        stop_event.clear()
+        scheduler_running = True
+        scheduler_thread = threading.Thread(target=scheduler_loop, daemon=True)
+        scheduler_thread.start()
+        started = True
+
+    if run_traffic_session is not None and not traffic_loop_running:
+        traffic_loop_running = True
+        traffic_thread = threading.Thread(target=traffic_loop, daemon=True)
+        traffic_thread.start()
+        started = True
+
+    if started and log_boot:
+        add_log("▶️ 서버 기동 — 순위 추적·트래픽 백그라운드 시작 (브라우저 불필요)")
+    _boot_auto_started = started or scheduler_running or traffic_loop_running
+
+
 def generate_daily_report():
     history = get_history()
     if not history:
@@ -174,6 +241,8 @@ def api_status():
 
     return jsonify({
         "running": running,
+        "traffic_loop": traffic_loop_running,
+        "auto_started": _boot_auto_started or running,
         "last_rank": last_rank,
         "total_tracks": len(history),
         "keyword_count": len(keywords),
@@ -236,7 +305,7 @@ def api_seo_audit_latest():
 
 @app.route("/api/start", methods=["POST"])
 def api_start():
-    global scheduler_running, scheduler_thread, stop_event
+    global scheduler_running, scheduler_thread, traffic_loop_running, traffic_thread, stop_event
     if is_serverless():
         state = load_hub_state()
         state["auto_enabled"] = True
@@ -244,22 +313,19 @@ def api_start():
         add_log("▶️ 24시간 Cron 자동 추적 활성화")
         return jsonify({
             "success": True,
-            "message": "24시간 자동 추적이 켜졌습니다. 매시 정각 Vercel Cron이 우선 키워드를 추적합니다.",
+            "message": "24시간 자동 추적이 켜졌습니다. JARVIS 작업 중에도 순위·트래픽 Cron이 백그라운드에서 계속됩니다.",
             "mode": "cron",
         })
-    if not scheduler_running:
-        stop_event.clear()
-        scheduler_running = True
-        scheduler_thread = threading.Thread(target=scheduler_loop, daemon=True)
-        scheduler_thread.start()
-        add_log("▶️ 자동 순위 추적을 시작했습니다.")
-        return jsonify({"success": True, "message": "자동 순위 추적이 시작되었습니다."})
-    return jsonify({"success": False, "message": "이미 실행 중입니다."})
+    ensure_background_services()
+    if scheduler_running:
+        add_log("▶️ 자동 순위 추적·트래픽 실행 중")
+        return jsonify({"success": True, "message": "자동 순위 추적·트래픽이 실행 중입니다."})
+    return jsonify({"success": False, "message": "시작에 실패했습니다."})
 
 
 @app.route("/api/stop", methods=["POST"])
 def api_stop():
-    global scheduler_running, stop_event
+    global scheduler_running, traffic_loop_running, stop_event
     if is_serverless():
         state = load_hub_state()
         state["auto_enabled"] = False
@@ -270,9 +336,9 @@ def api_stop():
             "message": "자동 추적이 꺼졌습니다. 「지금 추적」으로 수동 실행은 가능합니다.",
             "mode": "cron",
         })
-    if scheduler_running:
+    if scheduler_running or traffic_loop_running:
         stop_event.set()
-        add_log("⏸️ 자동 추적 중지 요청")
+        add_log("⏸️ 자동 추적·트래픽 중지 요청")
         return jsonify({"success": True, "message": "중지 명령이 전달되었습니다."})
     return jsonify({"success": False, "message": "실행 중이 아닙니다."})
 
@@ -545,6 +611,9 @@ def api_javis_launch():
         add_log(f"⚠️ 프로그램 실행 실패: {result.get('error', program_id)}")
     return jsonify(result)
 
+
+if os.environ.get("AUTO_START_SCHEDULER", "1") != "0":
+    ensure_background_services(log_boot=True)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)

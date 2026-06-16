@@ -175,11 +175,42 @@
         .tab-btn[data-ws] { display: inline-block; }
         body.ws-javis .tab-btn[data-ws="traffic-only"] { display: none; }
         body.ws-traffic .tab-btn[data-ws="javis-only"] { display: none; }
+        .ws-nav {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            background: var(--panel-bg); border: 1px solid var(--panel-border);
+            border-radius: 14px; padding: 6px; backdrop-filter: blur(12px);
+        }
+        .ws-nav-btn {
+            border: none; border-radius: 10px; padding: 12px 10px; font-size: 0.82rem; font-weight: 700;
+            cursor: pointer; color: var(--text-sub); background: transparent;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .ws-nav-btn.active { background: rgba(59,130,246,0.2); color: var(--text-main); }
+        .ws-nav-btn[data-ws="traffic"].active { background: rgba(16,185,129,0.18); color: #34d399; }
+        .ws-nav-btn[data-ws="javis"].active { background: rgba(139,92,246,0.2); color: #c4b5fd; }
+        .sidebar-ws-panel { display: none; }
+        .sidebar-ws-panel.active { display: block; }
+        .traffic-compact {
+            border-color: rgba(16,185,129,0.25);
+            background: rgba(16,185,129,0.06);
+        }
+        .traffic-compact .rank-big { font-size: 1.1rem !important; }
     </style>
 </head>
-<body>
+<body class="ws-traffic">
     <div class="app-shell">
         <aside class="sidebar">
+            <nav class="ws-nav" aria-label="워크스페이스">
+                <button type="button" class="ws-nav-btn active" id="wsTrafficBtn" data-ws="traffic">
+                    <i class="fa-solid fa-chart-line"></i> Traffic
+                </button>
+                <button type="button" class="ws-nav-btn" id="wsJavisBtn" data-ws="javis">
+                    <i class="fa-solid fa-robot"></i> JARVIS
+                </button>
+            </nav>
+
+            <div id="sidebarTrafficPanel" class="sidebar-ws-panel active">
             <section class="sidebar-section traffic-side">
                 <h2><i class="fa-solid fa-chart-line"></i> Traffic</h2>
                 <div class="status-row">
@@ -214,7 +245,9 @@
                     </button>
                 </div>
             </section>
+            </div>
 
+            <div id="sidebarJavisPanel" class="sidebar-ws-panel">
             <section class="sidebar-section javis-side">
                 <h2><i class="fa-solid fa-robot"></i> JARVIS</h2>
                 <div id="javisEngineStatus" class="status-badge stopped" style="margin-bottom:6px;">
@@ -224,12 +257,27 @@
                 <div id="javisHubStatus" class="hub-status" style="margin:0;">
                     <span class="hub-pill">연동 확인 중...</span>
                 </div>
-                <div id="sidebarJavisPrograms" style="margin-top:10px;max-height:220px;overflow-y:auto;">
+                <div id="sidebarJavisPrograms" style="margin-top:10px;max-height:280px;overflow-y:auto;">
                     <div class="sidebar-mini">프로그램 로딩 중...</div>
                 </div>
-                <button type="button" class="btn" style="margin-top:10px;background:linear-gradient(135deg,#4f46e5,#6366f1);width:100%;" onclick="openJavisWorkspace()">
-                    <i class="fa-solid fa-table-columns"></i> JARVIS 전체 보기
-                </button>
+            </section>
+            </div>
+
+            <section id="trafficCompactBar" class="sidebar-section traffic-compact" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                    <div>
+                        <div style="font-size:0.68rem;color:var(--text-sub);">Traffic 백그라운드</div>
+                        <div id="compactEngineStatus" class="status-badge stopped" style="margin-top:4px;font-size:0.72rem;padding:4px 10px;">
+                            <div class="pulse-dot"></div>
+                            <span id="compactEngineStatusText">확인 중</span>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.68rem;color:var(--text-sub);">최근 순위</div>
+                        <div id="compactRankVal" class="rank-big" style="font-size:1.1rem;">--</div>
+                    </div>
+                </div>
+                <div id="trafficBgPillCompact" class="bg-pill off" style="margin-top:8px;"><i class="fa-solid fa-circle"></i> 백그라운드 대기</div>
             </section>
         </aside>
 
@@ -243,98 +291,35 @@
         </div>
 
         <header>
-            <h1 id="hubTitle">나눔랩 SEO · Traffic 허브</h1>
-            <p id="hubSubtitle">순위 추적 · SEO · 블로그 · 로컬 트래픽 도구</p>
+            <h1 id="hubTitle">나눔랩 SEO · JARVIS 허브</h1>
+            <p id="hubSubtitle">Traffic은 24시간 백그라운드 · JARVIS는 좌측에서 바로 실행</p>
         </header>
 
-        <div class="workspace-switch">
-            <button type="button" class="ws-btn active" id="wsTrafficBtn" data-ws="traffic">
-                <i class="fa-solid fa-chart-line"></i> Traffic
-            </button>
-            <button type="button" class="ws-btn" id="wsJavisBtn" data-ws="javis">
-                <i class="fa-solid fa-robot"></i> JARVIS
-            </button>
-        </div>
-
-        <div id="trafficPanel" class="ws-panel active">
-        <div class="glass-panel">
-            <div class="status-row">
-                <div>
-                    <div style="font-size:0.75rem;color:var(--text-sub);margin-bottom:4px;">자동 추적</div>
-                    <div id="engineStatus" class="status-badge stopped">
-                        <div class="pulse-dot"></div>
-                        <span id="engineStatusText">중지됨</span>
-                    </div>
-                </div>
-                <div style="text-align:right;">
-                    <div style="font-size:0.75rem;color:var(--text-sub);margin-bottom:4px;">최근 순위</div>
-                    <div id="currentRankVal" class="rank-big">--</div>
-                    <div id="cronHint" style="font-size:0.7rem;color:#94a3b8;margin-top:4px;display:none;"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="btn-grid">
-            <button id="startBtn" class="btn btn-start" onclick="toggleScheduler(true)">
-                <i class="fa-solid fa-play"></i> 자동 추적
-            </button>
-            <button id="stopBtn" class="btn btn-stop" onclick="toggleScheduler(false)" disabled>
-                <i class="fa-solid fa-pause"></i> 중지
-            </button>
-        </div>
-        <div class="btn-grid btn-grid-3">
-            <button class="btn btn-track" onclick="trackNow()">
-                <i class="fa-solid fa-magnifying-glass-chart"></i> 지금 추적
-            </button>
-            <button class="btn btn-audit" onclick="runSeoAudit()">
-                <i class="fa-solid fa-list-check"></i> SEO 점검
-            </button>
-            <button class="btn" style="background:#6366f1;" onclick="showCompletionModal()">
-                <i class="fa-solid fa-clipboard-check"></i> 결과
-            </button>
-        </div>
-        <div class="btn-grid" id="cloudTrafficRow" style="display:none;margin-top:0;">
-            <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);grid-column:1/-1;" onclick="runCloudTraffic()">
-                <i class="fa-solid fa-cloud-arrow-up"></i> 클라우드 트래픽 1회
-            </button>
-        </div>
-        </div>
-
-        <div id="javisPanel" class="ws-panel">
-            <div class="glass-panel">
-                <div class="status-row">
-                    <div>
-                        <div style="font-size:0.75rem;color:var(--text-sub);margin-bottom:4px;">JARVIS 상태</div>
-                        <div id="javisEngineStatus" class="status-badge stopped">
-                            <div class="pulse-dot"></div>
-                            <span id="javisEngineStatusText">확인 중</span>
-                        </div>
-                    </div>
-                    <div style="text-align:right;font-size:0.78rem;color:var(--text-sub);">
-                        <div>로컬 PC에서 bat 실행</div>
-                        <div id="javisRootHint" style="margin-top:4px;color:#94a3b8;font-size:0.72rem;"></div>
-                    </div>
-                </div>
-                <div id="javisHubStatus" class="hub-status" style="margin-top:12px;">
-                    <span class="hub-pill">연동 상태 확인 중...</span>
-                </div>
-            </div>
-        </div>
-
         <div class="tabs">
-            <button class="tab-btn active" data-tab="tab-dashboard" data-ws="traffic">대시보드</button>
-            <button class="tab-btn" data-tab="tab-chart" data-ws="traffic">순위 그래프</button>
-            <button class="tab-btn" data-tab="tab-seo" data-ws="traffic">SEO 체크</button>
-            <button class="tab-btn" data-tab="tab-blog" data-ws="traffic">블로그</button>
-            <button class="tab-btn" data-tab="tab-local" data-ws="traffic">로컬 실행</button>
-            <button class="tab-btn" data-tab="tab-report" data-ws="traffic">일일 리포트</button>
-            <button class="tab-btn" data-tab="tab-javis" data-ws="javis">프로그램</button>
-            <button class="tab-btn" data-tab="tab-javis-bridge" data-ws="javis">연동·점검</button>
+            <button class="tab-btn active" data-tab="tab-dashboard" data-ws="both">대시보드</button>
+            <button class="tab-btn" data-tab="tab-chart" data-ws="traffic-only">순위 그래프</button>
+            <button class="tab-btn" data-tab="tab-seo" data-ws="traffic-only">SEO 체크</button>
+            <button class="tab-btn" data-tab="tab-blog" data-ws="traffic-only">블로그</button>
+            <button class="tab-btn" data-tab="tab-local" data-ws="traffic-only">로컬 실행</button>
+            <button class="tab-btn" data-tab="tab-javis" data-ws="javis-only">JARVIS</button>
+            <button class="tab-btn" data-tab="tab-javis-bridge" data-ws="javis-only">연동·점검</button>
+            <button class="tab-btn" data-tab="tab-report" data-ws="both">일일 리포트</button>
             <button class="tab-btn" data-tab="tab-logs" data-ws="both">로그</button>
         </div>
 
         <div id="tab-dashboard" class="tab-content active">
             <div class="glass-panel">
+                <div class="btn-grid btn-grid-3" style="margin-bottom:14px;">
+                    <button class="btn btn-audit" onclick="runSeoAudit()">
+                        <i class="fa-solid fa-list-check"></i> SEO 점검
+                    </button>
+                    <button class="btn" style="background:#6366f1;" onclick="showCompletionModal()">
+                        <i class="fa-solid fa-clipboard-check"></i> 결과
+                    </button>
+                    <button class="btn btn-track" onclick="trackNow()">
+                        <i class="fa-solid fa-rotate"></i> 새로고침
+                    </button>
+                </div>
                 <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-ranking-star"></i> 최근 작업 결과</h3>
                 <div id="recentResults">
                     <div class="empty-state" id="dashboardEmpty">
@@ -474,6 +459,7 @@
                 </div>
             </div>
         </div>
+        </div>
     </div>
 
     <div id="completionModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
@@ -493,12 +479,20 @@
         let lastBlogAudit = null;
         const WS_KEY = 'hubWorkspace';
         let currentWorkspace = localStorage.getItem(WS_KEY) || 'traffic';
-
-        document.getElementById('wsTrafficBtn').addEventListener('click', () => setWorkspace('traffic'));
-        document.getElementById('wsJavisBtn').addEventListener('click', () => setWorkspace('javis'));
+        let javisProgramsCache = [];
 
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn));
+        });
+        document.getElementById('wsTrafficBtn').addEventListener('click', () => {
+            setWorkspace('traffic');
+            const first = document.querySelector('.tab-btn[data-tab="tab-dashboard"]');
+            if (first) switchTab('tab-dashboard', first);
+        });
+        document.getElementById('wsJavisBtn').addEventListener('click', () => {
+            setWorkspace('javis');
+            const first = document.querySelector('.tab-btn[data-tab="tab-javis"]');
+            if (first) switchTab('tab-javis', first);
         });
 
         function setWorkspace(ws) {
@@ -506,26 +500,88 @@
             localStorage.setItem(WS_KEY, ws);
             document.body.classList.remove('ws-traffic', 'ws-javis');
             document.body.classList.add('ws-' + ws);
+
             document.getElementById('wsTrafficBtn').classList.toggle('active', ws === 'traffic');
             document.getElementById('wsJavisBtn').classList.toggle('active', ws === 'javis');
-            document.getElementById('trafficPanel').classList.toggle('active', ws === 'traffic');
-            document.getElementById('javisPanel').classList.toggle('active', ws === 'javis');
+            document.getElementById('sidebarTrafficPanel').classList.toggle('active', ws === 'traffic');
+            document.getElementById('sidebarJavisPanel').classList.toggle('active', ws === 'javis');
+            const compact = document.getElementById('trafficCompactBar');
+            if (compact) compact.style.display = ws === 'javis' ? 'block' : 'none';
+
             const title = document.getElementById('hubTitle');
             const sub = document.getElementById('hubSubtitle');
-            if (ws === 'javis') {
-                title.textContent = '나눔랩 JARVIS 허브';
-                sub.textContent = 'JARVIS 프로그램 런처 · 연동 · 점검 (로컬 PC)';
-                const first = document.querySelector('.tab-btn[data-tab="tab-javis"]');
-                if (first) switchTab('tab-javis', first);
-                loadProgramHub('javis');
-            } else {
-                title.textContent = '나눔랩 SEO · Traffic 허브';
-                sub.textContent = '순위 추적 · SEO · 블로그 · 로컬 트래픽 도구';
-                const first = document.querySelector('.tab-btn[data-tab="tab-dashboard"]');
-                if (first) switchTab('tab-dashboard', first);
-                loadProgramHub('traffic');
-                updateStatus();
+            if (title) {
+                title.textContent = ws === 'javis' ? '나눔랩 JARVIS 허브' : '나눔랩 SEO · Traffic 허브';
             }
+            if (sub) {
+                sub.textContent = ws === 'javis'
+                    ? 'Traffic은 서버에서 24시간 백그라운드 동작 · JARVIS 작업'
+                    : '서버 기동 시 자동 시작 · 순위·트래픽 24시간 (브라우저 불필요)';
+            }
+            if (ws === 'javis') loadProgramHub('javis');
+            else loadProgramHub('traffic');
+            updateTrafficBgPill();
+        }
+
+        function updateTrafficBgPill() {
+            const running = document.getElementById('engineStatus')?.classList.contains('running');
+            const labelOn = '<i class="fa-solid fa-circle"></i> Traffic 백그라운드 동작 중';
+            const labelOff = '<i class="fa-solid fa-circle"></i> Traffic 대기';
+            ['trafficBgPill', 'trafficBgPillCompact'].forEach(id => {
+                const pill = document.getElementById(id);
+                if (!pill) return;
+                pill.className = running ? 'bg-pill' : 'bg-pill off';
+                pill.innerHTML = running ? labelOn : labelOff;
+            });
+        }
+
+        function syncCompactTrafficStatus(data, running) {
+            const compactBadge = document.getElementById('compactEngineStatus');
+            const compactText = document.getElementById('compactEngineStatusText');
+            const compactRank = document.getElementById('compactRankVal');
+            if (compactBadge && compactText) {
+                if (running) {
+                    compactBadge.className = 'status-badge running';
+                    compactText.textContent = data.serverless ? '24h Cron' : '추적 중';
+                } else {
+                    compactBadge.className = 'status-badge stopped';
+                    compactText.textContent = data.serverless ? 'Cron 꺼짐' : '중지됨';
+                }
+            }
+            if (compactRank && data) {
+                const rank = data.last_rank;
+                compactRank.textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
+            }
+        }
+
+        function renderSidebarJavis(programs) {
+            const box = document.getElementById('sidebarJavisPrograms');
+            if (!box) return;
+            const items = (programs || []).filter(p => p.available).slice(0, 6);
+            if (!items.length) {
+                box.innerHTML = '<div class="sidebar-mini">실행 가능한 JARVIS 프로그램이 없습니다. PC에 javis/ 설치 후 새로고침하세요.</div>';
+                return;
+            }
+            box.innerHTML = items.map(p => `
+                <div class="sidebar-program">
+                    <span title="${p.description || ''}">${p.name}</span>
+                    <button type="button" onclick="launchJavisProgram('${p.id}')">실행</button>
+                </div>
+            `).join('');
+        }
+
+        async function ensureTrafficRunning() {
+            try {
+                const res = await fetch('/api/status');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.running) {
+                    const start = await fetch('/api/start', { method: 'POST' });
+                    const started = await start.json();
+                    if (started.success) showToast(started.message || '24시간 Traffic 시작');
+                }
+                updateStatus();
+            } catch (e) { /* 서버 미기동 */ }
         }
 
         function switchTab(tabId, btn) {
@@ -533,6 +589,11 @@
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById(tabId).classList.add('active');
+            if (tabId.startsWith('tab-javis')) {
+                if (currentWorkspace !== 'javis') setWorkspace('javis');
+            } else if (['tab-chart', 'tab-seo', 'tab-blog', 'tab-local'].includes(tabId)) {
+                if (currentWorkspace !== 'traffic') setWorkspace('traffic');
+            }
             if (tabId === 'tab-chart') loadChart();
             if (tabId === 'tab-report') loadReport();
             if (tabId === 'tab-seo') loadLatestAudit();
@@ -675,6 +736,8 @@
                 const res = await fetch('/api/javis/programs?workspace=' + encodeURIComponent(workspace));
                 const data = await res.json();
                 if (workspace === 'javis') {
+                    javisProgramsCache = data.programs || [];
+                    renderSidebarJavis(javisProgramsCache);
                     const statusBox = document.getElementById('javisHubStatus');
                     const pills = [];
                     pills.push(`<span class="hub-pill ${data.jarvis_installed ? 'ok' : 'warn'}">JARVIS ${data.jarvis_installed ? '설치됨' : '경로 없음'}</span>`);
@@ -719,7 +782,7 @@
         }
 
         async function launchJavisProgram(id) {
-            showToast('프로그램 실행 중...');
+            showToast('JARVIS 실행 (Traffic은 백그라운드 유지)');
             const res = await fetch('/api/javis/launch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -939,9 +1002,10 @@
                 const data = await res.json();
             const badge = document.getElementById('engineStatus');
             const text = document.getElementById('engineStatusText');
-            if (data.running) {
+            const running = !!data.running;
+            if (running) {
                 badge.className = 'status-badge running';
-                text.textContent = data.serverless ? '24h Cron' : '추적 중';
+                text.textContent = data.serverless ? '24h Cron' : (data.traffic_loop ? '추적·트래픽' : '추적 중');
                 document.getElementById('startBtn').disabled = true;
                 document.getElementById('stopBtn').disabled = false;
             } else {
@@ -950,20 +1014,24 @@
                 document.getElementById('startBtn').disabled = false;
                 document.getElementById('stopBtn').disabled = true;
             }
+            syncCompactTrafficStatus(data, running);
             const cronHint = document.getElementById('cronHint');
             if (cronHint) {
                 if (data.serverless) {
                     cronHint.style.display = 'block';
                     const last = data.last_cron_at ? `마지막 Cron: ${data.last_cron_at}` : 'Cron 대기 중';
                     const traffic = data.last_traffic_at ? ` · 트래픽: ${data.last_traffic_at}` : '';
-                    const store = data.persistence === 'supabase' ? ' · Supabase 저장' : ' · 임시 저장(Supabase 권장)';
-                    cronHint.textContent = `${data.cron_schedule || '매시 정각'} · ${last}${traffic}${store}`;
+                    const store = data.persistence === 'supabase' ? ' · Supabase' : ' · Supabase 권장';
+                    cronHint.textContent = `${data.cron_schedule || '매시'}${traffic}${store} · ${last}`;
+                } else if (data.running) {
+                    cronHint.style.display = 'block';
+                    cronHint.textContent = `로컬 백그라운드 · ${data.interval_minutes || 60}분 간격`;
                 } else {
                     cronHint.style.display = 'none';
                 }
             }
-            const cloudRow = document.getElementById('cloudTrafficRow');
-            if (cloudRow) cloudRow.style.display = data.serverless ? 'grid' : 'none';
+            const cloudBtn = document.getElementById('cloudTrafficBtn');
+            if (cloudBtn) cloudBtn.style.display = data.serverless ? 'flex' : 'none';
             const rank = data.last_rank;
             document.getElementById('currentRankVal').textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
             document.getElementById('totalTracksVal').textContent = data.total_tracks || 0;
@@ -979,6 +1047,7 @@
                 lastReport = data.last_report;
                 renderRecentResults(data.last_report);
             }
+            updateTrafficBgPill();
             } catch (e) {
                 const text = document.getElementById('engineStatusText');
                 if (text) text.textContent = '서버 오류';
@@ -1068,19 +1137,24 @@
         }
 
         setInterval(() => {
-            if (currentWorkspace === 'traffic') {
-                updateStatus();
-                loadChart();
-            }
+            updateStatus();
+            if (document.getElementById('tab-chart')?.classList.contains('active')) loadChart();
             updateLogs();
         }, 60000);
         setInterval(() => {
-            if (currentWorkspace === 'traffic') updateStatus();
+            updateStatus();
             updateLogs();
         }, 5000);
-        setWorkspace(currentWorkspace);
-        loadLatestAudit();
-        loadConfig();
+
+        (async function initHub() {
+            setWorkspace(currentWorkspace);
+            const defaultTab = currentWorkspace === 'javis' ? 'tab-javis' : 'tab-dashboard';
+            const defaultBtn = document.querySelector(`.tab-btn[data-tab="${defaultTab}"]`);
+            if (defaultBtn) switchTab(defaultTab, defaultBtn);
+            await ensureTrafficRunning();
+            loadLatestAudit();
+            loadConfig();
+        })();
 
         let deferredPrompt;
         const installBanner = document.getElementById('installBanner');
