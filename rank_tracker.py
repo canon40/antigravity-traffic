@@ -147,9 +147,21 @@ def ensure_history_file():
     path = _history_path()
     if os.path.exists(path):
         return
-    with open(path, "w", encoding="utf-8-sig", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(HISTORY_HEADERS)
+    parent = os.path.dirname(path)
+    if parent:
+        try:
+            os.makedirs(parent, exist_ok=True)
+        except OSError:
+            if not uses_ephemeral_disk():
+                raise
+            return
+    try:
+        with open(path, "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(HISTORY_HEADERS)
+    except OSError:
+        if not uses_ephemeral_disk():
+            raise
 
 
 def get_history(limit=None):
@@ -186,7 +198,6 @@ def get_last_rank(keyword, store_name):
 
 
 def append_history(keyword, store_name, rank, prev_rank, task_type, detail):
-    ensure_history_file()
     if prev_rank is None:
         change = "-"
     elif rank < prev_rank:
@@ -213,9 +224,14 @@ def append_history(keyword, store_name, rank, prev_rank, task_type, detail):
         return
     except Exception:
         pass
-    with open(_history_path(), "a", encoding="utf-8-sig", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow([row[h] for h in HISTORY_HEADERS])
+    ensure_history_file()
+    try:
+        with open(_history_path(), "a", encoding="utf-8-sig", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([row[h] for h in HISTORY_HEADERS])
+    except OSError:
+        if not uses_ephemeral_disk():
+            raise
 
 
 def get_all_product_rankings(keyword, product_map, logger=None, max_pages=13):

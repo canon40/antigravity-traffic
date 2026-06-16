@@ -307,7 +307,15 @@ def run_serverless_program(
             "result": payload,
         }
     if action == "javis_proxy":
-        return run_serverless_program(program_id, entry, logger)
+        payload = _action_javis_proxy(entry, logger)
+        return {
+            "success": True,
+            "message": f"☁️ {entry.get('name', program_id)} — 클라우드 프록시 실행 완료",
+            "cloud": True,
+            "program_id": program_id,
+            "action": action,
+            "result": payload,
+        }
 
     handler = _HANDLERS.get(action)
     if not handler:

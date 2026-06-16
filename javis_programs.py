@@ -156,15 +156,34 @@ def launch_program(program_id: str, *, logger: Callable[[str], None] | None = No
             "error": f"실행 파일 없음: {entry.get('launcher')} ({root})",
         }
     cwd = path.parent
-    if sys.platform == "win32":
-        subprocess.Popen(
-            ["cmd", "/c", "start", "", str(path)],
-            cwd=str(cwd),
-            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
-            close_fds=True,
-        )
-    else:
-        subprocess.Popen([str(path)], cwd=str(cwd), start_new_session=True)
+    try:
+        if sys.platform == "win32":
+            subprocess.Popen(
+                ["cmd", "/c", "start", "", str(path)],
+                cwd=str(cwd),
+                creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+                close_fds=True,
+            )
+        else:
+            ext = path.suffix.lower()
+            if ext == ".sh":
+                subprocess.Popen(["bash", str(path)], cwd=str(cwd), start_new_session=True)
+            elif ext in (".py", ".pyw"):
+                subprocess.Popen([sys.executable, str(path)], cwd=str(cwd), start_new_session=True)
+            else:
+                return {
+                    "success": False,
+                    "error": f"현재 런타임에서 실행 불가한 파일 형식: {path.name}",
+                    "launcher": str(path),
+                    "workspace": entry.get("workspace"),
+                }
+    except OSError as exc:
+        return {
+            "success": False,
+            "error": str(exc),
+            "launcher": str(path),
+            "workspace": entry.get("workspace"),
+        }
     return {
         "success": True,
         "message": f"{entry['name']} 실행 요청됨",
