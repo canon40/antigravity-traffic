@@ -2,6 +2,7 @@ import os
 import sys
 import threading
 import time
+import traceback
 from datetime import datetime
 from pathlib import Path
 
@@ -41,6 +42,28 @@ rank_stop_event = threading.Event()
 traffic_stop_event = threading.Event()
 last_completion_report = None
 _boot_auto_started = False
+
+
+def _json_error(endpoint: str, exc: Exception, status_code: int = 500):
+    """클라이언트 JSON 파싱 실패 방지: 모든 서버 예외를 JSON으로 반환."""
+    detail = str(exc) or exc.__class__.__name__
+    add_log(f"❌ {endpoint} 오류: {detail}")
+    return jsonify({
+        "success": False,
+        "error": detail,
+        "endpoint": endpoint,
+    }), status_code
+
+
+@app.errorhandler(Exception)
+def _handle_unexpected_error(exc):
+    detail = str(exc) or exc.__class__.__name__
+    add_log(f"❌ unhandled: {detail}")
+    return jsonify({
+        "success": False,
+        "error": detail,
+        "endpoint": "unhandled",
+    }), 500
 
 
 def is_serverless():
@@ -233,66 +256,70 @@ def index():
 
 @app.route("/api/status")
 def api_status():
-    history = get_history()
-    last_rank = None
-    if history:
-        try:
-            last_rank = int(history[-1].get("순위", 100))
-        except (TypeError, ValueError):
-            last_rank = 100
+    try:
+        history = get_history()
+        last_rank = None
+        if history:
+            try:
+                last_rank = int(history[-1].get("순위", 100))
+            except (TypeError, ValueError):
+                last_rank = 100
 
-    config = load_config()
-    keywords = config.get("keywords") or []
-    priority = config.get("priority_keywords") or []
-    on_cron = is_cron_mode()
-    on_cloud = is_cloud_hub()
-    platform = cloud_platform()
-    track_count = len(priority) if (on_cron and priority) else len(keywords)
-    if on_cron and not priority:
-        track_count = min(len(keywords), int(config.get("priority_track_limit") or 10))
+        config = load_config()
+        keywords = config.get("keywords") or []
+        priority = config.get("priority_keywords") or []
+        on_cron = is_cron_mode()
+        on_cloud = is_cloud_hub()
+        platform = cloud_platform()
+        track_count = len(priority) if (on_cron and priority) else len(keywords)
+        if on_cron and not priority:
+            track_count = min(len(keywords), int(config.get("priority_track_limit") or 10))
 
-    state = load_hub_state()
-    rank_on = state.get("auto_enabled", True) is not False
-    traffic_on = state.get("traffic_enabled", True) is not False
-    running = scheduler_running
-    if on_cron:
-        running = rank_on
+        state = load_hub_state()
+        rank_on = state.get("auto_enabled", True) is not False
+        traffic_on = state.get("traffic_enabled", True) is not False
+        running = scheduler_running
+        if on_cron:
+            running = rank_on
 
-    traffic_running = traffic_loop_running
-    if on_cron:
-        traffic_running = traffic_on
+        traffic_running = traffic_loop_running
+        if on_cron:
+            traffic_running = traffic_on
 
-    report = last_completion_report or state.get("last_report")
-    auto_mode = "cron" if on_cron else ("daemon" if is_cloudtype() else "local")
+        report = last_completion_report or state.get("last_report")
+        auto_mode = "cron" if on_cron else ("daemon" if is_cloudtype() else "local")
 
-    return jsonify({
-        "running": running,
-        "traffic_running": traffic_running,
-        "traffic_enabled": traffic_on,
-        "rank_enabled": rank_on,
-        "traffic_loop": traffic_loop_running,
-        "auto_started": _boot_auto_started or running,
-        "last_rank": last_rank,
-        "total_tracks": len(history),
-        "keyword_count": len(keywords),
-        "priority_count": len(priority) or min(len(keywords), int(config.get("priority_track_limit") or 10)),
-        "track_batch_count": track_count,
-        "serverless": on_cron,
-        "platform": platform,
-        "auto_mode": auto_mode,
-        "last_cron_at": state.get("last_cron_at"),
-        "last_traffic_at": state.get("last_traffic_at"),
-        "traffic_target_url": _traffic_target_url() if on_cloud else None,
-        "persistence": persistence_backend(),
-        "interval_minutes": config.get("track_interval_minutes", 60),
-        "cron_schedule": "매시 정각 · 트래픽 20분마다 (0 * * * * / */20 * * * *)" if on_cron else None,
-        "daemon_schedule": (
-            f"순위 {config.get('track_interval_minutes', 60)}분 · 트래픽 {max(5, int(os.environ.get('TRAFFIC_INTERVAL_SEC', '1200')) // 60)}분"
-            if auto_mode == "daemon"
-            else None
-        ),
-        "last_report": report,
-    })
+        return jsonify({
+            "running": running,
+            "traffic_running": traffic_running,
+            "traffic_enabled": traffic_on,
+            "rank_enabled": rank_on,
+            "traffic_loop": traffic_loop_running,
+            "auto_started": _boot_auto_started or running,
+            "last_rank": last_rank,
+            "total_tracks": len(history),
+            "keyword_count": len(keywords),
+            "priority_count": len(priority) or min(len(keywords), int(config.get("priority_track_limit") or 10)),
+            "track_batch_count": track_count,
+            "serverless": on_cron,
+            "platform": platform,
+            "auto_mode": auto_mode,
+            "last_cron_at": state.get("last_cron_at"),
+            "last_traffic_at": state.get("last_traffic_at"),
+            "traffic_target_url": _traffic_target_url() if on_cloud else None,
+            "persistence": persistence_backend(),
+            "interval_minutes": config.get("track_interval_minutes", 60),
+            "cron_schedule": "매시 정각 · 트래픽 20분마다 (0 * * * * / */20 * * * *)" if on_cron else None,
+            "daemon_schedule": (
+                f"순위 {config.get('track_interval_minutes', 60)}분 · 트래픽 {max(5, int(os.environ.get('TRAFFIC_INTERVAL_SEC', '1200')) // 60)}분"
+                if auto_mode == "daemon"
+                else None
+            ),
+            "last_report": report,
+        })
+    except Exception as exc:
+        add_log(traceback.format_exc())
+        return _json_error("/api/status", exc)
 
 
 @app.route("/api/config", methods=["GET", "POST"])
@@ -681,17 +708,21 @@ def api_javis_programs():
 
 @app.route("/api/javis/launch", methods=["POST"])
 def api_javis_launch():
-    data = request.get_json(silent=True) or {}
-    program_id = (data.get("id") or data.get("program_id") or "").strip()
-    if not program_id:
-        return jsonify({"success": False, "error": "program id 필요"}), 400
-    result = launch_program(program_id, logger=add_log)
-    if result.get("success"):
-        mode = "클라우드" if result.get("cloud") else "로컬"
-        add_log(f"🚀 JARVIS 프로그램 ({mode}): {program_id}")
-    else:
-        add_log(f"⚠️ 프로그램 실행 실패: {result.get('error', program_id)}")
-    return jsonify(result)
+    try:
+        data = request.get_json(silent=True) or {}
+        program_id = (data.get("id") or data.get("program_id") or "").strip()
+        if not program_id:
+            return jsonify({"success": False, "error": "program id 필요"}), 400
+        result = launch_program(program_id, logger=add_log)
+        if result.get("success"):
+            mode = "클라우드" if result.get("cloud") else "로컬"
+            add_log(f"🚀 JARVIS 프로그램 ({mode}): {program_id}")
+        else:
+            add_log(f"⚠️ 프로그램 실행 실패: {result.get('error', program_id)}")
+        return jsonify(result)
+    except Exception as exc:
+        add_log(traceback.format_exc())
+        return _json_error("/api/javis/launch", exc)
 
 
 if os.environ.get("AUTO_START_SCHEDULER", "1") != "0":
