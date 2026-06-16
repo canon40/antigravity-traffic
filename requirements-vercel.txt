@@ -1,6 +1,2 @@
-# Vercel SEO 허브 전용 (루트 requirements.txt 사용 금지 — Playwright·pywin32 등 제외)
-flask>=3.0.0
-requests>=2.32.0
-beautifulsoup4>=4.12.0
-httpx>=0.28.0
-python-dotenv>=1.0.0
+# Vercel·Cloudtype SEO 허브 — requirements.txt 와 동일 (레거시 경로 호환)
+-r requirements.txt

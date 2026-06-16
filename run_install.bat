@@ -31,12 +31,15 @@ if not exist "%~dp0requirements.txt" (
   echo  requirements.txt 없음 - httpx만 설치합니다.
   "%PY%" -m pip install "httpx>=0.28.1" -q
 ) else (
-  echo  [3/5] requirements.txt 설치 (시간이 걸릴 수 있음) ...
+  echo  [3/5] requirements.txt + requirements-local.txt 설치 ...
   "%PY%" -m pip install -r "%~dp0requirements.txt" -q
   if errorlevel 1 (
     echo  pip install 실패. 네트워크 또는 requirements.txt 확인.
     pause
     exit /b 1
+  )
+  if exist "%~dp0requirements-local.txt" (
+    "%PY%" -m pip install -r "%~dp0requirements-local.txt" -q
   )
 )
 
