@@ -1,0 +1,19 @@
+name: antigravity-traffic
+options:
+  env:
+    - name: CLOUDTYPE
+      value: "1"
+    - name: HUB_CLOUD_PLATFORM
+      value: cloudtype
+    - name: AUTO_START_SCHEDULER
+      value: "1"
+    - name: FLASK_ENV
+      value: production
+  ports: 5000
+  install: pip install -r requirements-vercel.txt
+  start: gunicorn -w 1 -b 0.0.0.0:5000 --timeout 120 --access-logfile - app:app
+context:
+  git:
+    url: https://github.com/canon40/antigravity-traffic.git
+    branch: main
+  preset: python-flask

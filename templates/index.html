@@ -535,6 +535,10 @@
             });
         }
 
+        function hubAuto24h(data) {
+            return data && (data.auto_mode === 'cron' || data.auto_mode === 'daemon');
+        }
+
         function syncCompactTrafficStatus(data, running) {
             const compactBadge = document.getElementById('compactEngineStatus');
             const compactText = document.getElementById('compactEngineStatusText');
@@ -542,10 +546,10 @@
             if (compactBadge && compactText) {
                 if (running) {
                     compactBadge.className = 'status-badge running';
-                    compactText.textContent = data.serverless ? '24h Cron' : '추적 중';
+                    compactText.textContent = hubAuto24h(data) ? '24h 동작' : '추적 중';
                 } else {
                     compactBadge.className = 'status-badge stopped';
-                    compactText.textContent = data.serverless ? 'Cron 꺼짐' : '중지됨';
+                    compactText.textContent = hubAuto24h(data) ? '24h 꺼짐' : '중지됨';
                 }
             }
             if (compactRank && data) {
@@ -1005,24 +1009,31 @@
             const running = !!data.running;
             if (running) {
                 badge.className = 'status-badge running';
-                text.textContent = data.serverless ? '24h Cron' : (data.traffic_loop ? '추적·트래픽' : '추적 중');
+                const label24 = data.auto_mode === 'cron' ? '24h Cron' : (data.auto_mode === 'daemon' ? '24h 백그라운드' : (data.traffic_loop ? '추적·트래픽' : '추적 중'));
+                text.textContent = hubAuto24h(data) ? label24 : (data.traffic_loop ? '추적·트래픽' : '추적 중');
                 document.getElementById('startBtn').disabled = true;
                 document.getElementById('stopBtn').disabled = false;
             } else {
                 badge.className = 'status-badge stopped';
-                text.textContent = data.serverless ? 'Cron 꺼짐' : '중지됨';
+                text.textContent = hubAuto24h(data) ? (data.auto_mode === 'cron' ? 'Cron 꺼짐' : '24h 꺼짐') : '중지됨';
                 document.getElementById('startBtn').disabled = false;
                 document.getElementById('stopBtn').disabled = true;
             }
             syncCompactTrafficStatus(data, running);
             const cronHint = document.getElementById('cronHint');
             if (cronHint) {
-                if (data.serverless) {
+                if (data.auto_mode === 'cron') {
                     cronHint.style.display = 'block';
                     const last = data.last_cron_at ? `마지막 Cron: ${data.last_cron_at}` : 'Cron 대기 중';
                     const traffic = data.last_traffic_at ? ` · 트래픽: ${data.last_traffic_at}` : '';
                     const store = data.persistence === 'supabase' ? ' · Supabase' : ' · Supabase 권장';
                     cronHint.textContent = `${data.cron_schedule || '매시'}${traffic}${store} · ${last}`;
+                } else if (data.auto_mode === 'daemon') {
+                    cronHint.style.display = 'block';
+                    const plat = data.platform === 'cloudtype' ? 'Cloudtype' : '클라우드';
+                    const sched = data.daemon_schedule || `순위 ${data.interval_minutes || 60}분 · 트래픽 20분`;
+                    const store = data.persistence === 'supabase' ? 'Supabase' : 'Supabase 권장 (/tmp 휘발)';
+                    cronHint.textContent = `${plat} 24h · ${sched} · ${store}`;
                 } else if (data.running) {
                     cronHint.style.display = 'block';
                     cronHint.textContent = `로컬 백그라운드 · ${data.interval_minutes || 60}분 간격`;
@@ -1031,7 +1042,7 @@
                 }
             }
             const cloudBtn = document.getElementById('cloudTrafficBtn');
-            if (cloudBtn) cloudBtn.style.display = data.serverless ? 'flex' : 'none';
+            if (cloudBtn) cloudBtn.style.display = data.auto_mode === 'cron' ? 'flex' : 'none';
             const rank = data.last_rank;
             document.getElementById('currentRankVal').textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
             document.getElementById('totalTracksVal').textContent = data.total_tracks || 0;
@@ -1039,9 +1050,11 @@
             const hint = document.getElementById('kwHint');
             if (hint) {
                 const batch = data.track_batch_count || data.keyword_count || 0;
-                hint.textContent = data.serverless
-                    ? `웹(서버리스): 우선 ${batch}개 키워드 추적 · 전체 ${data.keyword_count || 0}개는 PC에서`
-                    : `등록 키워드 ${data.keyword_count || 0}개 · 우선 ${data.priority_count || batch}개`;
+                hint.textContent = data.auto_mode === 'cron'
+                    ? `웹(Cron): 우선 ${batch}개 키워드 추적 · 전체 ${data.keyword_count || 0}개는 PC에서`
+                    : (data.auto_mode === 'daemon'
+                        ? `Cloud 24h: 키워드 ${data.keyword_count || 0}개 · 우선 ${data.priority_count || batch}개`
+                        : `등록 키워드 ${data.keyword_count || 0}개 · 우선 ${data.priority_count || batch}개`);
             }
             if (data.last_report) {
                 lastReport = data.last_report;

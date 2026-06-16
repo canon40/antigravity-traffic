@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from app_resources import get_storage_dir
+from hub_runtime import is_vercel, uses_ephemeral_disk
 
 _HISTORY_TABLE = os.environ.get("RANK_HISTORY_TABLE") or "rank_history"
 _STATE_TABLE = os.environ.get("RANK_HUB_STATE_TABLE") or "rank_hub_state"
@@ -54,8 +55,10 @@ def supabase_enabled() -> bool:
 def persistence_backend() -> str:
     if supabase_enabled():
         return "supabase"
-    if os.environ.get("VERCEL"):
+    if is_vercel():
         return "vercel_tmp"
+    if uses_ephemeral_disk():
+        return "cloud_tmp"
     return "local"
 
 
@@ -108,13 +111,13 @@ def _request(
 
 
 def _runtime_state_path() -> Path:
-    if os.environ.get("VERCEL"):
+    if uses_ephemeral_disk():
         return Path("/tmp") / "rank_hub_state.json"
     return _LOCAL_STATE
 
 
 def _runtime_history_path() -> Path:
-    if os.environ.get("VERCEL"):
+    if uses_ephemeral_disk():
         return Path("/tmp") / "rank_history_rows.json"
     return _ROOT / "data" / "rank_history_rows.json"
 
@@ -201,7 +204,7 @@ def save_hub_state(state: dict[str, Any]) -> dict[str, Any]:
         return {"ok": False, "backend": "supabase", "error": res.get("error")}
 
     paths = [_runtime_state_path()]
-    if not os.environ.get("VERCEL"):
+    if not uses_ephemeral_disk():
         paths.append(_LOCAL_STATE)
     for path in paths:
         try:
@@ -268,7 +271,7 @@ def _save_local_history_rows(rows: list[dict[str, str]]) -> None:
         _write_json(_runtime_history_path(), payload)
     except OSError:
         pass
-    if not os.environ.get("VERCEL"):
+    if not uses_ephemeral_disk():
         csv_path = os.path.join(get_storage_dir(), "rank_history.csv")
         try:
             with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:

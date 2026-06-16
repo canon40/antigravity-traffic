@@ -2,6 +2,8 @@
 import json
 import os
 
+from hub_runtime import uses_ephemeral_disk
+
 EMBEDDED = {
     "store_name": "나눔랩",
     "products": {
@@ -19,8 +21,8 @@ EMBEDDED = {
 
 
 def get_storage_dir():
-    """쓰기 가능한 앱 저장소 (Vercel: /tmp, Android: FLET_APP_STORAGE_DATA)."""
-    if os.environ.get("VERCEL"):
+    """쓰기 가능한 앱 저장소 (클라우드: /tmp, Android: FLET_APP_STORAGE_DATA)."""
+    if uses_ephemeral_disk():
         data = "/tmp/anty-traffic"
         os.makedirs(data, exist_ok=True)
         return data

@@ -20,6 +20,7 @@ from seo_content_builder import generate_content, list_workflows, save_content
 from rank_tracker import check_product_rank
 from javis_programs import get_catalog, launch_program
 from rank_persistence import load_hub_state, persistence_backend, save_hub_state
+from hub_runtime import cloud_platform, is_cloud_hub, is_cloudtype, is_cron_mode
 
 _VT_ROOT = Path(__file__).resolve().parent / "vercel_traffic"
 if _VT_ROOT.is_dir() and str(_VT_ROOT) not in sys.path:
@@ -42,7 +43,8 @@ _boot_auto_started = False
 
 
 def is_serverless():
-    return bool(os.environ.get("VERCEL"))
+    """Vercel Cron 모드 (하위 호환). Cloudtype은 False — 백그라운드 스레드 사용."""
+    return is_cron_mode()
 
 
 def _bootstrap_from_persistence():
@@ -148,7 +150,7 @@ def ensure_background_services(*, log_boot: bool = False) -> None:
     global scheduler_running, scheduler_thread, traffic_loop_running, traffic_thread
     global stop_event, _boot_auto_started
 
-    if is_serverless():
+    if is_cron_mode():
         state = load_hub_state()
         if state.get("auto_enabled") is None:
             state["auto_enabled"] = True
@@ -156,6 +158,14 @@ def ensure_background_services(*, log_boot: bool = False) -> None:
             if log_boot:
                 add_log("▶️ Vercel Cron 24시간 자동 추적·트래픽 (기본 켜짐)")
         _boot_auto_started = True
+        return
+
+    state = load_hub_state()
+    if state.get("auto_enabled") is False:
+        if log_boot:
+            plat = cloud_platform()
+            add_log(f"⏸️ 자동 추적·트래픽 꺼짐 ({plat})")
+        _boot_auto_started = False
         return
 
     started = False
@@ -173,7 +183,11 @@ def ensure_background_services(*, log_boot: bool = False) -> None:
         started = True
 
     if started and log_boot:
-        add_log("▶️ 서버 기동 — 순위 추적·트래픽 백그라운드 시작 (브라우저 불필요)")
+        plat = cloud_platform()
+        if is_cloudtype():
+            add_log("▶️ Cloudtype 기동 — 순위·트래픽 24시간 백그라운드 (Cron 불필요)")
+        else:
+            add_log("▶️ 서버 기동 — 순위 추적·트래픽 백그라운드 시작 (브라우저 불필요)")
     _boot_auto_started = started or scheduler_running or traffic_loop_running
 
 
@@ -227,17 +241,20 @@ def api_status():
     config = load_config()
     keywords = config.get("keywords") or []
     priority = config.get("priority_keywords") or []
-    on_vercel = is_serverless()
-    track_count = len(priority) if (on_vercel and priority) else len(keywords)
-    if on_vercel and not priority:
+    on_cron = is_cron_mode()
+    on_cloud = is_cloud_hub()
+    platform = cloud_platform()
+    track_count = len(priority) if (on_cron and priority) else len(keywords)
+    if on_cron and not priority:
         track_count = min(len(keywords), int(config.get("priority_track_limit") or 10))
 
     state = load_hub_state()
     running = scheduler_running
-    if on_vercel:
+    if on_cron:
         running = bool(state.get("auto_enabled", True))
 
     report = last_completion_report or state.get("last_report")
+    auto_mode = "cron" if on_cron else ("daemon" if is_cloudtype() else "local")
 
     return jsonify({
         "running": running,
@@ -248,14 +265,20 @@ def api_status():
         "keyword_count": len(keywords),
         "priority_count": len(priority) or min(len(keywords), int(config.get("priority_track_limit") or 10)),
         "track_batch_count": track_count,
-        "serverless": on_vercel,
-        "auto_mode": "cron" if on_vercel else "local",
+        "serverless": on_cron,
+        "platform": platform,
+        "auto_mode": auto_mode,
         "last_cron_at": state.get("last_cron_at"),
         "last_traffic_at": state.get("last_traffic_at"),
-        "traffic_target_url": _traffic_target_url() if on_vercel else None,
+        "traffic_target_url": _traffic_target_url() if on_cloud else None,
         "persistence": persistence_backend(),
         "interval_minutes": config.get("track_interval_minutes", 60),
-        "cron_schedule": "매시 정각 · 트래픽 20분마다 (0 * * * * / */20 * * * *)" if on_vercel else None,
+        "cron_schedule": "매시 정각 · 트래픽 20분마다 (0 * * * * / */20 * * * *)" if on_cron else None,
+        "daemon_schedule": (
+            f"순위 {config.get('track_interval_minutes', 60)}분 · 트래픽 {max(5, int(os.environ.get('TRAFFIC_INTERVAL_SEC', '1200')) // 60)}분"
+            if auto_mode == "daemon"
+            else None
+        ),
         "last_report": report,
     })
 
@@ -480,10 +503,13 @@ def _traffic_target_url() -> str:
 def api_health():
     return jsonify({
         "status": "healthy",
-        "serverless": is_serverless(),
+        "serverless": is_cron_mode(),
+        "platform": cloud_platform(),
         "persistence": persistence_backend(),
         "traffic_available": run_traffic_session is not None,
-        "auto_mode": "cron" if is_serverless() else "local",
+        "auto_mode": "cron" if is_cron_mode() else ("daemon" if is_cloudtype() else "local"),
+        "scheduler_running": scheduler_running,
+        "traffic_loop_running": traffic_loop_running,
     })
 
 
@@ -616,4 +642,5 @@ if os.environ.get("AUTO_START_SCHEDULER", "1") != "0":
     ensure_background_services(log_boot=True)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    port = int(os.environ.get("PORT", "5000"))
+    app.run(host="0.0.0.0", port=port, debug=False)

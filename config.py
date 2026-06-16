@@ -1,14 +1,16 @@
 # API Keys and Accounts Configuration
 import os
 
+from hub_runtime import is_cloud_hub
+
 try:
     from dotenv import load_dotenv
 except ImportError:
     def load_dotenv(*_args, **_kwargs):
         return False
 
-# .env에서 환경변수 로드 (개인 PC용). Vercel은 대시보드 env만 사용.
-if not os.environ.get("VERCEL"):
+# .env에서 환경변수 로드 (개인 PC용). Vercel·Cloudtype은 대시보드 env만 사용.
+if not is_cloud_hub():
     load_dotenv()
     _javis_env = os.environ.get("JARVIS_ROOT", r"D:\@code\javis")
     _javis_dotenv = os.path.join(_javis_env, ".env")
@@ -38,7 +40,7 @@ def _apply_jarvis_claude_fable() -> None:
         pass
 
 
-if not os.environ.get("VERCEL"):
+if not is_cloud_hub():
     _apply_jarvis_claude_fable()
 
 # Google / Gemini API Key (둘 중 하나만 있어도 동작)

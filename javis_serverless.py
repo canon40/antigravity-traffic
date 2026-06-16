@@ -34,8 +34,12 @@ CLOUD_ACTION_BY_ID: dict[str, str] = {
 }
 
 
+from hub_runtime import cloud_platform, is_cloud_hub
+
+
 def is_vercel_runtime() -> bool:
-    return bool(os.environ.get("VERCEL"))
+    """클라우드 허브(Vercel·Cloudtype) — .bat 대신 서버 액션."""
+    return is_cloud_hub()
 
 
 def resolve_cloud_action(entry: dict[str, Any]) -> str | None:
@@ -173,7 +177,7 @@ def _action_cloud_connect(entry: dict[str, Any], logger: Callable[[str], None]) 
     logger("☁️ JARVIS·Vercel 연동 점검")
     checks = []
     for name, ok, detail in (
-        ("VERCEL", True, os.environ.get("VERCEL", "")),
+        ("HUB_CLOUD", True, cloud_platform()),
         ("GEMINI_API_KEY", bool(os.environ.get("GEMINI_API_KEY", "").strip()), "set" if os.environ.get("GEMINI_API_KEY") else "missing"),
         ("SUPABASE_URL", bool(os.environ.get("SUPABASE_URL", "").strip()), "set" if os.environ.get("SUPABASE_URL") else "optional"),
         ("persistence", True, persistence_backend()),

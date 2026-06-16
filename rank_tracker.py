@@ -8,6 +8,7 @@ from urllib.parse import quote
 import requests
 
 from app_resources import get_storage_dir
+from hub_runtime import is_cron_mode, uses_ephemeral_disk
 
 HISTORY_HEADERS = ["날짜", "키워드", "스토어명", "순위", "이전순위", "변동", "작업유형", "상세"]
 
@@ -138,7 +139,7 @@ def save_config(config):
         with open(path, "w", encoding="utf-8") as f:
             json.dump(config, f, ensure_ascii=False, indent=2)
     except OSError:
-        if not os.environ.get("VERCEL"):
+        if not uses_ephemeral_disk():
             raise
 
 
@@ -408,7 +409,7 @@ def check_naver_shopping_rank(keyword, store_name, logger=None):
 def _keywords_for_run(config=None, *, serverless=False):
     """Vercel 등 서버리스에서는 우선 키워드만 추적."""
     config = config or load_config()
-    if serverless or os.environ.get("VERCEL"):
+    if serverless or is_cron_mode():
         priority = config.get("priority_keywords") or []
         if priority:
             return priority
@@ -430,7 +431,7 @@ def _rotate_keywords(keywords, offset: int, batch_size: int):
 def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keyword_batch_size=None):
     config = load_config()
     if serverless is None:
-        serverless = bool(os.environ.get("VERCEL"))
+        serverless = is_cron_mode()
     keywords = _keywords_for_run(config, serverless=serverless)
     if keyword_batch_size:
         keywords = _rotate_keywords(keywords, int(keyword_offset or 0), int(keyword_batch_size))
