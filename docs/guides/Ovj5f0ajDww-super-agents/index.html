@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>24/7 Super Agent 가이드 — login2</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
+<style>
+:root{--bg:#0a0e17;--card:#1a2234;--border:#2d3a52;--text:#f1f5f9;--muted:#94a3b8;--accent:#a78bfa;--ok:#34d399;--warn:#fbbf24;--font:'Pretendard',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.65;padding:24px;max-width:880px;margin:0 auto}
+h1{font-size:24px;margin-bottom:8px;line-height:1.3}
+.lead{color:var(--muted);font-size:14px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+.card h2{font-size:15px;color:var(--accent);margin-bottom:10px}
+.card p,.card li{font-size:14px;color:var(--muted)}
+.card ul,.card ol{margin:8px 0 0 20px}
+.card li{margin-bottom:6px}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;background:rgba(167,139,250,.15);color:#c4b5fd;margin-right:6px;margin-bottom:6px}
+pre{background:#0a0e17;border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;overflow-x:auto;margin-top:8px;color:#e2e8f0}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+.links a{color:var(--accent);text-decoration:none;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:600}
+.links a:hover{background:rgba(167,139,250,.08)}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:rgba(52,211,153,.15);color:var(--ok);font-weight:800;font-size:12px;margin-right:8px}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted);margin:12px 0}
+.flow span{padding:4px 8px;background:var(--card);border:1px solid var(--border);border-radius:6px}
+.warn{background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.3);border-radius:8px;padding:10px 12px;font-size:13px;color:#fde68a;margin-top:10px}
+.checklist label{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px;cursor:pointer}
+.checklist input{margin-top:4px;accent-color:var(--accent)}
+</style>
+</head>
+<body>
+<h1>24/7 Super Agent — Base44 영상 로컬 구현</h1>
+<p class="lead">
+  원본: <a href="https://youtu.be/Ovj5f0ajDww" style="color:var(--accent)">WorldofAI — How to Build 24/7 Claude Agents</a>
+  · login2에서 Ollama로 동일 멀티 에이전트 체인 실행
+</p>
+
+<div class="links">
+  <a href="https://base44.com/superagents" target="_blank" rel="noopener">Base44 Super Agents ↗</a>
+  <a href="/studio/">LoopReel 스튜디오 ↗</a>
+  <a href="/evolution/">YouTube 학습 허브 ↗</a>
+</div>
+
+<div class="card">
+  <h2>한눈에 보는 에이전트 체인</h2>
+  <div class="flow">
+    <span>① Research</span>→<span>② Script</span>→<span>③ Report</span>→<span>④ Gmail</span>→<span>⑤ Schedule</span>
+  </div>
+  <p>영상처럼 <strong>역할별 에이전트</strong>를 연결합니다. 한 번에 거대 프롬프트를 쓰지 않고, 리서치 결과가 스크립트·리포트·이메일로 이어집니다.</p>
+</div>
+
+<div class="card">
+  <h2>바로 실행 (3단계)</h2>
+  <ol>
+    <li>터미널: <code>ollama serve</code> (모델 <code>gemma4:e2b</code> 권장)</li>
+    <li>프로젝트 루트에서 <strong>run_super_agents.bat</strong> 실행</li>
+    <li><code>data/super_agents/runs/</code> 의 HTML 열기 → Ctrl+P → PDF 저장</li>
+  </ol>
+  <pre>run_super_agents.bat
+run_super_agents.bat status
+run_super_agents.bat schedule</pre>
+</div>
+
+<div class="card">
+  <h2><span class="step-num">1</span>Research Agent — 딥 리서치</h2>
+  <p><span class="tag">웹 검색</span><span class="tag">네이버 블로그</span><span class="tag">신뢰도 점수</span></p>
+  <ul>
+    <li><code>workflow.json</code> 의 <code>research_topics</code> 주제로 검색</li>
+    <li>Ollama가 스토리 3~5개 + [신뢰도 X/10] + 출처 URL 브리핑 생성</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2><span class="step-num">2</span>Script Agent — 대본 변환</h2>
+  <p><span class="tag">INTRO</span><span class="tag">SEGMENTS</span><span class="tag">CTA</span><span class="tag">OUTRO</span></p>
+  <ul>
+    <li>브리핑을 YouTube·블로그 촬영용 스크립트로 자동 변환</li>
+    <li>영상 예시: World of AI Daily Script 형식</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2><span class="step-num">3</span>Report Agent — HTML 리포트</h2>
+  <p>영상의 PDF 단계를 <strong>스타일 HTML</strong>로 대체 (추가 패키지 없음)</p>
+  <ul>
+    <li>브리핑 + 스크립트 + 출처 링크가 한 페이지에 정리</li>
+    <li>브라우저에서 인쇄 → PDF로 저장</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2><span class="step-num">4</span>Notify Agent — Gmail (선택)</h2>
+  <p>.env 설정 후:</p>
+  <pre>SUPER_AGENT_GMAIL_USER=you@gmail.com
+SUPER_AGENT_GMAIL_APP_PASSWORD=앱비밀번호
+SUPER_AGENT_EMAIL_TO=받을주소@gmail.com</pre>
+  <pre>run_super_agents.bat run --email</pre>
+  <div class="warn">Gmail 2단계 인증 + 앱 비밀번호 필요</div>
+</div>
+
+<div class="card">
+  <h2><span class="step-num">5</span>24/7 스케줄</h2>
+  <ul>
+    <li><strong>Base44</strong>: 채팅에서 "매일 9AM ET" — 클라우드 상시 실행</li>
+    <li><strong>login2</strong>: <code>run_super_agents.bat schedule</code> — Windows 작업 스케줄러 09:00 KST</li>
+  </ul>
+</div>
+
+<div class="card checklist">
+  <h2>체크리스트</h2>
+  <label><input type="checkbox"/> Ollama 실행 중</label>
+  <label><input type="checkbox"/> run_super_agents.bat 1회 성공</label>
+  <label><input type="checkbox"/> workflow.json 주제 수정</label>
+  <label><input type="checkbox"/> Gmail 앱 비밀번호 (선택)</label>
+  <label><input type="checkbox"/> schedule 등록 (선택)</label>
+</div>
+
+</body>
+</html>

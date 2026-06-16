@@ -1,0 +1,18 @@
+{
+  "products": [
+    {
+      "id": "fan-summer-001",
+      "name": "선풍기",
+      "tags": ["선풍기", "여름", "냉각", "가전", "추천", "에어"],
+      "link": "https://link.coupang.com/example-fan",
+      "blog_html": "<p>🌬️ 여름철 <strong>선풍기</strong> 비교 후기 — <a href=\"https://link.coupang.com/example-fan\" rel=\"nofollow sponsored\">쿠팡에서 보기</a></p>"
+    },
+    {
+      "id": "coating-car-001",
+      "name": "자동차 유리막 코팅제",
+      "tags": ["자동차", "코팅", "유리막", "세라믹", "퀵코트"],
+      "link": "https://smartstore.naver.com/nanumlab/products/10713170202",
+      "blog_html": "<p>🚗 <a href=\"https://smartstore.naver.com/nanumlab/products/10713170202\" rel=\"nofollow sponsored\">듀라코트 퀵코트</a> — 셀프 시공 후기</p>"
+    }
+  ]
+}

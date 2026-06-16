@@ -1,0 +1,23 @@
+{
+  "assignments": {
+    "1": "scene_01_pexels_37527860.mp4"
+  },
+  "clips": [
+    {
+      "filename": "scene_01_pexels_31942662.mp4",
+      "source": "pexels",
+      "video_id": "31942662",
+      "title": "setengah lima sore",
+      "scene_no": 1,
+      "download_url": "https://videos.pexels.com/video-files/31942662/13607250_1080_1920_30fps.mp4"
+    },
+    {
+      "filename": "scene_01_pexels_37527860.mp4",
+      "source": "pexels",
+      "video_id": "37527860",
+      "title": "FREE VIDEO HAPPY",
+      "scene_no": 1,
+      "download_url": "https://videos.pexels.com/video-files/37527860/15900695_1080_1920_30fps.mp4"
+    }
+  ]
+}

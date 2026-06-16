@@ -1,0 +1,22 @@
+# 콘티 — ✨듀라코트 리빙코트 — Duracoat Livingcoat home spray
+
+**주제:** 듀라코트 리빙코트 — Duracoat Livingcoat home spray, nano coating home surface, diamond coating technology home
+**스타일:** home_lifestyle
+**후킹:** 매일 쌓이는 물때, 이제 그만 고민하세요!
+
+## 마스터 프롬프트 (FLOW)
+실제 생활 현장에서 듀라코트 리빙코트을(를) 사용하는 모습을 담은 실사 쇼츠 B-roll. 키워드: Duracoat Livingcoat home spray, nano coating home surface, diamond coating technology home, bathroom coating spray, tile coating bathroom, dining table coating, natural wood furniture coating, faucet chrome coating. 스튜디오 연출·CG 금지.
+
+## FLOW Master (English)
+Photorealistic lifestyle short-form B-roll for 리빙코트. Natural light, real hands and surfaces, keywords: Duracoat Livingcoat home spray, nano coating home surface, diamond coating technology home, bathroom coating spray, tile coating bathroom, dining table coating, natural wood furniture coating, faucet chrome coating. No studio CGI, no logos only shots.
+
+## 입력 키워드
+Duracoat Livingcoat home spray, nano coating home surface, diamond coating technology home, bathroom coating spray, tile coating bathroom, dining table coating, natural wood furniture coating, faucet chrome coating
+
+## 장면별 콘티
+| # | 연출(콘티) | 배경/촬영 | 화자 | 나레이션 | 자막 | 제품 노출 | FLOW 키워드 |
+|---|-----------|-----------|------|----------|------|-----------|-------------|
+| 1 | 키워드 'Duracoat Livingcoat home spray'에 맞는 고민·상황 장면. 제품은 아직 강조하지 않음. | 주방 | host | 매번 물때·얼룩, 청소 힘드셨죠? | 매번 물때·얼룩, 청소 힘드셨죠? | 없음 | `Duracoat Livingcoat home spray` |
+| 2 | 'nano coating home surface' 장면에서 리빙코트 사용·효과를 자연스럽게 연출. | 욕실 | customer | 뿌리기만 해도 물방울이 맺혀요. | 뿌리기만 해도 물방울이 맺혀요. | 손에 리빙코트 스프레이, 라벨은 살짝만 | `nano coating home surface` |
+| 3 | 'diamond coating technology home' 장면에서 리빙코트 사용·효과를 자연스럽게 연출. | 거실 | host | 쓱 닦으면 끝, 정말 간단해요. | 쓱 닦으면 끝, 정말 간단해요. | 없음 | `diamond coating technology home` |
+| 4 | 사용 후 만족·일상 회복. 제품명을 부드럽게 마무리. | 가구 표면 | customer | 우리 집엔 듀라코트 리빙코트. | 우리 집엔 듀라코트 리빙코트. | 대사로 듀라코트 리빙코트 자연스럽게 언급 | `bathroom coating spray` |

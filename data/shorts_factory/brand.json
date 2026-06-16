@@ -1,0 +1,126 @@
+{
+  "id": "loopreel",
+  "name": "루프릴",
+  "name_en": "LoopReel",
+  "tagline": "목적지까지 돌리는 쇼츠 스튜디오",
+  "description": "키워드 → 콘티 → 스토리보드 → 상세페이지 → MP4. 루프 3요소(목적지·피드백·멈춤)로 품질을 맞춥니다.",
+  "byline": "나눔랩 · 듀라코트",
+  "version": "1.1.0",
+  "loop_principles": [
+    { "key": "goal", "label": "목적지", "hint": "후킹·제품·장면 수" },
+    { "key": "feedback", "label": "피드백", "hint": "콘티 확인 → 이미지 → MP4" },
+    { "key": "stop", "label": "멈춤", "hint": "기준 통과 시 다음 단계" }
+  ],
+  "pipeline": [
+    { "step": 1, "label": "콘티", "action": "대본·장면표" },
+    { "step": 2, "label": "보드", "action": "장면 이미지" },
+    { "step": 3, "label": "상세", "action": "스마트스토어 HTML" },
+    { "step": 4, "label": "미리보기", "action": "TTS·자막 MP4" }
+  ],
+  "changelog": [
+    {
+      "version": "1.1.0",
+      "date": "2026-06-10",
+      "title": "스튜디오 UX · 한국형 이미지",
+      "features": [
+        {
+          "id": "detail-studio",
+          "title": "상세페이지 스튜디오 분리",
+          "summary": "쇼츠 UI와 분리 · /detail/ 3단계 전용 (선택 → 분석 → HTML)",
+          "href": "/detail/",
+          "tags": ["UI", "상세"]
+        },
+        {
+          "id": "kr-locale",
+          "title": "한국형 이미지 locale",
+          "summary": "바이크·자동차 — 아파트·셀프세차·도심 장면 / 산악·오프로드 금지",
+          "tags": ["bike", "auto", "이미지"]
+        },
+        {
+          "id": "shorts-simplify",
+          "title": "쇼츠 UI 단순화",
+          "summary": "메인은 ①콘티 → ②보드 → ④MP4 · 상세는 별도 스튜디오 링크",
+          "tags": ["UI"]
+        },
+        {
+          "id": "cdb-refs",
+          "title": "큐레이터 단비 참고 링크",
+          "summary": "AI 이미지 갤러리 · 채널 분석기 · 쇼핑쇼츠·편집 자동화 영상",
+          "tags": ["참고"]
+        }
+      ]
+    }
+  ],
+  "references": [
+    {
+      "title": "신개념 쇼핑쇼츠 — 방법 전부 공개 (김월백)",
+      "url": "https://youtu.be/hkYCHhWK5hE",
+      "type": "video"
+    },
+    {
+      "title": "쇼츠 편집 자동화 대성공 (AI 필수)",
+      "url": "https://youtu.be/h-pQu10TEp0",
+      "type": "video"
+    },
+    {
+      "title": "CDB · AI 이미지 갤러리 (프롬프트·모델)",
+      "url": "https://min-inter.co.kr/youtube-curator-danbi/ai-image-gallery/",
+      "type": "cdb"
+    },
+    {
+      "title": "CDB · 유튜브 채널 분석기",
+      "url": "https://min-inter.co.kr/youtube-curator-danbi/analytics/",
+      "type": "cdb"
+    },
+    {
+      "title": "CDB · 무료 AI 색칠 도안",
+      "url": "https://min-inter.co.kr/youtube-curator-danbi/free-printable-coloring-pages-kids/",
+      "type": "cdb"
+    },
+    {
+      "title": "Malva AI — 무료 AI 툴 디렉터리 (25+)",
+      "url": "https://malvaai.com/tools",
+      "type": "hub"
+    },
+    {
+      "title": "Higgsfield Supercomputer 워크플로 (Malva AI)",
+      "url": "https://youtu.be/JLyiEsw-pYI",
+      "type": "video"
+    },
+    {
+      "title": "실습 가이드 (루프 3요소)",
+      "url": "https://wordmaster.notion.site/08c0c44b6eb94377aa459bbf79b58185",
+      "type": "guide"
+    },
+    {
+      "title": "루프 설계의 모든 것",
+      "url": "https://youtu.be/_uRvSUkiCAk",
+      "type": "video"
+    },
+    {
+      "title": "Fable 5 Loop Engineering",
+      "url": "https://youtu.be/QI1FNnUfiZg",
+      "type": "video"
+    },
+    {
+      "title": "클로드 리모션 가이드",
+      "url": "https://youtu.be/I9Ib9au7js4",
+      "type": "video"
+    },
+    {
+      "title": "TapNow AI 영상 제작",
+      "url": "https://youtu.be/bJVpKeOqvJ4",
+      "type": "video"
+    },
+    {
+      "title": "무료 AI 영상 툴 4선",
+      "url": "https://youtu.be/gvF8yiFuhN4",
+      "type": "video"
+    },
+    {
+      "title": "네이버 블로그 × AI 시대",
+      "url": "https://youtu.be/JkFo4oX-PQE",
+      "type": "video"
+    }
+  ]
+}

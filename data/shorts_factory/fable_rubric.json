@@ -1,0 +1,44 @@
+{
+  "name": "shorts_conti",
+  "pass_score": 80,
+  "max_iterations": 4,
+  "min_scene_score": 8,
+  "criteria": [
+    {
+      "id": "scene_count",
+      "label": "장면 수",
+      "weight": 15,
+      "hint": "요청한 장면 수와 일치"
+    },
+    {
+      "id": "hook",
+      "label": "후킹",
+      "weight": 15,
+      "hint": "hook_line 8자 이상, 질문/장면형"
+    },
+    {
+      "id": "keywords",
+      "label": "키워드 반영",
+      "weight": 20,
+      "hint": "입력 키워드가 search_keyword·flow_prompt에 포함"
+    },
+    {
+      "id": "forbidden",
+      "label": "금지어",
+      "weight": 20,
+      "hint": "금지 언급 단어 없음"
+    },
+    {
+      "id": "fields",
+      "label": "필수 필드",
+      "weight": 15,
+      "hint": "나레이션·자막·flow_prompt·conti 존재"
+    },
+    {
+      "id": "flow_english",
+      "label": "FLOW 영어",
+      "weight": 15,
+      "hint": "flow_prompt는 영어, 실사 B-roll 톤"
+    }
+  ]
+}

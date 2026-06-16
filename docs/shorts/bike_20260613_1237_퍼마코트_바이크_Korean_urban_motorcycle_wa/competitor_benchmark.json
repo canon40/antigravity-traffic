@@ -1,0 +1,299 @@
+{
+  "urls": [
+    "https://smartstore.naver.com/redline2/products/13364421998",
+    "https://smartstore.naver.com/v-power/products/9391444547",
+    "https://smartstore.naver.com/mobashop/products/7526403399",
+    "https://smartstore.naver.com/eptpart/products/7429015789",
+    "https://smartstore.naver.com/showmethebike/products/5837916341"
+  ],
+  "ownProductUrl": "https://smartstore.naver.com/nanumlab/products/12639296730",
+  "ownManualText": "https://smartstore.naver.com/nanumlab/products/12639296730?nl-query=%ED%8D%BC%EB%A7%88%EC%BD%94%ED%8A%B8&nl-ts-pid=jA93Ysqo0qMOEl3beqC-364771&NaPm=ct%3Dmqeokjw8%7Cci%3D4e65e05646f0abc446de7d23964158598b81afb9%7Ctr%3Dsls%7Csn%3D6958634%7Chk%3D0c34d776540b1bf5ad41d920dc0230c7be68c464",
+  "manualByUrl": {
+    "https://smartstore.naver.com/redline2/products/13364421998": "https://smartstore.naver.com/redline2/products/13364421998?NaPm=ct%3Dmqeoufls%7Cci%3D614949be28eb6c6a130a274bc836cac0c998e44d%7Ctr%3Dslsl%7Csn%3D12328083%7Chk%3D542b7d73a874ba7444c4aac5b01a95dbe0b3d253&nl-au=0552d24d3c4e42929eb20ecfe5b4b4d4&nl-query=%EB%B0%94%EC%9D%B4%ED%81%AC%EC%BD%94%ED%8C%85%EC%A0%9C",
+    "https://smartstore.naver.com/v-power/products/9391444547": "https://smartstore.naver.com/v-power/products/9391444547?NaPm=ct%3Dmqeosrf4%7Cci%3D96258a88426f18f8701f65bfe68395c5e20865b8%7Ctr%3Dslsl%7Csn%3D815938%7Chk%3D273c6f423841f19c1299f85b15619e9a94a7ddc2&nl-au=6087de53eadf424ca4b82f5e4a30cb5b&nl-query=%EB%B0%94%EC%9D%B4%ED%81%AC%EC%BD%94%ED%8C%85%EC%A0%9C",
+    "https://smartstore.naver.com/mobashop/products/7526403399": "https://smartstore.naver.com/mobashop/products/7526403399?NaPm=ct%3Dmqeork7k%7Cci%3D9ee3e84a5f6bd344958f1f1f789a8682fdd87a8b%7Ctr%3Dslsl%7Csn%3D6615325%7Chk%3D6d137952e03f616d80342874187b85e185961324&nl-au=61f299fdee84419f86b7c93f7ef6ef7e&nl-query=%EB%B0%94%EC%9D%B4%ED%81%AC%EC%BD%94%ED%8C%85%EC%A0%9C",
+    "https://smartstore.naver.com/eptpart/products/7429015789": "https://smartstore.naver.com/eptpart/products/7429015789?nl-query=%EB%B0%94%EC%9D%B4%ED%81%AC%EC%BD%94%ED%8C%85%EC%A0%9C&nl-ts-pid=jA9GUsqo0qnVrl3a3Gw-259546&NaPm=ct%3Dmqeoqq48%7Cci%3D1510cc045555fac1140acd9b5bdb6c8654b228d6%7Ctr%3Dsls%7Csn%3D3901178%7Chk%3D9363d6e806d0ab1a9913bdd5041a17cec2723b72",
+    "https://smartstore.naver.com/showmethebike/products/5837916341": "https://smartstore.naver.com/showmethebike/products/5837916341?nl-query=%EB%B0%94%EC%9D%B4%ED%81%AC%EC%BD%94%ED%8C%85%EC%A0%9C&nl-ts-pid=jA9GUsqo0qnVrl3a3Gw-259546&NaPm=ct%3Dmqeop15s%7Cci%3D0b890ab1b22eec666884375e88281d252a13fb52%7Ctr%3Dsls%7Csn%3D837459%7Chk%3Dd771c3707ab1673bcf5bc30c2235118745eee081",
+    "https://smartstore.naver.com/nanumlab/products/12639296730": "https://smartstore.naver.com/nanumlab/products/12639296730?nl-query=%ED%8D%BC%EB%A7%88%EC%BD%94%ED%8A%B8&nl-ts-pid=jA93Ysqo0qMOEl3beqC-364771&NaPm=ct%3Dmqeokjw8%7Cci%3D4e65e05646f0abc446de7d23964158598b81afb9%7Ctr%3Dsls%7Csn%3D6958634%7Chk%3D0c34d776540b1bf5ad41d920dc0230c7be68c464"
+  },
+  "ownProductProfile": {
+    "url": "https://smartstore.naver.com/nanumlab/products/12639296730",
+    "ok": true,
+    "source": "manual",
+    "domain": "smartstore.naver.com",
+    "title": "products",
+    "sections": {
+      "hero": false,
+      "pain": false,
+      "before_after": false,
+      "usp": true,
+      "howto": false,
+      "components": false,
+      "reviews": false,
+      "faq": false,
+      "trust": false,
+      "cta": true
+    },
+    "sectionLabels": [
+      "USP·스펙",
+      "CTA·구매"
+    ],
+    "headlines": [
+      "https://smartstore",
+      "com/nanumlab/products/12639296730"
+    ],
+    "signals": {
+      "imageCount": 0,
+      "hasVideo": false,
+      "textLength": 282
+    },
+    "snippet": "https://smartstore.naver.com/nanumlab/products/12639296730?nl-query=%ED%8D%BC%EB%A7%88%EC%BD%94%ED%8A%B8&nl-ts-pid=jA93Ysqo0qMOEl3beqC-364771&NaPm=ct%3Dmqeokjw8%7Cci%3D4e65e05646f0abc446de7d23964158598b81afb9%7Ctr%3Dsls%7Csn%3D6958634%7Chk%3D0c34d776540b1bf5ad41d920dc0230c7be68c464",
+    "role": "own"
+  },
+  "profiles": [
+    {
+      "url": "https://smartstore.naver.com/redline2/products/13364421998",
+      "ok": true,
+      "source": "manual",
+      "domain": "smartstore.naver.com",
+      "title": "products",
+      "sections": {
+        "hero": false,
+        "pain": false,
+        "before_after": false,
+        "usp": true,
+        "howto": false,
+        "components": false,
+        "reviews": false,
+        "faq": false,
+        "trust": false,
+        "cta": true
+      },
+      "sectionLabels": [
+        "USP·스펙",
+        "CTA·구매"
+      ],
+      "headlines": [
+        "https://smartstore",
+        "com/redline2/products/13364421998"
+      ],
+      "signals": {
+        "imageCount": 0,
+        "hasVideo": false,
+        "textLength": 304
+      },
+      "snippet": "https://smartstore.naver.com/redline2/products/13364421998?NaPm=ct%3Dmqeoufls%7Cci%3D614949be28eb6c6a130a274bc836cac0c998e44d%7Ctr%3Dslsl%7Csn%3D12328083%7Chk%3D542b7d73a874ba7444c4aac5b01a95dbe0b3d253&nl-au=0552d24d3c4e42929eb20ecfe5b4b4d4&nl-query=%EB%B0%94%EC%9D%B4%ED%81%AC%EC%BD%94%ED%8C%85%EC%A0%9C"
+    },
+    {
+      "url": "https://smartstore.naver.com/v-power/products/9391444547",
+      "ok": true,
+      "source": "manual",
+      "domain": "smartstore.naver.com",
+      "title": "products",
+      "sections": {
+        "hero": false,
+        "pain": false,
+        "before_after": false,
+        "usp": true,
+        "howto": false,
+        "components": false,
+        "reviews": false,
+        "faq": false,
+        "trust": false,
+        "cta": true
+      },
+      "sectionLabels": [
+        "USP·스펙",
+        "CTA·구매"
+      ],
+      "headlines": [
+        "https://smartstore",
+        "com/v-power/products/9391444547"
+      ],
+      "signals": {
+        "imageCount": 0,
+        "hasVideo": false,
+        "textLength": 300
+      },
+      "snippet": "https://smartstore.naver.com/v-power/products/9391444547?NaPm=ct%3Dmqeosrf4%7Cci%3D96258a88426f18f8701f65bfe68395c5e20865b8%7Ctr%3Dslsl%7Csn%3D815938%7Chk%3D273c6f423841f19c1299f85b15619e9a94a7ddc2&nl-au=6087de53eadf424ca4b82f5e4a30cb5b&nl-query=%EB%B0%94%EC%9D%B4%ED%81%AC%EC%BD%94%ED%8C%85%EC%A0%9C"
+    },
+    {
+      "url": "https://smartstore.naver.com/mobashop/products/7526403399",
+      "ok": true,
+      "source": "manual",
+      "domain": "smartstore.naver.com",
+      "title": "products",
+      "sections": {
+        "hero": false,
+        "pain": false,
+        "before_after": false,
+        "usp": true,
+        "howto": false,
+        "components": false,
+        "reviews": false,
+        "faq": true,
+        "trust": false,
+        "cta": true
+      },
+      "sectionLabels": [
+        "USP·스펙",
+        "FAQ·Q&A",
+        "CTA·구매"
+      ],
+      "headlines": [
+        "https://smartstore",
+        "com/mobashop/products/7526403399"
+      ],
+      "signals": {
+        "imageCount": 0,
+        "hasVideo": false,
+        "textLength": 302
+      },
+      "snippet": "https://smartstore.naver.com/mobashop/products/7526403399?NaPm=ct%3Dmqeork7k%7Cci%3D9ee3e84a5f6bd344958f1f1f789a8682fdd87a8b%7Ctr%3Dslsl%7Csn%3D6615325%7Chk%3D6d137952e03f616d80342874187b85e185961324&nl-au=61f299fdee84419f86b7c93f7ef6ef7e&nl-query=%EB%B0%94%EC%9D%B4%ED%81%AC%EC%BD%94%ED%8C%85%EC%A0%9C"
+    },
+    {
+      "url": "https://smartstore.naver.com/eptpart/products/7429015789",
+      "ok": true,
+      "source": "manual",
+      "domain": "smartstore.naver.com",
+      "title": "products",
+      "sections": {
+        "hero": false,
+        "pain": false,
+        "before_after": false,
+        "usp": true,
+        "howto": false,
+        "components": false,
+        "reviews": false,
+        "faq": false,
+        "trust": false,
+        "cta": true
+      },
+      "sectionLabels": [
+        "USP·스펙",
+        "CTA·구매"
+      ],
+      "headlines": [
+        "https://smartstore",
+        "com/eptpart/products/7429015789"
+      ],
+      "signals": {
+        "imageCount": 0,
+        "hasVideo": false,
+        "textLength": 298
+      },
+      "snippet": "https://smartstore.naver.com/eptpart/products/7429015789?nl-query=%EB%B0%94%EC%9D%B4%ED%81%AC%EC%BD%94%ED%8C%85%EC%A0%9C&nl-ts-pid=jA9GUsqo0qnVrl3a3Gw-259546&NaPm=ct%3Dmqeoqq48%7Cci%3D1510cc045555fac1140acd9b5bdb6c8654b228d6%7Ctr%3Dsls%7Csn%3D3901178%7Chk%3D9363d6e806d0ab1a9913bdd5041a17cec2723b72"
+    },
+    {
+      "url": "https://smartstore.naver.com/showmethebike/products/5837916341",
+      "ok": true,
+      "source": "manual",
+      "domain": "smartstore.naver.com",
+      "title": "products",
+      "sections": {
+        "hero": false,
+        "pain": false,
+        "before_after": false,
+        "usp": true,
+        "howto": false,
+        "components": false,
+        "reviews": false,
+        "faq": false,
+        "trust": false,
+        "cta": true
+      },
+      "sectionLabels": [
+        "USP·스펙",
+        "CTA·구매"
+      ],
+      "headlines": [
+        "https://smartstore",
+        "com/showmethebike/products/5837916341"
+      ],
+      "signals": {
+        "imageCount": 0,
+        "hasVideo": false,
+        "textLength": 303
+      },
+      "snippet": "https://smartstore.naver.com/showmethebike/products/5837916341?nl-query=%EB%B0%94%EC%9D%B4%ED%81%AC%EC%BD%94%ED%8C%85%EC%A0%9C&nl-ts-pid=jA9GUsqo0qnVrl3a3Gw-259546&NaPm=ct%3Dmqeop15s%7Cci%3D0b890ab1b22eec666884375e88281d252a13fb52%7Ctr%3Dsls%7Csn%3D837459%7Chk%3Dd771c3707ab1673bcf5bc30c2235118745eee081"
+    }
+  ],
+  "benchmark": [
+    {
+      "id": "hero",
+      "label": "히어로·한줄 정의",
+      "competitorCoverage": 0,
+      "recommended": true
+    },
+    {
+      "id": "pain",
+      "label": "문제·Pain",
+      "competitorCoverage": 0,
+      "recommended": true
+    },
+    {
+      "id": "before_after",
+      "label": "전후·B&A",
+      "competitorCoverage": 0,
+      "recommended": false
+    },
+    {
+      "id": "usp",
+      "label": "USP·스펙",
+      "competitorCoverage": 100,
+      "recommended": true
+    },
+    {
+      "id": "howto",
+      "label": "시공·사용법",
+      "competitorCoverage": 0,
+      "recommended": false
+    },
+    {
+      "id": "components",
+      "label": "구성·라인업",
+      "competitorCoverage": 0,
+      "recommended": false
+    },
+    {
+      "id": "reviews",
+      "label": "후기·리뷰",
+      "competitorCoverage": 0,
+      "recommended": false
+    },
+    {
+      "id": "faq",
+      "label": "FAQ·Q&A",
+      "competitorCoverage": 20,
+      "recommended": false
+    },
+    {
+      "id": "trust",
+      "label": "신뢰·인증",
+      "competitorCoverage": 0,
+      "recommended": false
+    },
+    {
+      "id": "cta",
+      "label": "CTA·구매",
+      "competitorCoverage": 100,
+      "recommended": true
+    }
+  ],
+  "summary": {
+    "analyzed": 5,
+    "failed": 0,
+    "commonSections": [
+      "USP·스펙",
+      "CTA·구매"
+    ],
+    "gapsToExploit": [
+      "히어로·한줄 정의",
+      "문제·Pain"
+    ],
+    "recommendedFlow": "USP·스펙 → CTA·구매",
+    "ownProductOk": true
+  },
+  "competitorNotesBlob": "[smartstore.naver.com] products\n  섹션: USP·스펙, CTA·구매\n  톤: https://smartstore / com/redline2/products/13364421998\n[smartstore.naver.com] products\n  섹션: USP·스펙, CTA·구매\n  톤: https://smartstore / com/v-power/products/9391444547\n[smartstore.naver.com] products\n  섹션: USP·스펙, FAQ·Q&A, CTA·구매\n  톤: https://smartstore / com/mobashop/products/7526403399\n[smartstore.naver.com] products\n  섹션: USP·스펙, CTA·구매\n  톤: https://smartstore / com/eptpart/products/7429015789\n[smartstore.naver.com] products\n  섹션: USP·스펙, CTA·구매\n  톤: https://smartstore / com/showmethebike/products/5837916341\n[우리] products\n  현재 섹션: USP·스펙, CTA·구매",
+  "fetchHint": null
+}

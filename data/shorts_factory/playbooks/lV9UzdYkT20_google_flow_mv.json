@@ -1,0 +1,106 @@
+{
+  "id": "lV9UzdYkT20",
+  "title": "AI로 뮤직비디오 10분 컷 (제작비 0원, 진짜임) | 무료로 무제한 찍어내는 법",
+  "channel": "GPT PARK의 AI팩트",
+  "url": "https://www.youtube.com/watch?v=lV9UzdYkT20",
+  "duration_sec": 632,
+  "summary": "Google FLOW로 캐릭터·배경·클립을 만들고, Suno로 음악을 생성한 뒤 MV 스튜디오·심리스 루프·CapCut으로 뮤직비디오를 완성하는 10분 워크플로.",
+  "tools": [
+    { "name": "Google FLOW", "url": "https://labs.google/fx/tools/flow", "role": "캐릭터·배경·영상·타임라인 편집" },
+    { "name": "Suno (수노)", "url": "https://suno.com/", "role": "AI 가사·음악 생성" },
+    { "name": "MV 만들기 도구", "url": "https://www.youtube.com/watch?v=lV9UzdYkT20", "role": "영상 설명란 GPT 공식 사이트 — 가사→스토리보드→일괄 영상" },
+    { "name": "Seamless Loop Studio", "url": "https://www.youtube.com/watch?v=lV9UzdYkT20", "role": "영상 설명란 GPT 공식 사이트 — 끊김 없는 루프" },
+    { "name": "CapCut", "url": "https://www.capcut.com/", "role": "최종 합성·전환·자막" }
+  ],
+  "workflow": [
+    {
+      "step": 1,
+      "title": "캐릭터 에셋 (FLOW)",
+      "settings": { "ratio": "4:3", "count": 4, "model": "Nano Banana Pro" },
+      "prompt_ko": "고전적인 아름다움을 간직한 20대 한국 여성의 얼굴",
+      "tips": ["각 이미지·프로젝트 이름을 '캐릭터_여성' 등으로 저장", "@ 버튼으로 에셋 라이브러리에서 재사용"]
+    },
+    {
+      "step": 2,
+      "title": "배경 에셋 (FLOW)",
+      "settings": { "ratio": "16:9", "count": 4 },
+      "prompt_ko": "평화롭고 낭만적이면서 아름다운 들판",
+      "tips": ["프로젝트명 '배경'으로 저장"]
+    },
+    {
+      "step": 3,
+      "title": "에셋 기반 영상 클립",
+      "settings": { "tab": "동영상+에셋", "ratio": "16:9", "count": 1, "duration_sec": 6 },
+      "prompt_ko": "캐릭터가 배경을 걸어가는 장면",
+      "tips": ["@캐릭터 이미지 1장 + @배경 1장 첨부 후 실행", "영상 생성은 크레딧 소모 — 개수 1개 권장"]
+    },
+    {
+      "step": 4,
+      "title": "프레임(시작·끝) 영상",
+      "settings": { "tab": "동영상 프레임", "model": "Veo 3.1 Lite (필수 — OmniFlash는 프레임 미지원)" },
+      "prompt_ko": "시작·끝 정지 이미지 사이 자연스러운 미소·손 흔들기",
+      "tips": ["시작·종료 이미지를 드래그로 등록", "OmniFlash 사용 시 종료 이미지 등록 실패 → Veo 3.1 Lite로 변경"]
+    },
+    {
+      "step": 5,
+      "title": "FLOW 타임라인 편집",
+      "actions": ["앞·뒤 구간 드래그로 트림", "영상 끝 + → 확장(Extend)으로 장면 연장", "예: '나비를 만나서 즐겁게 논다'"]
+    },
+    {
+      "step": 6,
+      "title": "음악 (Suno + MV 도구)",
+      "actions": [
+        "MV 도구 → AI 가사 생성: 키워드·장르 입력",
+        "제목·스타일·가사 복사 → Suno에 붙여넣기 → 음악 생성·다운로드",
+        "고급 스타일은 Suno Studio(별도 영상) 참고"
+      ]
+    },
+    {
+      "step": 7,
+      "title": "MV 스토리보드·일괄 영상",
+      "actions": [
+        "비주얼·시나리오: 장면 수 지정(예: 2)",
+        "FLOW 이미지 불러오기 → 캐릭터 에셋 선택",
+        "화풍(예: Cinematic) → 스토리보드 생성",
+        "일괄 처리 → 전체 시네마틱 영상 생성",
+        "ZIP 다운로드 (FLOW 단독 루프는 완벽하지 않음)"
+      ]
+    },
+    {
+      "step": 8,
+      "title": "심리스 루프 (선택)",
+      "actions": ["GPT 공식 사이트 → Seamless Loop Studio", "영상 업로드 → 출력 타입 2 → 구간 분석 시작"]
+    },
+    {
+      "step": 9,
+      "title": "CapCut 최종 합성",
+      "actions": [
+        "루프 클립 + Suno 음악 가져오기",
+        "오디오 트랙에 음악 먼저 배치",
+        "비디오 트랙에 클립 순서 배치",
+        "음악 길이에 맞게 영상 트림",
+        "전환 → 오버랩 효과 적용",
+        "전체 재생 확인 후 내보내기"
+      ]
+    }
+  ],
+  "loopreel_mapping": {
+    "conti": "가사·장면 구조 = MV 도구 AI 가사 + 스토리보드",
+    "board": "FLOW 캐릭터·배경 이미지 = LoopReel ② 스토리보드",
+    "flow_clips": "FLOW 장면별 클립 = LoopReel Google FLOW 버튼 프롬프트",
+    "preview_mp4": "CapCut 합성 전 미리보기 = LoopReel ④ MP4 (슬라이드+TTS)",
+    "final": "CapCut = 실사·뮤직비 최종본"
+  },
+  "checklist": [
+    "Google FLOW 로그인",
+    "캐릭터 4:3 · 4장 · 이름 저장",
+    "배경 16:9 · 4장 · 이름 저장",
+    "에셋 영상 6초 1개",
+    "프레임 영상 (Veo 3.1 Lite)",
+    "Suno 음악 MP3",
+    "MV 일괄 영상 ZIP",
+    "루프 처리(선택)",
+    "CapCut 합성·전환·내보내기"
+  ],
+  "learned_at": "2026-06-14T04:46:06+00:00"
+}

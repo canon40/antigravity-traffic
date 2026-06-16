@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="theme-color" content="#0b1220" />
+  <title>Traffic Hub — 어디서든 트래픽·자동화</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #111827;
+      --border: #2b3548;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Malgun Gothic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 16px 14px 48px; }
+    header { margin-bottom: 20px; }
+    header h1 { font-size: 1.35rem; margin: 0 0 4px; font-weight: 800; }
+    header p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+    .grid { display: grid; gap: 12px; }
+    @media (min-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr 1fr; }
+      .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .card h2 {
+      font-size: 0.95rem;
+      margin: 0 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+    .badge-cloud { background: #1e3a5f; color: #93c5fd; }
+    .badge-pc { background: #3b2f1a; color: #fcd34d; }
+    .badge-soon { background: #2a2a2a; color: #a3a3a3; }
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin: 10px 0 4px; }
+    input, select, textarea {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: var(--text);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 0.95rem;
+    }
+    textarea { min-height: 64px; resize: vertical; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .status-line { font-size: 0.85rem; margin-top: 8px; min-height: 1.4em; }
+    .status-ok { color: var(--ok); }
+    .status-err { color: var(--err); }
+    .status-warn { color: var(--warn); }
+    pre.log {
+      white-space: pre-wrap;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      background: #020617;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 220px;
+      overflow: auto;
+      margin: 8px 0 0;
+    }
+    .module-card {
+      cursor: default;
+      transition: border-color 0.15s;
+    }
+    .module-card:hover { border-color: #475569; }
+    .module-card p { margin: 0; font-size: 0.82rem; color: var(--muted); }
+    .module-card .tag { margin-top: 8px; font-size: 0.75rem; color: #93c5fd; }
+    nav.tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    nav.tabs button {
+      width: auto;
+      margin: 0;
+      padding: 8px 14px;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    nav.tabs button.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    footer a { color: #93c5fd; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Traffic Hub</h1>
+      <p>클라우드 트래픽 · PC 자동화 · 모바일 원격 — 한곳에서 연동</p>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button type="button" class="active" data-tab="traffic">☁️ 트래픽</button>
+      <button type="button" data-tab="modules">📦 모듈</button>
+      <button type="button" data-tab="settings">⚙️ 설정</button>
+      <button type="button" data-tab="docs">📖 연동</button>
+    </nav>
+
+    <section id="panel-traffic" class="panel active">
+      <div class="grid grid-2">
+        <div class="card">
+          <h2>서버 상태 <span id="healthBadge" class="badge badge-soon">확인 중</span></h2>
+          <div id="healthDetail" class="status-line status-warn">헬스 체크 중…</div>
+          <button type="button" class="btn-ghost" id="healthBtn">다시 확인</button>
+        </div>
+        <div class="card">
+          <h2>빠른 실행</h2>
+          <label for="targetUrl">상품·스토어 URL</label>
+          <input id="targetUrl" type="url" placeholder="https://smartstore.naver.com/..." />
+          <button type="button" class="btn-primary" id="runBtn">트래픽 1회 실행</button>
+          <div id="runStatus" class="status-line"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h2>실행 로그</h2>
+        <pre id="logBox" class="log">대기 중</pre>
+      </div>
+    </section>
+
+    <section id="panel-modules" class="panel">
+      <div class="grid grid-2 grid-3">
+        <div class="card module-card">
+          <h2>클라우드 트래픽 <span class="badge badge-cloud">Vercel</span></h2>
+          <p>httpx 모바일 UA 1회 방문. Base44·웹훅·이 허브에서 실행.</p>
+          <div class="tag">지금 이 페이지</div>
+        </div>
+        <div class="card module-card">
+          <h2>블로그 자동화 <span class="badge badge-pc">PC</span></h2>
+          <p>네이버·티스토리 발행, Playwright. Tk GUI 또는 평일 일과.</p>
+          <div class="tag">run_gui.bat · blog_main.py</div>
+        </div>
+        <div class="card module-card">
+          <h2>모바일 원격 <span class="badge badge-pc">PC:8787</span></h2>
+          <p>같은 Wi‑Fi/터널에서 폰으로 발행·트래픽. PC가 켜져 있어야 함.</p>
+          <div class="tag">python mobile_server.py</div>
+        </div>
+        <div class="card module-card">
+          <h2>이웃·티스토리 방문 <span class="badge badge-pc">PC</span></h2>
+          <p>Playwright 소셜 트래픽. 클라우드와 역할 분리.</p>
+          <div class="tag">blog_automation_visit.py</div>
+        </div>
+        <div class="card module-card">
+          <h2>쇼츠·동영상 <span class="badge badge-soon">PC</span></h2>
+          <p>YouTube 학습 플레이북, 쇼핑 쇼츠 파이프라인.</p>
+          <div class="tag">shorts_factory/</div>
+        </div>
+        <div class="card module-card">
+          <h2>블로그 리프레시 <span class="badge badge-soon">에이전트</span></h2>
+          <p>네이버 AI 브리핑·메이트 5원칙 맞춤 글 새로고침.</p>
+          <div class="tag">naver-blog-refresh 스킬</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="panel-settings" class="panel">
+      <div class="card">
+        <h2>연동 설정 <span class="badge badge-cloud">localStorage</span></h2>
+        <p style="margin:0 0 8px;font-size:0.82rem;color:var(--muted)">브라우저에만 저장됩니다. 비밀키는 서버 환경변수와 동일하게 맞추세요.</p>
+        <label for="apiBase">API 베이스 URL</label>
+        <input id="apiBase" type="url" placeholder="https://your-project.vercel.app" />
+        <label for="webhookSecret">Webhook Secret (선택)</label>
+        <input id="webhookSecret" type="password" autocomplete="off" placeholder="WEBHOOK_SECRET" />
+        <label for="defaultTarget">기본 상품 URL</label>
+        <input id="defaultTarget" type="url" placeholder="https://smartstore.naver.com/..." />
+        <div class="row">
+          <div>
+            <label for="timeoutSec">타임아웃(초)</label>
+            <input id="timeoutSec" type="number" min="1" max="9" value="8" />
+          </div>
+          <div>
+            <label for="intervalMin">주기(분, PC 스케줄 참고)</label>
+            <input id="intervalMin" type="number" min="5" value="20" />
+          </div>
+        </div>
+        <button type="button" class="btn-primary" id="saveSettings">설정 저장</button>
+        <div id="settingsStatus" class="status-line"></div>
+      </div>
+    </section>
+
+    <section id="panel-docs" class="panel">
+      <div class="card">
+        <h2>API 계약</h2>
+        <pre class="log">GET  /api/health
+POST /api/traffic
+Body: { "target_url": "https://...", "timeout_sec": 8 }
+Auth: Authorization: Bearer &lt;WEBHOOK_SECRET&gt;
+      또는 X-Webhook-Secret: &lt;WEBHOOK_SECRET&gt;</pre>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h2>PC 프로그램 (login2)</h2>
+        <pre class="log">git clone https://github.com/canon40/traffic.git
+cd traffic/pc          # (예정) monorepo 구조
+run_install.bat
+run_gui.bat
+
+검증: python scripts/verify_vercel_traffic.py
+트래픽 1회: traffic_once.bat</pre>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h2>accounts.json 키</h2>
+        <pre class="log">vercel_api_url, vercel_webhook_secret
+vercel_enabled, vercel_on_publish
+vercel_interval_minutes, vercel_mode (cloud|local|both)
+product_url</pre>
+      </div>
+    </section>
+
+    <footer>
+      <a href="https://github.com/canon40/traffic" target="_blank" rel="noopener">canon40/traffic</a>
+      · Vercel Root Directory = <code>cloud</code> 또는 <code>vercel_traffic</code>
+    </footer>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const STORAGE_KEY = "traffic_hub_settings_v1";
+
+    function loadSettings() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+      } catch (_) {
+        return {};
+      }
+    }
+
+    function saveSettingsToStorage() {
+      const data = {
+        apiBase: $("apiBase").value.trim().replace(/\/+$/, ""),
+        webhookSecret: $("webhookSecret").value,
+        defaultTarget: $("defaultTarget").value.trim(),
+        timeoutSec: Number($("timeoutSec").value || 8),
+        intervalMin: Number($("intervalMin").value || 20),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      if (data.defaultTarget) $("targetUrl").value = data.defaultTarget;
+      $("settingsStatus").textContent = "저장됨";
+      $("settingsStatus").className = "status-line status-ok";
+      return data;
+    }
+
+    function applySettings() {
+      const s = loadSettings();
+      const origin = window.location.origin;
+      $("apiBase").value = s.apiBase || origin;
+      $("webhookSecret").value = s.webhookSecret || "";
+      $("defaultTarget").value = s.defaultTarget || "";
+      $("timeoutSec").value = s.timeoutSec || 8;
+      $("intervalMin").value = s.intervalMin || 20;
+      if (s.defaultTarget) $("targetUrl").value = s.defaultTarget;
+    }
+
+    function apiUrl(path) {
+      const base = ($("apiBase").value || window.location.origin).replace(/\/+$/, "");
+      if (path === "/api/health") return base + "/api/health";
+      if (path === "/api/traffic") {
+        if (base.endsWith("/api/traffic")) return base;
+        if (base.endsWith("/api")) return base + "/traffic";
+        return base + "/api/traffic";
+      }
+      return base + path;
+    }
+
+    function authHeaders() {
+      const secret = $("webhookSecret").value.trim();
+      const h = { "Content-Type": "application/json" };
+      if (secret) {
+        h["Authorization"] = "Bearer " + secret;
+        h["X-Webhook-Secret"] = secret;
+      }
+      return h;
+    }
+
+    function appendLog(msg) {
+      const box = $("logBox");
+      const ts = new Date().toLocaleTimeString("ko-KR");
+      box.textContent = "[" + ts + "] " + msg + "\n" + box.textContent;
+    }
+
+    async function checkHealth() {
+      $("healthBadge").textContent = "확인 중";
+      $("healthBadge").className = "badge badge-soon";
+      $("healthDetail").textContent = "요청 중…";
+      $("healthDetail").className = "status-line status-warn";
+      try {
+        const res = await fetch(apiUrl("/api/health"));
+        const j = await res.json();
+        if (res.ok && (j.status === "healthy" || j.message)) {
+          $("healthBadge").textContent = "정상";
+          $("healthBadge").className = "badge badge-cloud";
+          $("healthDetail").textContent = j.message || JSON.stringify(j);
+          $("healthDetail").className = "status-line status-ok";
+          appendLog("헬스 OK: " + (j.message || j.status));
+        } else {
+          throw new Error(JSON.stringify(j));
+        }
+      } catch (e) {
+        $("healthBadge").textContent = "오류";
+        $("healthBadge").className = "badge badge-soon";
+        $("healthDetail").textContent = String(e.message || e);
+        $("healthDetail").className = "status-line status-err";
+        appendLog("헬스 실패: " + e);
+      }
+    }
+
+    async function runTraffic() {
+      const url = ($("targetUrl").value || $("defaultTarget").value || "").trim();
+      if (!url) {
+        $("runStatus").textContent = "상품 URL을 입력하세요.";
+        $("runStatus").className = "status-line status-err";
+        return;
+      }
+      $("runStatus").textContent = "실행 중…";
+      $("runStatus").className = "status-line status-warn";
+      try {
+        const res = await fetch(apiUrl("/api/traffic"), {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            target_url: url,
+            timeout_sec: Math.min(9, Number($("timeoutSec").value || 8)),
+          }),
+        });
+        const j = await res.json();
+        if (res.ok) {
+          $("runStatus").textContent = j.message || "성공";
+          $("runStatus").className = "status-line status-ok";
+          appendLog("트래픽 OK " + url + " → " + JSON.stringify(j.result || j));
+        } else {
+          const detail = j.detail || j;
+          $("runStatus").textContent = typeof detail === "string" ? detail : JSON.stringify(detail);
+          $("runStatus").className = "status-line status-err";
+          appendLog("트래픽 실패: " + JSON.stringify(detail));
+        }
+      } catch (e) {
+        $("runStatus").textContent = String(e.message || e);
+        $("runStatus").className = "status-line status-err";
+        appendLog("요청 오류: " + e);
+      }
+    }
+
+    document.querySelectorAll("nav.tabs button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("nav.tabs button").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+        btn.classList.add("active");
+        $("panel-" + btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    $("healthBtn").addEventListener("click", checkHealth);
+    $("runBtn").addEventListener("click", runTraffic);
+    $("saveSettings").addEventListener("click", saveSettingsToStorage);
+
+    applySettings();
+    checkHealth();
+  </script>
+</body>
+</html>

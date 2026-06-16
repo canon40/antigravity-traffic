@@ -1,12 +1,56 @@
-.venv/
-__pycache__/
-*.pyc
+# Secrets & local config
+accounts.json
+.env
+config.json
 security_vault/
+client_secrets.json
+client_secrets*.json
+client_secrets.*json
+gen-lang-client-*.json
+token.pickle
+*.pickle
+*.pem
+*credentials*
+session.txt
+cookies.txt
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Build / dist
+dist/
+build/
+*.spec.bak
+
+# Playwright / browser profiles
+browser_data_*/
+web_browser_*/
+verify_*/
+
+# Generated assets & reports
+generated_images/
+.tmp/
+drafts/
 *.csv
 *report.json
 seo_audit_history.json
 *.zip
-build/
-dist/
-*.html
-!templates/*.html
+
+# IDE / agent local
+.vscode/
+.idea/
+agent_dialogue.jsonl
+.hermes/
+.javis/
+.openclaw/
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store

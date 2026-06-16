@@ -1,0 +1,108 @@
+{
+  "title": "Malva AI — Free AI Tools Directory",
+  "title_ko": "Malva AI · 무료 AI 툴 허브",
+  "home_url": "https://malvaai.com/",
+  "tagline": "25+ 큐레이션 무료 AI 도구 · PDF 가이드 · AI Chat",
+  "guide_video": {
+    "title": "Claude PRO · Higgsfield Supercomputer 올인원",
+    "title_ko": "Malva AI — Higgsfield Supercomputer 워크플로",
+    "url": "https://youtu.be/JLyiEsw-pYI",
+    "channel": "Malva AI"
+  },
+  "supercomputer_workflow": [
+    "단일 프롬프트로 작업 지시 (에이전틱 AI)",
+    "이커머스 제품·트렌드 리서치",
+    "시네마틱 제품 이미지 3장 생성",
+    "모델·제품 영상 생성",
+    "경쟁사·시장 조사",
+    "아웃리치 이메일 초안"
+  ],
+  "loopreel_mapping": [
+    "① 콘티 = 후킹·장면·FLOW 프롬프트 설계",
+    "② 보드 = 시네마틱 정지컷 (Gemini)",
+    "③ Higgsfield/FLOW = 장면별 9:16 실사 클립",
+    "④ 상세 = 스마트스토어 HTML · Malva PDF로 워크플로 보강"
+  ],
+  "links": [
+    {
+      "id": "directory",
+      "label": "AI Tools Directory (25+)",
+      "label_ko": "AI 툴 디렉터리",
+      "url": "https://malvaai.com/tools",
+      "badge": "허브"
+    },
+    {
+      "id": "free_tools",
+      "label": "Free Browser Tools",
+      "label_ko": "무료 브라우저 툴",
+      "url": "https://malvaai.com/free-tools",
+      "badge": ""
+    },
+    {
+      "id": "ai_chat",
+      "label": "Malva AI Chat",
+      "label_ko": "Malva AI Chat (무료)",
+      "url": "https://malvaai.com/chat",
+      "badge": "Chat"
+    },
+    {
+      "id": "ai_image",
+      "label": "Free AI Image",
+      "label_ko": "Free AI Image · 워터마크 없음",
+      "url": "https://malvaai.com/image",
+      "badge": "Image"
+    },
+    {
+      "id": "pdf_guides",
+      "label": "Free PDF Guides",
+      "label_ko": "PDF 가이드·치트시트",
+      "url": "https://malvaai.com/pdfs",
+      "badge": "PDF"
+    },
+    {
+      "id": "blog",
+      "label": "Blog · Tutorials",
+      "label_ko": "블로그 · 튜토리얼",
+      "url": "https://malvaai.com/blog",
+      "badge": ""
+    }
+  ],
+  "featured_for_loopreel": [
+    {
+      "id": "higgsfield_supercomputer",
+      "name": "Higgsfield Supercomputer",
+      "name_ko": "Higgsfield Supercomputer (올인원)",
+      "description": "Malva AI 추천. 한 프롬프트로 리서치→이미지→영상→이메일까지 에이전트가 실행.",
+      "url": "https://higgsfield.ai/supercomputer-intro",
+      "badge": "올인원",
+      "copy_field": "supercomputer_brief"
+    },
+    {
+      "id": "google_flow",
+      "name": "Google FLOW",
+      "name_ko": "Google FLOW (Veo)",
+      "description": "장면별 실사 B-roll. Malva 디렉터리·루프릴 기본 권장.",
+      "url": "https://labs.google/fx/tools/flow",
+      "badge": "권장",
+      "copy_field": "flow_master_prompt_en"
+    },
+    {
+      "id": "meta_ai",
+      "name": "Meta AI",
+      "name_ko": "Meta AI 영상",
+      "description": "Malva 디렉터리 인기 무료 영상 툴.",
+      "url": "https://www.meta.ai/",
+      "badge": "Malva",
+      "copy_field": "flow_master_prompt_en"
+    },
+    {
+      "id": "wan_video",
+      "name": "Wan.video",
+      "name_ko": "Wan.video (Wan 2.6)",
+      "description": "Malva AI Video 1위 · 4K·15초·카메라 컨트롤.",
+      "url": "https://malvaai.com/tools",
+      "badge": "4.9",
+      "copy_field": "flow_prompt"
+    }
+  ]
+}

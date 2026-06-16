@@ -1,0 +1,85 @@
+{
+  "comment": "SKU별 12장 고유 이미지. 실촬영 시 local 경로로 교체 (예: images/bike/bike_quick/01_hero.jpg)",
+  "products": {
+    "bike_quick": {
+      "slots": [
+        {"id": "01", "unsplash": "photo-1449426467049-49d3a7042925", "alt": "듀라코트 퍼마코트 퀵 바이크 코팅제 입문 히어로"},
+        {"id": "02", "unsplash": "photo-1558980660-287bfb813a4f", "alt": "셀프 코팅 입문 라이더 라이프스타일"},
+        {"id": "03", "unsplash": "photo-1609630875171-0724bd29f626", "alt": "오토바이 도장면 코팅 전 상태"},
+        {"id": "04", "unsplash": "photo-1568772585407-9361d9bf90a", "alt": "유리막 코팅 후 바이크 광택"},
+        {"id": "05", "unsplash": "photo-1558981805-ed52c565fa1c", "alt": "입문용 발수 비딩 클로즈업"},
+        {"id": "06", "unsplash": "photo-1583947212849-127f666dcc9b", "alt": "퍼마코트 퀵 14% 제품 실사"},
+        {"id": "07", "unsplash": "photo-1558618047-3c8c76ca7d13", "alt": "바이크 탱크 도장면 시공"},
+        {"id": "08", "unsplash": "photo-1571068316344-75bb76f0b2ee", "alt": "헬멧 관리 셀프 코팅"},
+        {"id": "09", "unsplash": "photo-1601362840469-51e4d8d58785", "alt": "도장면 세척 1단계"},
+        {"id": "10", "unsplash": "photo-1619642759868-474cc4270a3d", "alt": "코팅제 도포 2단계"},
+        {"id": "11", "unsplash": "photo-1520340359834-1deb912fa773", "alt": "건식 마무리 3단계"},
+        {"id": "12", "unsplash": "photo-1558618666-fcd25c85cd64", "alt": "라이딩 후 바이크 관리"}
+      ]
+    },
+    "bike_titan": {
+      "slots": [
+        {"id": "01", "unsplash": "photo-1558981403-c5f9899a28f9", "alt": "퍼마코트 티탄 고발수 바이크 유리막 히어로"},
+        {"id": "02", "unsplash": "photo-1605559424843-26e4c4dfab0b", "alt": "오토바이 디테일링 라이더"},
+        {"id": "03", "unsplash": "photo-1558618056-3d77b1d466a4", "alt": "티탄 시공 전 도장면"},
+        {"id": "04", "unsplash": "photo-1591637333184-b665bda74fb9", "alt": "고발수 코팅 후 바이크"},
+        {"id": "05", "unsplash": "photo-1541623704-7eb4064533ca", "alt": "비딩 발수 클로즈업 티탄"},
+        {"id": "06", "unsplash": "photo-1517649763962-0c623066bdd3", "alt": "퍼마코트 티탄 28% 제품"},
+        {"id": "07", "unsplash": "photo-1469285996302-4c3f6ed9ae43", "alt": "도장면 탱크 셀프 디테일링"},
+        {"id": "08", "unsplash": "photo-1471478334189-6dfd3d3770d2", "alt": "헬멧 코팅 시공"},
+        {"id": "09", "unsplash": "photo-1631545957311-361032743e9e", "alt": "세척 및 탈지 단계"},
+        {"id": "10", "unsplash": "photo-1492144534655-ae79c964c9d7", "alt": "28% 원액 코팅 도포"},
+        {"id": "11", "unsplash": "photo-1503376780353-7ebb838c287a", "alt": "건식 마무리 디테일링"},
+        {"id": "12", "unsplash": "photo-1617810287996-1fb7757a8c06", "alt": "장거리 라이딩 후 관리"}
+      ]
+    },
+    "bike_resin": {
+      "slots": [
+        {"id": "01", "unsplash": "photo-1552518507-da3b67705df9", "alt": "퍼마코트 레진 프리미엄 바이크 코팅 히어로"},
+        {"id": "02", "unsplash": "photo-1581092160562-40aa08e78837", "alt": "프리미엄 디테일링 라이더"},
+        {"id": "03", "unsplash": "photo-1614705260756-19e8b0c4c0e5", "alt": "레진 시공 전 도장면"},
+        {"id": "04", "unsplash": "photo-1553440568-b78e7ff70a39", "alt": "장기 보호 코팅 후 광택"},
+        {"id": "05", "unsplash": "photo-1525600667836-f94a81728120", "alt": "프리미엄 발수 비딩"},
+        {"id": "06", "unsplash": "photo-1549317661-bd32c8ce0db7", "alt": "퍼마코트 레진 제품 실사"},
+        {"id": "07", "unsplash": "photo-1603584173871-7f4ee95eaa04", "alt": "프리미엄 도장면 탱크"},
+        {"id": "08", "unsplash": "photo-1523985253134-109a55a5436c", "alt": "헬멧 프리미엄 시공"},
+        {"id": "09", "unsplash": "photo-1511919884226-f3de18161135", "alt": "정밀 세척 단계"},
+        {"id": "10", "unsplash": "photo-1493238799250-48ec0bb91506", "alt": "레진 배합 도포"},
+        {"id": "11", "unsplash": "photo-1622185135505-6d25630345f8", "alt": "광택 마무리 단계"},
+        {"id": "12", "unsplash": "photo-1508179713080-ff22dee852c9", "alt": "신차급 관리 라이딩"}
+      ]
+    },
+    "bike_lineup": {
+      "slots": [
+        {"id": "01", "unsplash": "photo-1632824442826-8d32ae053d3a", "alt": "듀라코트 퍼마코트 바이크 라인 퀵 티탄 레진"},
+        {"id": "02", "unsplash": "photo-1631049351160-92d95d6a7a23", "alt": "오토바이 유리막 라인업 라이더"},
+        {"id": "03", "unsplash": "photo-1568605117035-41325fc12ec0", "alt": "라인별 시공 전 비교"},
+        {"id": "04", "unsplash": "photo-1580273916557-4061edccf36b", "alt": "라인별 코팅 후 비교"},
+        {"id": "05", "unsplash": "photo-1494976388531-d1058498bdd2", "alt": "함량별 발수 비딩 차이"},
+        {"id": "06", "unsplash": "photo-1502872369578-884a61445af9", "alt": "퀵 티탄 레진 제품 라인업"},
+        {"id": "07", "unsplash": "photo-1618843479313-40f8afb4b4d8", "alt": "입문 퀵 도장면 적용"},
+        {"id": "08", "unsplash": "photo-1507608862599-7ff187575806", "alt": "티탄 레진 헬멧 시공"},
+        {"id": "09", "unsplash": "photo-1485291571154-7762f05f86ef", "alt": "공통 세척 준비"},
+        {"id": "10", "unsplash": "photo-1550355197-0f3af0ae573d", "alt": "라인별 도포 방법"},
+        {"id": "11", "unsplash": "photo-1621135802921-d216174ef9ff", "alt": "건식 관리제 병행"},
+        {"id": "12", "unsplash": "photo-1578773860500-64c696daa22a", "alt": "바이크 라인 선택 가이드"}
+      ]
+    },
+    "bike_dry_care": {
+      "slots": [
+        {"id": "01", "unsplash": "photo-1583121274602-3fc0ecc19ff2", "alt": "바이크 건식 관리제 코팅 유지 히어로"},
+        {"id": "02", "unsplash": "photo-1614162692294-7ba8249c691c", "alt": "라이딩 후 건식 관리 루틴"},
+        {"id": "03", "unsplash": "photo-1558980664-10d0f0f659ca", "alt": "관리 전 도장면 먼지"},
+        {"id": "04", "unsplash": "photo-1568772585277-8b8feb54ba70", "alt": "건식 관리 후 깨끗한 도장면"},
+        {"id": "05", "unsplash": "photo-1617054293338-11e1007bca00", "alt": "수분 제거 클로즈업"},
+        {"id": "06", "unsplash": "photo-1626259293720-f601a5892d0f", "alt": "전용 건식 관리제 제품"},
+        {"id": "07", "unsplash": "photo-1506905925346-14bda5d7c7aa", "alt": "탱크 도장면 관리"},
+        {"id": "08", "unsplash": "photo-1616422283683-08729a51bbf4", "alt": "헬멧 건식 관리"},
+        {"id": "09", "unsplash": "photo-1599059813003-c7de188ded23", "alt": "먼지 제거 1단계"},
+        {"id": "10", "unsplash": "photo-1614887136356-9ee77d45b42d", "alt": "건식 도포 2단계"},
+        {"id": "11", "unsplash": "photo-1625047509248-9862b6cec047", "alt": "마무리 광택 3단계"},
+        {"id": "12", "unsplash": "photo-1646144494-ff32f78fcc7a", "alt": "코팅 유지 일상 관리"}
+      ]
+    }
+  }
+}

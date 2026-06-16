@@ -1,143 +1,54 @@
-# 나눔랩 쇼핑 SEO 자동화 시스템 — 실행 가이드
+# Antigravity Traffic
 
-> **목표**: 네이버 쇼핑 "자동차코팅제" 키워드 1페이지 진입
+[canon40/antigravity-traffic](https://github.com/canon40/antigravity-traffic) — 네이버 쇼핑 SEO·트래픽·블로그 자동화 통합 저장소입니다.
 
----
+이 저장소에는 **두 계열**이 공존합니다.
 
-## ⚡ 원클릭 실행 (BAT 파일)
+| 계열 | 대상 | 빠른 시작 |
+|------|------|-----------|
+| **Autoblog (login2)** | 네이버·티스토리 발행, Vercel 트래픽, 쇼츠, 모바일 원격 | `run_install.bat` → `run_gui.bat` |
+| **SEO Rank Tools** | 순위 체크, 트래픽 집중, 블로그 초안 | `run_rank_check.bat`, `run_traffic_focus.bat` |
 
-| 파일 | 기능 | 언제 쓰나 |
-|------|------|----------|
-| `run_rank_check.bat` | 순위 즉시 체크 | **매일 아침 순위 확인** |
-| `run_traffic_focus.bat` | 자동차코팅제 집중 트래픽 | **하루 3~5회 수동 실행** |
-| `run_blog_post.bat` | SEO 블로그 글 생성 | **주 3~5회 블로그 발행** |
-
----
-
-## 🚀 권장 하루 루틴
-
-```
-오전 09:00  run_rank_check.bat      → 오늘 현재 순위 확인
-오전 10:00  run_traffic_focus.bat   → 트래픽 세션 1회
-            (1번 선택: 테스트 1회 실행)
-
-오후 12:00  run_blog_post.bat       → 블로그 글 1개 생성
-            → blog_drafts 폴더에서 HTML 파일을 네이버 블로그에 복붙
-
-오후 02:00  run_traffic_focus.bat   → 트래픽 세션 2회
-오후 04:00  run_traffic_focus.bat   → 트래픽 세션 3회
-오후 06:00  run_rank_check.bat      → 저녁 순위 확인 (변화 체크)
-오후 09:00  run_traffic_focus.bat   → 트래픽 세션 4회 (선택)
-```
-
-> **⚠️ 주의**: 하루 5회 이상은 위험합니다. IP를 자주 바꿔주세요!
+에이전트·개발자는 Autoblog 작업 시 [`AGENTS.md`](AGENTS.md)를 먼저 읽으세요.
 
 ---
 
-## 📋 각 파일 상세 설명
+## Autoblog (login2)
 
-### 1. 순위 체크 — `run_rank_check.bat`
+네이버·티스토리 블로그 자동 발행, 상품 트래픽(Vercel), 쇼츠 콘티·FLOW, 모바일 원격 제어.
 
-```
-python rank_monitor_live.py           # 1회 즉시 체크
-python rank_monitor_live.py --watch   # 60분마다 자동 반복
-python rank_monitor_live.py --watch --interval 30  # 30분마다
-```
-
-체크 키워드:
-- 🎯 자동차코팅제 (집중 공략)
-- 📊 바이크코팅제 (비교)
-- 🏷️ 퍼마코트 (브랜드)
-- 🔍 셀프 유리막 코팅 (롱테일)
-- 🔍 유리막코팅제 (롱테일)
-
-결과는 `rank_live_log.csv` 에 자동 누적 저장됩니다.
-
----
-
-### 2. 트래픽 세션 — `run_traffic_focus.bat`
-
-```
-python traffic_single.py --test    # 1회 테스트
-python traffic_single.py --engine  # 24시간 연속 (주의!)
+```bash
+copy accounts.json.example accounts.json   # 값 입력 후
+run_install.bat
+run_gui.bat
 ```
 
-**안전 설정 (자동 적용):**
-- 자동차코팅제 75% 집중 / 25% 기타 키워드 분산
-- 세션 간 최소 **15분** 강제 대기
-- 시간당 최대 **4회** 제한
-- 봇 감지 시 **45분** 자동 쿨다운
-- 연속 3회 실패 시 **30분** 추가 대기
-- UA 7종 랜덤 로테이션 (PC/Mac/iPhone/Android)
-
----
-
-### 3. 블로그 글 생성 — `run_blog_post.bat`
-
-```
-python blog_autoposter.py --once    # 글 1개 즉시 생성
-python blog_autoposter.py --engine  # 무한 자동 발행
-```
-
-생성 결과:
-- `blog_drafts/` 폴더에 HTML 파일로 저장
-- 티스토리 토큰 있으면 → 자동 발행
-- 네이버 블로그 → HTML 파일 열어서 내용 복붙
-
-**집중 키워드 (자동 로테이션):**
-- 자동차코팅제, 자동차 유리막 코팅, 차량 코팅제, 셀프 유리막 코팅 등
-
----
-
-### 4. 키워드 트렌드 분석
-
-```
-python keyword_trend_analyzer.py
-python keyword_trend_analyzer.py --keywords "자동차코팅제,바이크코팅제,유리막코팅"
-```
-
-분석 항목:
-- 자동차코팅제 vs 바이크코팅제 순위 비교
-- 경쟁 강도 분석 (광고 수, 상위 20위 경쟁사 수)
-- 진입 용이 키워드 추천
-
-결과는 `keyword_trend_report.json` 에 저장됩니다.
-
----
-
-## 🛡️ 보안 설정 (`security_vault/credentials.json`)
-
-```json
-{
-  "tistory_access_token": "YOUR_TOKEN",
-  "tistory_blog_name": "your-blog-name",
-  "gemini_api_key": "YOUR_GEMINI_KEY"
-}
-```
-
-- 티스토리 토큰 없어도 동작 (초안 파일로 저장)
-- Gemini 키 없어도 동작 (내장 템플릿 사용)
-
----
-
-## 📁 생성되는 파일
-
-| 파일 | 내용 |
+| 모듈 | 설명 |
 |------|------|
-| `permcoat_history.csv` | 트래픽 세션 기록 |
-| `rank_live_log.csv` | 실시간 순위 체크 기록 |
-| `keyword_trend_report.json` | 키워드 분석 결과 |
-| `blog_drafts/*.html` | 생성된 블로그 초안 |
+| `blog_main.py` | Tk GUI 메인 |
+| `vercel_traffic_client.py` | Vercel 클라우드 트래픽 |
+| `vercel_traffic/` | Vercel 배포용 API + Traffic Hub UI |
+| `mobile_server.py` | 모바일 원격 (8787) |
+| `shorts_factory/` | 쇼츠 콘티·FLOW 보드 |
+
+- Vercel Root Directory: **`vercel_traffic`**
+- 연동 검증: `python scripts/verify_vercel_traffic.py`
+- 문서: [`wiki/04_ai_briefing_geo.md`](wiki/04_ai_briefing_geo.md), [`docs/checklists/youtube_4videos_blog_shorts.md`](docs/checklists/youtube_4videos_blog_shorts.md)
+
+`accounts.json`과 `.env`는 커밋하지 마세요.
 
 ---
 
-## 🔥 지금 당장 할 것
+## SEO Rank Tools (레거시 루트 스크립트)
 
-1. `run_rank_check.bat` 실행 → 현재 순위 확인
-2. `run_traffic_focus.bat` → 1번 선택 (1회 테스트)
-3. 정상 동작 확인 후 → 하루 3~5회 반복
-4. `run_blog_post.bat` → 블로그 초안 생성 후 네이버 복붙
+네이버 쇼핑 순위·트래픽·블로그 초안 (기존 `rank_*.py`, `traffic_single.py` 등).
 
----
+| BAT | 기능 |
+|-----|------|
+| `run_rank_check.bat` | 순위 즉시 체크 |
+| `run_traffic_focus.bat` | 자동차코팅제 집중 트래픽 |
+| `run_blog_post.bat` | SEO 블로그 글 생성 |
 
-*나눔랩 퍼마코트 자동차코팅제 — 1페이지 진입 파이팅! 🚀*
+보안 설정: `security_vault/credentials.json` (커밋 금지)
+
+자세한 루틴·옵션은 원격 초기 README 내용을 참고하거나 각 스크립트 `--help`를 사용하세요.

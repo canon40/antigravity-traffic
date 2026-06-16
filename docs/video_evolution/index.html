@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>YouTube 학습 · 동영상 진화 — LoopReel</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
+<style>
+:root{--bg:#0a0e17;--card:#1a2234;--border:#2d3a52;--text:#f1f5f9;--muted:#94a3b8;--accent:#38bdf8;--ok:#34d399;--font:'Pretendard',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.55;padding:24px;max-width:920px;margin:0 auto}
+h1{font-size:22px;margin-bottom:6px}
+.lead{color:var(--muted);font-size:14px;margin-bottom:20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px}
+.card h2{font-size:13px;color:var(--accent);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.gen{font-size:28px;font-weight:800;color:var(--ok)}
+ul{margin:8px 0 0 18px;font-size:13px;color:var(--muted)}
+li{margin-bottom:4px}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+input{flex:1;min-width:220px;background:#0a0e17;border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;font:inherit}
+.btn{padding:10px 16px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font-weight:700;cursor:pointer;font:inherit}
+.btn.primary{background:linear-gradient(135deg,#0284c7,#0ea5e9);border:none}
+.status{font-size:13px;color:var(--muted);margin-top:12px;min-height:20px}
+.status.ok{color:var(--ok)}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;font-size:13px}
+.links a{color:var(--accent);text-decoration:none;padding:6px 10px;border:1px solid var(--border);border-radius:8px}
+.vid{font-size:12px;color:var(--muted);margin-top:8px;padding:8px;background:#0a0e17;border-radius:8px}
+</style>
+</head>
+<body>
+<h1>📺 YouTube 학습 · 동영상 제작 진화</h1>
+<p class="lead">가이드 영상 자막을 분석해 후킹·워크플로·도구 패턴을 축적합니다. API 없이 yt-dlp + 휴리스틱. 콘티 생성 시 자동 반영됩니다.</p>
+
+<div class="card">
+  <h2>진화 세대</h2>
+  <div class="gen" id="gen">—</div>
+  <p class="lead" style="margin:8px 0 0" id="meta">학습 영상 0개</p>
+</div>
+
+<div class="card">
+  <h2>플레이북 (콘티·FLOW에 주입)</h2>
+  <div id="playbook"><p class="lead">불러오는 중…</p></div>
+</div>
+
+<div class="card">
+  <h2>새 영상 학습</h2>
+  <div class="row">
+    <input id="url" type="text" placeholder="https://www.youtube.com/watch?v=..."/>
+    <button class="btn primary" id="btnLearn">학습</button>
+    <button class="btn" id="btnSeed">참고 영상 일괄 학습</button>
+  </div>
+  <div class="status" id="status"></div>
+</div>
+
+<div class="card" id="mvGuideCard" style="display:none">
+  <h2>학습 완료 · 뮤직비디오 10분 가이드</h2>
+  <p class="lead" style="margin:0 0 10px">Google FLOW + Suno + CapCut 워크플로를 단계별 체크리스트로 정리했습니다.</p>
+  <div class="links" style="margin:0">
+    <a href="/guide/mv-flow/">📖 바로 사용 가이드 열기 ↗</a>
+    <a href="https://www.youtube.com/watch?v=lV9UzdYkT20" target="_blank" rel="noopener">원본 YouTube ↗</a>
+  </div>
+</div>
+
+<div class="links">
+  <a href="/guide/mv-flow/">MV 10분 가이드 ↗</a>
+  <a href="/shopping/">쇼핑쇼츠 ↗</a>
+  <a href="/studio/">일반 쇼츠 ↗</a>
+  <a href="/detail/">상세페이지 ↗</a>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML}
+
+async function api(path, opts){
+  const r = await fetch(path, opts);
+  return r.json();
+}
+
+function renderPb(pb){
+  if(!pb) return '<p class="lead">플레이북 없음</p>';
+  const sec = (title, items) => items?.length
+    ? `<h2 style="margin-top:14px">${title}</h2><ul>${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>` : '';
+  return [
+    sec('워크플로', pb.workflow),
+    sec('후킹', pb.hooks),
+    sec('장면 흐름', pb.scene_flow),
+    sec('따라할 것', pb.rules_follow),
+    sec('피할 것', pb.rules_avoid),
+    sec('도구', pb.tools),
+    sec('팁', pb.tips),
+  ].join('');
+}
+
+async function refresh(){
+  const d = await api('/api/youtube/evolution');
+  const evo = d.evolution || {};
+  $('gen').textContent = 'Gen ' + (evo.generation || 0);
+  const n = (evo.learned_videos || []).length;
+  $('meta').textContent = `학습 영상 ${n}개 · ${evo.updated_at || ''}`;
+  $('playbook').innerHTML = renderPb(evo.playbook);
+  const learned = evo.learned_videos || [];
+  const hasMv = learned.some(v => (v.video_id || v.id || '').includes('lV9UzdYkT20') || (v.url || '').includes('lV9UzdYkT20'));
+  $('mvGuideCard').style.display = hasMv ? 'block' : 'none';
+}
+
+async function learn(url){
+  $('status').textContent = '자막 분석 중… (1~2분)';
+  $('status').className = 'status';
+  try {
+    const d = await api('/api/youtube/learn', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url})});
+    if(d.error) throw new Error(d.error);
+    $('status').textContent = d.skipped ? '이미 학습된 영상입니다.' : `학습 완료 · Gen ${d.evolution?.generation}`;
+    $('status').className = 'status ok';
+    await refresh();
+  } catch(e){
+    $('status').textContent = e.message;
+    $('status').className = 'status';
+  }
+}
+
+$('btnLearn').onclick = () => {
+  const u = $('url').value.trim();
+  if(!u) { $('status').textContent = 'URL을 입력하세요.'; return; }
+  learn(u);
+};
+$('btnSeed').onclick = async () => {
+  $('status').textContent = 'brand.json 참고 영상 일괄 학습 중… (수 분 소요)';
+  try {
+    const d = await api('/api/youtube/evolve-seed', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    if(d.error) throw new Error(d.error);
+    $('status').textContent = `일괄 학습 완료 · ${d.learned_count}건 · Gen ${d.evolution?.generation}`;
+    $('status').className = 'status ok';
+    await refresh();
+  } catch(e){ $('status').textContent = e.message; }
+};
+
+refresh();
+</script>
+</body>
+</html>

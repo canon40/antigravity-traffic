@@ -1,0 +1,2601 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="theme-color" content="#0a0e17"/>
+<title>루프릴 LoopReel — 쇼츠 스튜디오</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin/>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0a0e17;--surface:#111827;--surface2:#1a2234;--surface3:#222d42;
+  --border:#2d3a52;--text:#f1f5f9;--muted:#94a3b8;--dim:#64748b;
+  --accent:#38bdf8;--accent2:#fbbf24;--accent3:#34d399;
+  --warn:#fb923c;--living:#22d3ee;--bike:#c084fc;--auto:#fb923c;
+  --radius:16px;--radius-sm:10px;
+  --shadow:0 16px 48px rgba(0,0,0,.5);
+  --font:'Pretendard',-apple-system,'Malgun Gothic',sans-serif;
+  --sidebar-w:340px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;line-height:1.5}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%,rgba(56,189,248,.12),transparent 50%),
+    radial-gradient(ellipse 60% 40% at 90% 0%,rgba(251,191,36,.08),transparent 45%),
+    radial-gradient(ellipse 50% 30% at 50% 100%,rgba(52,211,153,.06),transparent 40%);
+}
+.app{position:relative;z-index:1;display:grid;grid-template-columns:var(--sidebar-w) 1fr;min-height:100vh}
+@media(max-width:1024px){.app{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid var(--border);max-height:none}}
+
+/* —— Brand —— */
+.sidebar{
+  background:rgba(17,24,39,.92);backdrop-filter:blur(20px);
+  border-right:1px solid var(--border);padding:22px 20px 28px;
+  display:flex;flex-direction:column;gap:18px;overflow:auto;
+}
+.brand-block{display:flex;gap:14px;align-items:flex-start}
+.brand-mark{
+  width:44px;height:44px;border-radius:14px;flex-shrink:0;
+  background:linear-gradient(135deg,#1e3a5f 0%,#0f172a 100%);
+  border:1px solid rgba(56,189,248,.35);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 24px rgba(56,189,248,.15);
+}
+.brand-mark svg{width:26px;height:26px}
+.brand-title{font-size:22px;font-weight:800;letter-spacing:-.03em;line-height:1.2}
+.brand-title em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.brand-en{font-size:11px;font-weight:600;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-top:2px}
+.tagline{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.55}
+.byline{font-size:10px;color:var(--dim);margin-top:4px}
+
+.loop-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.loop-pill{
+  font-size:10px;font-weight:600;padding:5px 10px;border-radius:99px;
+  background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);color:#7dd3fc;
+}
+.loop-pill span{color:var(--dim);font-weight:500;margin-left:4px}
+
+.pipeline{
+  display:flex;align-items:center;gap:4px;padding:12px 14px;
+  background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
+}
+.pipe-node{
+  flex:1;text-align:center;padding:8px 4px;border-radius:8px;
+  font-size:10px;font-weight:700;color:var(--dim);transition:.2s;
+  border:1px solid transparent;
+}
+.pipe-node .pipe-label{display:block;font-size:11px;color:var(--muted);margin-bottom:2px}
+.pipe-node.active{color:var(--accent);border-color:rgba(56,189,248,.35);background:rgba(56,189,248,.08)}
+.pipe-node.done{color:var(--accent3);border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.06)}
+.pipe-arrow{color:var(--border);font-size:10px;flex-shrink:0}
+
+.section-label{
+  display:block;font-size:10px;font-weight:700;color:var(--dim);
+  margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;
+}
+
+.product-active{margin-bottom:8px}
+.pcard{
+  background:var(--surface2);border:2px solid var(--border);border-radius:var(--radius-sm);
+  padding:12px 14px;transition:.15s;
+}
+.pcard.active{border-color:var(--accent);box-shadow:0 0 0 1px rgba(56,189,248,.3)}
+.pcard[data-id="living"].active{border-color:var(--living)}
+.pcard[data-id="bike"].active{border-color:var(--bike)}
+.pcard[data-id="auto"].active{border-color:var(--auto)}
+.pcard .name{font-weight:700;font-size:14px}
+.pcard .desc{font-size:11px;color:var(--muted);margin-top:4px}
+.product-switch{
+  width:100%;background:#0a0e17;border:1px solid var(--border);color:var(--text);
+  border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;font-family:inherit;margin-bottom:8px;
+}
+.product-actions{display:flex;gap:8px}
+.product-actions .btn-ghost{flex:1;margin-top:0}
+.add-product{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-top:8px;display:none}
+.add-product.open{display:block}
+.add-product .btn-add{
+  width:100%;margin-top:10px;padding:10px;border:none;border-radius:var(--radius-sm);
+  background:linear-gradient(135deg,#0284c7,#0891b2);color:#fff;font-weight:700;cursor:pointer;font-family:inherit;
+}
+
+input[type=text],textarea,select{
+  width:100%;background:#0a0e17;border:1px solid var(--border);color:var(--text);
+  border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;font-family:inherit;
+  transition:border-color .15s;
+}
+input:focus,textarea:focus,select:focus{outline:none;border-color:rgba(56,189,248,.5)}
+textarea{min-height:72px;resize:vertical}
+.kw-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:2px}
+.btn-kw-restore{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer;white-space:nowrap}
+.btn-kw-restore:hover{color:var(--accent);border-color:rgba(56,189,248,.45)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;max-height:140px;overflow-y:auto;padding-right:2px}
+.chip-ko{border-color:rgba(251,191,36,.35);color:#fde68a}
+.chip{
+  font-size:11px;padding:5px 10px;border-radius:99px;
+  background:var(--surface3);color:#cbd5e1;border:1px solid var(--border);cursor:pointer;transition:.12s;
+}
+.chip:hover{background:#2d3d55;border-color:rgba(56,189,248,.3)}
+
+.row{display:flex;align-items:center;gap:10px}
+input[type=range]{flex:1;accent-color:var(--accent);height:6px}
+.toggle{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer}
+.toggle input{accent-color:var(--accent2);width:16px;height:16px}
+
+.btn-step{
+  width:100%;border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:inherit;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text);text-align:left;margin-bottom:8px;transition:.15s;
+}
+.btn-step:hover:not(:disabled){border-color:rgba(56,189,248,.4);background:var(--surface3)}
+.btn-step:disabled{opacity:.38;cursor:not-allowed}
+.btn-step.primary{
+  background:linear-gradient(135deg,#0369a1 0%,#0d9488 100%);
+  color:#fff;border:none;box-shadow:0 4px 20px rgba(13,148,136,.25);
+}
+.btn-step.primary:hover:not(:disabled){filter:brightness(1.06)}
+.btn-step .step-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:8px;background:rgba(0,0,0,.25);
+  font-size:12px;margin-right:8px;vertical-align:middle;font-weight:800;
+}
+.btn-step.primary .step-num{background:rgba(255,255,255,.2)}
+.btn-step .step-hint{display:block;font-size:11px;font-weight:400;color:var(--muted);margin-top:4px;margin-left:32px}
+.btn-step.primary .step-hint{color:rgba(255,255,255,.8)}
+.detail-studio-box{
+  margin:16px 0;padding:14px;border-radius:var(--radius-sm);
+  border:1px dashed rgba(52,211,153,.45);background:rgba(6,78,59,.15);
+  opacity:.72;transition:opacity .15s,border-color .15s;
+}
+.detail-studio-box.enabled{opacity:1;border-color:rgba(52,211,153,.75);box-shadow:0 0 0 1px rgba(52,211,153,.15)}
+.detail-studio-box .section-label{color:var(--accent2)}
+.btn-detail-external{
+  width:100%;border-radius:var(--radius-sm);padding:12px 14px;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:inherit;border:1px solid rgba(52,211,153,.5);
+  background:rgba(52,211,153,.12);color:var(--accent2);text-align:left;margin-top:8px;transition:.15s;
+}
+.btn-detail-external:hover:not(:disabled){filter:brightness(1.08);border-color:var(--accent2)}
+.btn-detail-external:disabled{opacity:.38;cursor:not-allowed}
+.workflow-hint{
+  font-size:11px;color:var(--muted);line-height:1.55;margin-bottom:6px;
+  padding:10px 12px;background:rgba(10,14,23,.6);border-radius:var(--radius-sm);border:1px solid var(--border);
+}
+.ai-video-hub{
+  padding:14px 12px;background:linear-gradient(145deg,rgba(52,211,153,.12),rgba(56,189,248,.08));
+  border:1px solid rgba(52,211,153,.35);border-radius:var(--radius-sm);margin-bottom:4px;
+}
+.ai-video-hub .hub-title{font-size:12px;font-weight:800;color:var(--accent3);margin-bottom:6px}
+.ai-video-hub .hub-desc{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:10px}
+.ai-video-hub .hub-flow{font-size:10px;color:var(--dim);line-height:1.45;margin-bottom:10px;padding-left:14px}
+.ai-video-hub .hub-flow li{margin-bottom:3px}
+.studio-btn{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+  padding:10px 12px;margin-bottom:6px;border-radius:var(--radius-sm);cursor:pointer;
+  font-family:inherit;font-size:12px;font-weight:700;text-align:left;transition:.12s;
+  border:1px solid var(--border);background:var(--surface2);color:var(--text);
+}
+.studio-btn:hover:not(:disabled){border-color:rgba(56,189,248,.5);background:var(--surface3)}
+.studio-btn:disabled{opacity:.45;cursor:not-allowed}
+.studio-btn.recommended{
+  background:linear-gradient(135deg,rgba(13,148,136,.35),rgba(37,99,235,.25));
+  border-color:rgba(52,211,153,.45);color:#ecfdf5;
+}
+.studio-btn .badge{font-size:9px;font-weight:800;padding:2px 7px;border-radius:99px;background:rgba(0,0,0,.25);color:var(--accent3);flex-shrink:0}
+.studio-btn .ext{font-size:10px;color:var(--dim);font-weight:500}
+.studio-btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.studio-btn-row .studio-btn{width:auto;flex:1;min-width:calc(50% - 3px);margin-bottom:0;font-size:11px;padding:8px 10px}
+.ai-hub-actions{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.malva-hub{
+  padding:14px 12px;background:linear-gradient(145deg,rgba(167,139,250,.14),rgba(244,114,182,.08));
+  border:1px solid rgba(167,139,250,.35);border-radius:var(--radius-sm);margin-bottom:10px;
+}
+.malva-hub .hub-title{font-size:12px;font-weight:800;color:#c4b5fd;margin-bottom:6px}
+.malva-hub .hub-desc{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.malva-hub .hub-flow{font-size:10px;color:var(--dim);line-height:1.45;margin-bottom:8px;padding-left:14px}
+.malva-hub .hub-flow li{margin-bottom:3px}
+.malva-link-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.malva-link{
+  font-size:10px;font-weight:700;padding:6px 10px;border-radius:var(--radius-sm);
+  border:1px solid rgba(167,139,250,.35);background:rgba(10,14,23,.5);color:var(--text);
+  text-decoration:none;transition:.12s;
+}
+.malva-link:hover{border-color:#a78bfa;color:#ede9fe}
+.malva-link .badge{font-size:8px;margin-left:4px;opacity:.85;color:#c4b5fd}
+.malva-featured{display:flex;flex-direction:column;gap:6px}
+.malva-feature-btn{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+  padding:9px 11px;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;
+  font-size:11px;font-weight:700;text-align:left;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text);transition:.12s;
+}
+.malva-feature-btn:hover:not(:disabled){border-color:rgba(167,139,250,.5)}
+.malva-feature-btn:disabled{opacity:.45;cursor:not-allowed}
+.malva-feature-btn.highlight{
+  background:linear-gradient(135deg,rgba(109,40,217,.35),rgba(219,39,119,.2));
+  border-color:rgba(167,139,250,.45);
+}
+.shop-hub{
+  padding:14px 12px;background:linear-gradient(145deg,rgba(251,146,60,.12),rgba(244,63,94,.08));
+  border:1px solid rgba(251,146,60,.35);border-radius:var(--radius-sm);margin-bottom:10px;
+}
+.shop-hub .hub-title{font-size:12px;font-weight:800;color:#fdba74;margin-bottom:6px}
+.shop-hub .hub-desc{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.shop-hub .hub-flow{font-size:10px;color:var(--dim);line-height:1.45;margin-bottom:8px;padding-left:14px}
+.shop-hub .hub-flow li{margin-bottom:3px}
+.shop-rules{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;font-size:10px;line-height:1.4}
+.shop-rules strong{display:block;font-size:10px;margin-bottom:4px;color:#fdba74}
+.shop-rules ul{margin:0;padding-left:14px;color:var(--dim)}
+.shop-hook-chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.shop-hook-chip{
+  font-size:10px;padding:5px 8px;border-radius:99px;cursor:pointer;border:1px solid rgba(251,146,60,.35);
+  background:rgba(10,14,23,.45);color:var(--text);font-family:inherit;
+}
+.shop-hook-chip:hover{border-color:#fb923c;color:#ffedd5}
+.shop-brief-btn{
+  width:100%;padding:9px 11px;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;
+  font-size:11px;font-weight:700;border:1px solid rgba(251,146,60,.45);
+  background:linear-gradient(135deg,rgba(234,88,12,.25),rgba(244,63,94,.15));color:var(--text);
+}
+.shop-brief-btn:hover:not(:disabled){border-color:#fb923c}
+.shop-brief-btn:disabled{opacity:.45;cursor:not-allowed}
+.ref-link.ref-hub{color:#c4b5fd}
+.btn-flow-board{
+  width:100%;padding:9px 12px;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;
+  font-size:11px;font-weight:700;background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.35);color:#7dd3fc;
+}
+.btn-flow-board:hover:not(:disabled){background:rgba(56,189,248,.2)}
+.btn-flow-board:disabled{opacity:.45;cursor:not-allowed}
+.stock-hub{
+  padding:14px 12px;background:linear-gradient(145deg,rgba(251,191,36,.1),rgba(56,189,248,.06));
+  border:1px solid rgba(251,191,36,.35);border-radius:var(--radius-sm);margin-bottom:12px;
+}
+.stock-hub .hub-title{font-size:12px;font-weight:800;color:var(--accent2);margin-bottom:6px}
+.stock-hub .hub-desc{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.stock-key-status{font-size:10px;color:var(--dim);margin-bottom:8px}
+.stock-key-status .ok{color:var(--accent3)}
+.stock-key-status .no{color:var(--warn)}
+.stock-search-row{display:flex;gap:6px;margin-bottom:8px}
+.stock-search-row select{flex:0 0 88px;padding:8px;font-size:11px}
+.stock-search-row input{flex:1;padding:8px;font-size:12px}
+.stock-search-row button{
+  flex:0 0 auto;padding:8px 12px;border:none;border-radius:8px;cursor:pointer;
+  background:var(--accent2);color:#422006;font-weight:700;font-size:11px;font-family:inherit;
+}
+.stock-browse{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.stock-browse a,.stock-browse button{
+  font-size:10px;padding:4px 8px;border-radius:99px;text-decoration:none;
+  background:var(--surface3);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-family:inherit;
+}
+.stock-browse a:hover,.stock-browse button:hover{border-color:var(--accent2);color:var(--text)}
+.broll-panel{
+  margin-bottom:20px;padding:16px;border-radius:var(--radius);
+  background:var(--surface);border:1px solid rgba(251,191,36,.25);
+}
+.broll-panel h3{font-size:14px;color:var(--accent2);margin-bottom:10px;font-weight:800}
+.broll-scene-row{
+  display:grid;grid-template-columns:72px 1fr auto;gap:10px;align-items:center;
+  padding:10px 0;border-bottom:1px solid var(--border);font-size:12px;
+}
+.broll-scene-row:last-child{border-bottom:none}
+.broll-thumb{width:64px;height:48px;border-radius:6px;background:#000;object-fit:cover}
+.broll-results{max-height:200px;overflow:auto;margin-top:8px}
+.broll-hit{
+  display:flex;gap:8px;align-items:center;padding:8px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:11px;
+}
+.broll-hit img{width:48px;height:36px;object-fit:cover;border-radius:4px;background:#000}
+.broll-hit button{
+  margin-left:auto;padding:6px 10px;border:none;border-radius:6px;cursor:pointer;
+  background:var(--accent3);color:#052e16;font-weight:700;font-size:10px;font-family:inherit;
+}
+.detail-quick{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.detail-quick button{
+  width:100%;padding:10px 12px;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;
+  font-size:12px;font-weight:700;border:1px solid rgba(52,211,153,.4);background:rgba(52,211,153,.08);color:var(--accent2);
+}
+.detail-quick button:disabled{opacity:.38;cursor:not-allowed}
+.detail-quick button.primary{background:linear-gradient(135deg,#059669,#0d9488);color:#fff;border:none}
+.ai-video-banner{
+  margin-bottom:20px;padding:18px 20px;border-radius:var(--radius);
+  background:linear-gradient(135deg,rgba(13,148,136,.15),rgba(37,99,235,.12));
+  border:1px solid rgba(52,211,153,.35);
+}
+.ai-video-banner h3{font-size:16px;color:var(--accent3);margin-bottom:8px;font-weight:800}
+.ai-video-banner p{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:12px}
+.ai-video-banner .studio-grid{display:flex;flex-wrap:wrap;gap:8px}
+.ai-video-banner .studio-grid .studio-btn{width:auto;flex:1;min-width:140px;margin:0}
+.scene-flow-open{
+  margin-top:8px;padding:6px 10px;font-size:11px;font-weight:700;border-radius:8px;cursor:pointer;
+  background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);color:var(--accent3);font-family:inherit;
+}
+.scene-flow-open:hover{background:rgba(52,211,153,.25)}
+.flow-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center}
+.flow-actions .flow-open{
+  padding:6px 10px;font-size:11px;font-weight:700;border-radius:8px;cursor:pointer;
+  background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.35);color:var(--accent3);font-family:inherit;
+}
+.flow-actions .flow-open:hover{background:rgba(52,211,153,.25)}
+.video-hint{font-size:12px;color:var(--muted);margin:-4px 0 10px;line-height:1.45}
+
+.btn-ghost{
+  background:transparent;border:1px solid var(--border);color:var(--muted);
+  padding:8px 12px;font-size:12px;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;
+}
+.btn-ghost:hover{border-color:var(--dim);color:var(--text)}
+
+.history{margin-top:4px;flex:1;overflow:auto;min-height:80px}
+.history-filter{font-size:11px;color:var(--dim);margin-bottom:6px}
+.hitem{
+  display:block;padding:10px 12px;border-radius:var(--radius-sm);
+  background:var(--surface2);border:1px solid var(--border);margin-bottom:6px;
+  cursor:pointer;text-decoration:none;color:inherit;transition:.12s;
+}
+.hitem:hover{border-color:rgba(56,189,248,.4);transform:translateX(2px)}
+.hitem strong{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hitem span{font-size:11px;color:var(--dim)}
+
+.refs{margin-top:4px}
+.refs-toggle{
+  width:100%;display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);color:var(--muted);font-size:12px;font-weight:600;
+  cursor:pointer;font-family:inherit;
+}
+.refs-toggle:hover{border-color:var(--dim);color:var(--text)}
+.refs-list{display:none;margin-top:8px;gap:6px;flex-direction:column}
+.refs-list.open{display:flex}
+.ref-link{
+  display:block;padding:8px 10px;font-size:11px;color:var(--muted);
+  background:#0a0e17;border:1px solid var(--border);border-radius:8px;
+  text-decoration:none;transition:.12s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.ref-link:hover{color:var(--accent);border-color:rgba(56,189,248,.35)}
+.ref-link::before{content:'↗ ';opacity:.5}
+.ref-link.ref-store{border-color:rgba(52,211,153,.35);color:#6ee7b7}
+
+.sidebar-video{
+  margin-top:4px;padding:12px;background:var(--surface2);
+  border:2px solid rgba(52,211,153,.4);border-radius:var(--radius-sm);
+  box-shadow:0 0 20px rgba(52,211,153,.1);
+}
+.sidebar-video h4{font-size:12px;margin-bottom:8px;color:var(--accent3);font-weight:800}
+.sidebar-video video{width:100%;border-radius:8px;background:#000;display:block}
+.sidebar-video .vid-note{font-size:10px;color:var(--dim);margin-top:6px;line-height:1.4}
+
+/* —— Main —— */
+.main{padding:28px 32px 56px;overflow:auto}
+.main-header{
+  display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;
+  gap:16px;margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid var(--border);
+}
+.main-header h1{font-size:15px;font-weight:600;color:var(--muted)}
+.main-header .slug{font-size:12px;color:var(--dim);font-family:ui-monospace,monospace;margin-top:4px}
+
+.empty{
+  text-align:center;padding:48px 28px 56px;color:var(--muted);
+  background:var(--surface);border:1px dashed var(--border);border-radius:var(--radius);
+  max-width:780px;margin:24px auto;
+}
+.empty .empty-icon{
+  width:64px;height:64px;margin:0 auto 20px;border-radius:20px;
+  background:linear-gradient(135deg,rgba(56,189,248,.15),rgba(251,191,36,.1));
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;
+}
+.empty h2{font-size:20px;color:var(--text);margin-bottom:10px;font-weight:800}
+.empty p{font-size:14px;line-height:1.65;max-width:360px;margin:0 auto}
+.empty .empty-steps{display:flex;justify-content:center;gap:12px;margin-top:24px;flex-wrap:wrap}
+.empty .empty-step{
+  font-size:11px;font-weight:700;padding:8px 14px;border-radius:99px;
+  background:var(--surface2);border:1px solid var(--border);color:var(--muted);
+}
+
+.hook-box{
+  background:linear-gradient(135deg,rgba(30,58,95,.6),rgba(15,40,35,.5));
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 24px;margin-bottom:24px;
+}
+.hook-box .tag{font-size:10px;color:var(--accent2);font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.hook-box h2{font-size:24px;font-weight:800;line-height:1.35;letter-spacing:-.02em}
+.meta-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.pill{
+  font-size:11px;padding:5px 12px;border-radius:99px;
+  background:rgba(34,45,66,.8);color:#94a3b8;border:1px solid var(--border);
+}
+
+.timeline{display:flex;gap:6px;margin-bottom:24px;align-items:center}
+.tseg{height:8px;border-radius:99px;background:var(--surface3);flex:1;position:relative;overflow:hidden}
+.tseg .fill{position:absolute;inset:0;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:99px}
+.tseg span{position:absolute;right:4px;top:-20px;font-size:10px;color:var(--dim)}
+
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:18px}
+.scene{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;box-shadow:var(--shadow);transition:transform .15s;
+}
+.scene:hover{transform:translateY(-2px)}
+.frame{
+  aspect-ratio:9/16;
+  background:linear-gradient(165deg,#1a2234 0%,#0a0e17 55%,#151c28 100%);
+  position:relative;display:flex;flex-direction:column;justify-content:flex-end;
+  padding:12px;overflow:hidden;
+}
+.frame::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 30% 15%,rgba(56,189,248,.2),transparent 55%);
+  z-index:1;pointer-events:none;
+}
+.frame-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+.frame.no-img::after{
+  content:'이미지 대기';position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;font-size:12px;color:var(--dim);z-index:0;
+}
+.frame .kw{
+  position:absolute;top:10px;left:10px;font-size:10px;
+  background:rgba(0,0,0,.6);backdrop-filter:blur(4px);padding:4px 8px;
+  border-radius:6px;color:#7dd3fc;z-index:2;max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.frame .num{
+  position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:10px;
+  background:linear-gradient(135deg,var(--accent),#0ea5e9);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;z-index:2;
+}
+.frame .sub{font-size:13px;font-weight:700;line-height:1.35;text-shadow:0 2px 12px rgba(0,0,0,.95);position:relative;z-index:2}
+.frame .dur{
+  position:absolute;bottom:10px;right:10px;font-size:10px;color:#e2e8f0;
+  background:rgba(0,0,0,.5);padding:3px 7px;border-radius:6px;z-index:2;
+}
+
+.body{padding:14px}
+.tabs{display:flex;gap:4px;margin-bottom:10px}
+.tab{
+  flex:1;font-size:10px;padding:7px 4px;border:none;border-radius:8px;
+  background:var(--surface3);color:var(--dim);cursor:pointer;font-family:inherit;font-weight:600;
+}
+.tab.active{background:var(--accent);color:#0a0e17}
+.panel{display:none;font-size:12px;line-height:1.65;color:#cbd5e1}
+.panel.active{display:block}
+.panel pre{
+  font-family:ui-monospace,monospace;font-size:10px;background:#0a0e17;
+  padding:10px;border-radius:8px;white-space:pre-wrap;max-height:120px;overflow:auto;margin-top:6px;
+}
+.copy{
+  margin-top:8px;width:100%;padding:8px;border:none;border-radius:8px;
+  background:var(--accent3);color:#052e16;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;
+}
+.mention{font-size:11px;color:var(--warn);margin-top:8px}
+
+.master{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px;margin-bottom:24px;
+}
+.master h3{font-size:13px;margin-bottom:10px;font-weight:700;color:var(--muted)}
+.master pre{
+  font-family:ui-monospace,monospace;font-size:11px;background:#0a0e17;
+  padding:14px;border-radius:var(--radius-sm);white-space:pre-wrap;max-height:100px;overflow:auto;
+}
+
+.video-box{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;margin-bottom:24px;
+}
+.video-box.sticky-player{
+  position:sticky;top:0;z-index:30;
+  background:linear-gradient(180deg,rgba(10,14,23,.97) 80%,transparent);
+  padding-top:8px;
+}
+.video-box.is-new{border:2px solid var(--accent3);box-shadow:0 0 32px rgba(52,211,153,.2)}
+.video-box h3{font-size:14px;margin-bottom:12px;color:var(--accent3);font-weight:800}
+.video-box video{width:100%;max-width:400px;border-radius:var(--radius-sm);background:#000;display:block;margin:0 auto}
+.video-box .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;justify-content:center}
+.video-box .actions a,.video-box .actions button{
+  font-size:12px;padding:9px 16px;border-radius:var(--radius-sm);
+  text-decoration:none;font-weight:700;border:none;cursor:pointer;font-family:inherit;
+}
+.video-box .dl{background:var(--accent3);color:#052e16}
+.video-box .rerender{background:var(--surface3);color:#e2e8f0;border:1px solid var(--border)}
+
+.status{font-size:12px;color:var(--muted);min-height:20px;padding-left:2px}
+.spinner{
+  display:inline-block;width:16px;height:16px;border:2px solid var(--border);
+  border-top-color:var(--accent3);border-radius:50%;animation:spin .65s linear infinite;
+  vertical-align:middle;margin-right:6px;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.toast{
+  position:fixed;bottom:28px;right:28px;
+  background:linear-gradient(135deg,#059669,#0d9488);color:#ecfdf5;
+  padding:14px 20px;border-radius:var(--radius-sm);font-weight:700;font-size:13px;
+  opacity:0;transform:translateY(8px);transition:.25s;pointer-events:none;z-index:99;
+  box-shadow:0 8px 32px rgba(5,150,105,.35);
+}
+.toast.show{opacity:1;transform:translateY(0)}
+.boot-err{
+  background:#450a0a;color:#fecaca;padding:14px 20px;font-size:14px;
+  border-bottom:2px solid #ef4444;position:relative;z-index:10;
+}
+.boot-err code{background:#7f1d1d;padding:2px 6px;border-radius:4px}
+
+.version-pill{
+  display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;
+  padding:4px 10px;border-radius:99px;margin-top:8px;
+  background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.35);color:#6ee7b7;
+}
+.applied-strip{
+  padding:12px 14px;background:linear-gradient(145deg,rgba(52,211,153,.1),rgba(56,189,248,.06));
+  border:1px solid rgba(52,211,153,.3);border-radius:var(--radius-sm);margin-top:2px;
+}
+.applied-strip-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;
+}
+.applied-strip-head strong{font-size:11px;color:var(--accent3);font-weight:800}
+.applied-strip-head span{font-size:10px;color:var(--dim)}
+.applied-pills{display:flex;flex-wrap:wrap;gap:5px}
+.applied-pill{
+  font-size:10px;font-weight:600;padding:5px 9px;border-radius:99px;
+  background:rgba(10,14,23,.55);border:1px solid rgba(52,211,153,.35);color:#a7f3d0;
+  cursor:default;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.applied-pill.is-link{cursor:pointer;text-decoration:none;color:#7dd3fc;border-color:rgba(56,189,248,.4)}
+.applied-pill.is-link:hover{background:rgba(56,189,248,.12)}
+.locale-badge{
+  display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;
+  margin-top:8px;padding:4px 9px;border-radius:99px;
+  background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.35);color:#fde68a;
+}
+.locale-scenes{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.locale-chip{
+  font-size:9px;padding:3px 7px;border-radius:99px;
+  background:rgba(10,14,23,.5);border:1px solid var(--border);color:var(--muted);
+}
+.sidebar-group{
+  border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:rgba(10,14,23,.35);overflow:hidden;margin-bottom:10px;
+}
+.sidebar-group summary{
+  padding:10px 12px;font-size:11px;font-weight:700;color:var(--muted);
+  cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;
+  user-select:none;
+}
+.sidebar-group summary::-webkit-details-marker{display:none}
+.sidebar-group summary::after{content:'▼';font-size:9px;color:var(--dim);transition:transform .15s}
+.sidebar-group[open] summary::after{transform:rotate(180deg)}
+.sidebar-group summary:hover{color:var(--text)}
+.sidebar-group-body{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
+.sidebar-group-body .stock-hub,
+.sidebar-group-body .ai-video-hub,
+.sidebar-group-body .shop-hub,
+.sidebar-group-body .malva-hub{margin-bottom:0}
+.ref-link.ref-cdb{border-color:rgba(251,191,36,.35);color:#fde68a}
+.ref-type{
+  display:inline-block;font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;
+  margin-right:6px;vertical-align:middle;text-transform:uppercase;letter-spacing:.04em;
+  background:rgba(255,255,255,.08);color:var(--dim);
+}
+.ref-link.ref-cdb .ref-type{background:rgba(251,191,36,.2);color:#fcd34d}
+.ref-link.ref-hub .ref-type{background:rgba(167,139,250,.2);color:#c4b5fd}
+.ref-link.ref-store .ref-type{background:rgba(52,211,153,.2);color:#6ee7b7}
+.updates-dashboard{
+  margin-top:32px;text-align:left;padding-top:28px;border-top:1px solid var(--border);
+}
+.updates-head{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:10px;margin-bottom:16px;
+}
+.updates-head h3{font-size:15px;font-weight:800;color:var(--text);margin:0}
+.updates-head .meta{font-size:11px;color:var(--dim)}
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.feature-card{
+  padding:14px 16px;border-radius:var(--radius-sm);
+  background:var(--surface2);border:1px solid var(--border);
+  transition:border-color .15s,transform .15s;
+}
+.feature-card:hover{border-color:rgba(56,189,248,.35);transform:translateY(-1px)}
+.feature-card h4{font-size:13px;font-weight:800;color:var(--text);margin:0 0 6px;line-height:1.35}
+.feature-card p{font-size:11px;color:var(--muted);line-height:1.55;margin:0}
+.feature-card .ftags{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.feature-card .ftag{
+  font-size:9px;font-weight:700;padding:3px 7px;border-radius:99px;
+  background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:#6ee7b7;
+}
+.feature-card.is-link{cursor:pointer;text-decoration:none;color:inherit;display:block}
+.feature-card.is-link:hover h4{color:var(--accent)}
+</style>
+</head>
+<body>
+<div id="bootErr" class="boot-err" style="display:none"></div>
+<div class="app">
+  <aside class="sidebar">
+    <header class="brand-block">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 16a8 8 0 1 1 16 0" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M24 16a8 8 0 1 1-16 0" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round"/>
+          <rect x="12" y="10" width="8" height="12" rx="1.5" stroke="#94a3b8" stroke-width="1.5"/>
+          <circle cx="16" cy="13" r="1.5" fill="#38bdf8"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title"><em id="brandName">루프릴</em></div>
+        <div class="brand-en" id="brandEn">LoopReel</div>
+        <p class="tagline" id="brandTagline">목적지까지 돌리는 쇼츠 스튜디오</p>
+        <p class="byline" id="brandByline">나눔랩 · 듀라코트</p>
+        <span class="version-pill" id="brandVersion" hidden>v1.1.0</span>
+      </div>
+    </header>
+
+    <div class="loop-pills" id="loopPills" aria-label="루프 원칙"></div>
+
+    <div class="pipeline" id="pipeline" aria-label="제작 파이프라인"></div>
+
+    <div class="applied-strip" id="appliedStrip" aria-label="적용된 기능"></div>
+
+    <div>
+      <span class="section-label">제품</span>
+      <div class="product-active" id="productActive"></div>
+      <select class="product-switch" id="productSelect" aria-label="제품 선택"></select>
+      <div class="product-actions">
+        <button type="button" class="btn-ghost" id="btnToggleAdd">+ 제품 추가</button>
+      </div>
+      <div class="add-product" id="addProductForm">
+        <span class="section-label">새 제품</span>
+        <input type="text" id="newLabel" placeholder="표시명 — 예: 퍼마코트 보트"/>
+        <span class="section-label" style="margin-top:10px">전체 이름</span>
+        <input type="text" id="newFullName" placeholder="듀라코트 퍼마코트 보트"/>
+        <span class="section-label" style="margin-top:10px">프리셋 키워드</span>
+        <textarea id="newKeywords" placeholder="boat hull, water beading" style="min-height:56px"></textarea>
+        <span class="section-label" style="margin-top:10px">금지 언급</span>
+        <input type="text" id="newForbidden" placeholder="자동차, 주방"/>
+        <button type="button" class="btn-add" id="btnSaveProduct">저장하고 선택</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="kw-head">
+        <span class="section-label">키워드 <span style="color:var(--accent);font-weight:600">(FLOW·이미지용 영어)</span></span>
+        <button type="button" class="btn-kw-restore" id="btnRestorePresets" title="듀라코트 공식 프리셋 전체를 다시 넣습니다">↺ 프리셋 복원</button>
+      </div>
+      <textarea id="keywords" placeholder="kitchen sink coating spray, bathroom tile coating…"></textarea>
+      <div class="chips" id="presets"></div>
+      <p class="workflow-hint" style="margin-top:8px;margin-bottom:0">제품을 바꾸면 공식 키워드 <strong>50+개</strong>가 영어로 자동 입력됩니다. 칩(한글)을 누르면 해당 영어 키워드가 추가됩니다.</p>
+    </div>
+
+    <div>
+      <span class="section-label">장면 수 <strong id="sceneVal" style="color:var(--accent)">4</strong></span>
+      <div class="row"><input type="range" id="scenes" min="3" max="8" value="4"/></div>
+      <p class="workflow-hint" id="sceneCountHint" style="margin-top:6px;margin-bottom:0;font-size:11px;display:none"></p>
+    </div>
+
+    <div>
+      <span class="section-label">후킹 (선택)</span>
+      <input type="text" id="hook" placeholder="비우면 AI가 생성"/>
+    </div>
+
+    <label class="toggle">
+      <input type="checkbox" id="useLlm"/>
+      AI 콘티 생성 (Ollama / Gemini)
+    </label>
+
+    <label class="toggle">
+      <input type="checkbox" id="useFableLoop"/>
+      Fable5 로컬 루프 (Ollama · 루브릭 검증 후 재작성 · 2~5분)
+    </label>
+    <p class="workflow-hint" id="fableStatus" style="margin-top:6px;margin-bottom:0;font-size:11px">Fable 로컬: 확인 중…</p>
+
+    <label class="toggle">
+      <input type="checkbox" id="shoppingShortsMode"/>
+      쇼핑쇼츠 모드 (틱톡·벤치마킹 구조)
+    </label>
+
+    <label class="toggle">
+      <input type="checkbox" id="makeDetail"/>
+      상세페이지 만들기 (로컬 분석 + HTML, API 거의 없음)
+    </label>
+
+    <p class="workflow-hint" id="workflowHintMain"></p>
+
+    <details class="sidebar-group">
+      <summary>도구 · B-roll · 참고 허브</summary>
+      <div class="sidebar-group-body">
+    <div class="stock-hub" id="stockHub">
+      <div class="hub-title">무료 B-roll (Pexels·Pixabay·Mixkit…)</div>
+      <p class="hub-desc" id="stockHubDesc">장면 키워드로 <strong>무료 영상</strong> 검색·다운로드. 지정한 클립은 릴 단계 MP4에 우선 반영됩니다.</p>
+      <div class="stock-key-status" id="stockKeyStatus">API 키 확인 중…</div>
+      <div class="stock-search-row">
+        <select id="stockSource" aria-label="소스">
+          <option value="pexels">Pexels</option>
+          <option value="pixabay">Pixabay</option>
+        </select>
+        <input type="text" id="stockQuery" placeholder="motorcycle wash"/>
+        <button type="button" id="btnStockSearch">검색</button>
+      </div>
+      <div class="stock-browse" id="stockBrowseLinks"></div>
+    </div>
+
+    <div class="ai-video-hub" id="aiVideoHub">
+      <div class="hub-title">실사 AI 영상 만들기</div>
+      <p class="hub-desc">콘티 생성 후 FLOW 프롬프트가 자동 준비됩니다. 버튼을 누르면 <strong>프롬프트 복사 + 사이트 열기</strong>가 됩니다.</p>
+      <ol class="hub-flow" id="hubWorkflow"></ol>
+      <div id="studioButtons"></div>
+      <div class="ai-hub-actions">
+        <button type="button" class="btn-flow-board" id="btnFlowBoard" disabled>FLOW 보드 (장면별 프롬프트)</button>
+      </div>
+    </div>
+
+    <div class="shop-hub" id="shopHub">
+      <div class="hub-title">쇼핑쇼츠 · 전용 스튜디오</div>
+      <p class="hub-desc" id="shopDesc">틱톡 벤치마킹 → 멘트 패러프레이즈 → 제품 장면 → 프로필·스마트스토어</p>
+      <a class="malva-link" href="/shopping/" target="_blank" rel="noopener" style="display:inline-block;margin-bottom:10px;font-weight:700;color:#fdba74">🛒 쇼핑쇼츠 스튜디오 열기 ↗</a>
+      <div class="malva-link-row" id="shopLinks"></div>
+      <div class="shop-rules" id="shopRules"></div>
+      <div class="shop-hook-chips" id="shopHookChips"></div>
+      <ol class="hub-flow" id="shopMapping"></ol>
+      <button type="button" class="shop-brief-btn" id="btnShopBrief" disabled>CapCut·틱톡용 브리프 복사</button>
+    </div>
+
+    <div class="malva-hub" id="malvaHub">
+      <div class="hub-title">Malva AI · 무료 AI 툴 허브</div>
+      <p class="hub-desc" id="malvaDesc">25+ 큐레이션 무료 AI 도구 · PDF 가이드 · Supercomputer 올인원 워크플로</p>
+      <div class="malva-link-row" id="malvaLinks"></div>
+      <ol class="hub-flow" id="malvaMapping"></ol>
+      <div class="malva-featured" id="malvaFeatured"></div>
+    </div>
+      </div>
+    </details>
+
+    <button type="button" class="btn-step primary" id="btnConti">
+      <span class="step-num">—</span>콘티 생성
+      <span class="step-hint"></span>
+    </button>
+    <button type="button" class="btn-step" id="btnStoryboard" disabled>
+      <span class="step-num">—</span>스토리보드 이미지
+      <span class="step-hint"></span>
+    </button>
+
+    <div class="detail-studio-box" id="detailStudioBox">
+      <span class="section-label">스마트스토어 상세 (API 거의 없음)</span>
+      <button type="button" class="btn-detail-external" id="btnDetail" disabled>상세페이지 스튜디오 ↗</button>
+      <div class="detail-quick">
+        <button type="button" id="btnDetailAnalyze" disabled>분석 + HTML (한번에)</button>
+        <button type="button" id="btnDetailBuild" disabled class="primary">HTML만 다시 생성</button>
+      </div>
+      <p class="workflow-hint" style="margin:8px 0 0"></p>
+    </div>
+
+    <button type="button" class="btn-step" id="btnMp4" disabled>
+      <span class="step-num">—</span>미리보기 MP4
+      <span class="step-hint"></span>
+    </button>
+    <p class="status" id="status"></p>
+    <div id="sidebarVideo" class="sidebar-video" style="display:none" aria-live="polite"></div>
+
+    <div>
+      <span class="section-label">최근 작업</span>
+      <p class="history-filter" id="historyFilter">선택 제품 작업만 표시</p>
+      <div class="history" id="history"></div>
+    </div>
+
+    <div class="refs">
+      <button type="button" class="refs-toggle" id="refsToggle" aria-expanded="false">
+        <span id="refsLabel">참고 자료</span><span id="refsChevron">▼</span>
+      </button>
+      <div class="refs-list" id="refsList"></div>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <div class="main-header" id="mainHeader" style="display:none">
+      <div>
+        <h1>스토리보드</h1>
+        <div class="slug" id="mainSlug"></div>
+      </div>
+    </div>
+    <div class="empty" id="empty">
+      <div class="empty-icon">◎</div>
+      <h2>여기에 쇼츠가 펼쳐집니다</h2>
+      <p></p>
+      <div class="empty-steps" id="emptySteps"></div>
+      <div class="updates-dashboard" id="updatesDashboard" aria-label="적용된 기능"></div>
+    </div>
+    <div id="canvas" style="display:none"></div>
+  </main>
+</div>
+<div class="toast" id="toast">복사됨</div>
+
+<script>
+const FALLBACK_PRESETS = {
+  living: ['kitchen sink coating spray', 'bathroom tile coating', 'dining table coating', 'home glass coating'],
+  bike: [
+    'Korean urban motorcycle wash parking',
+    'coin self car wash motorcycle Korea',
+    'water beading sportbike tank apartment garage',
+    'post ride city motorcycle parking Korea'
+  ],
+  auto: [
+    'Korean apartment parking garage car detailing',
+    'coin self car wash booth Korea',
+    'water beading sedan hood urban garage',
+    'urban driveway car wash Korea'
+  ]
+};
+/** 서버 없을 때도 참고 자료·브랜드 표시 (data/shorts_factory/brand.json 과 동기) */
+const FALLBACK_BRAND = {
+  name: '루프릴',
+  name_en: 'LoopReel',
+  tagline: '목적지까지 돌리는 쇼츠 스튜디오',
+  byline: '나눔랩 · 듀라코트',
+  version: '1.1.0',
+  loop_principles: [
+    { key: 'goal', label: '목적지', hint: '후킹·제품·장면 수' },
+    { key: 'feedback', label: '피드백', hint: '' },
+    { key: 'stop', label: '멈춤', hint: '기준 통과 시 다음 단계' }
+  ],
+  changelog: [
+    {
+      version: '1.1.0',
+      date: '2026-06-10',
+      title: '스튜디오 UX · 한국형 이미지',
+      features: [
+        { id: 'detail-studio', title: '상세페이지 스튜디오 분리', summary: '쇼츠 UI와 분리 · /detail/ 3단계 전용', href: '/detail/', tags: ['UI', '상세'] },
+        { id: 'kr-locale', title: '한국형 이미지 locale', summary: '바이크·자동차 — 아파트·셀프세차 / 산악·오프로드 금지', tags: ['bike', 'auto', '이미지'] },
+        { id: 'shorts-simplify', title: '쇼츠 UI 단순화', summary: '메인 ①콘티→②보드→④MP4 · 상세 별도', tags: ['UI'] },
+        { id: 'cdb-refs', title: '큐레이터 단비 참고', summary: 'AI 갤러리 · 채널 분석 · 쇼핑쇼츠 영상', tags: ['참고'] }
+      ]
+    }
+  ],
+  references: [
+    { title: '신개념 쇼핑쇼츠 — 방법 전부 공개 (김월백)', url: 'https://youtu.be/hkYCHhWK5hE', type: 'video' },
+    { title: '쇼츠 편집 자동화 대성공 (AI 필수)', url: 'https://youtu.be/h-pQu10TEp0', type: 'video' },
+    { title: 'CDB · AI 이미지 갤러리', url: 'https://min-inter.co.kr/youtube-curator-danbi/ai-image-gallery/', type: 'cdb' },
+    { title: 'CDB · 유튜브 채널 분석기', url: 'https://min-inter.co.kr/youtube-curator-danbi/analytics/', type: 'cdb' },
+    { title: 'Malva AI — 무료 AI 툴 디렉터리 (25+)', url: 'https://malvaai.com/tools', type: 'hub' },
+    { title: 'Higgsfield Supercomputer 워크플로 (Malva AI)', url: 'https://youtu.be/JLyiEsw-pYI', type: 'video' },
+    { title: '실습 가이드 (루프 3요소)', url: 'https://wordmaster.notion.site/08c0c44b6eb94377aa459bbf79b58185', type: 'guide' },
+    { title: '루프 설계의 모든 것', url: 'https://youtu.be/_uRvSUkiCAk', type: 'video' },
+    { title: 'Fable 5 Loop Engineering', url: 'https://youtu.be/QI1FNnUfiZg', type: 'video' },
+    { title: '클로드 리모션 가이드', url: 'https://youtu.be/I9Ib9au7js4', type: 'video' },
+    { title: 'TapNow AI 영상 제작', url: 'https://youtu.be/bJVpKeOqvJ4', type: 'video' },
+    { title: '무료 AI 영상 툴 4선', url: 'https://youtu.be/gvF8yiFuhN4', type: 'video' },
+    { title: '네이버 블로그 × AI 시대', url: 'https://youtu.be/JkFo4oX-PQE', type: 'video' }
+  ]
+};
+/** Malva AI 허브 — data/shorts_factory/malva_ai_hub.json 과 동기 */
+const FALLBACK_MALVA = {
+  title_ko: 'Malva AI · 무료 AI 툴 허브',
+  home_url: 'https://malvaai.com/',
+  tagline: '25+ 큐레이션 무료 AI 도구 · PDF 가이드 · AI Chat',
+  guide_video: {
+    title_ko: 'Higgsfield Supercomputer 워크플로 (Malva AI)',
+    url: 'https://youtu.be/JLyiEsw-pYI'
+  },
+  loopreel_mapping: null,
+  links: [
+    { label_ko: 'AI 툴 디렉터리', url: 'https://malvaai.com/tools', badge: '허브' },
+    { label_ko: 'Malva AI Chat', url: 'https://malvaai.com/chat', badge: 'Chat' },
+    { label_ko: 'Free AI Image', url: 'https://malvaai.com/image', badge: 'Image' },
+    { label_ko: 'PDF 가이드', url: 'https://malvaai.com/pdfs', badge: 'PDF' },
+    { label_ko: '가이드 영상 ↗', url: 'https://youtu.be/JLyiEsw-pYI', badge: 'Video' }
+  ],
+  featured_for_loopreel: [
+    { id: 'higgsfield_supercomputer', name_ko: 'Higgsfield Supercomputer', url: 'https://higgsfield.ai/supercomputer-intro', badge: '올인원', copy_field: 'supercomputer_brief', description: '한 프롬프트 올인원' },
+    { id: 'google_flow', name_ko: 'Google FLOW', url: 'https://labs.google/fx/tools/flow', badge: '권장', copy_field: 'flow_master_prompt_en', description: '장면별 B-roll' }
+  ]
+};
+/** 쇼핑쇼츠 허브 — data/shorts_factory/shopping_shorts_hub.json 과 동기 */
+const FALLBACK_SHOPPING = {
+  title_ko: '신개념 쇼핑쇼츠 · 김월백 워크플로',
+  tagline: '틱톡·인기 영상 벤치마킹 → 멘트 살짝 변경 → 제품 장면 → 스마트스토어·쿠팡 링크',
+  source_video: { title: '신개념 쇼핑쇼츠, 방법 싹 다 공개합니다', url: 'https://youtu.be/hkYCHhWK5hE' },
+  loopreel_mapping: null,
+  reference_rules: {
+    follow: ['좋아요 500+ 제품 홍보형', '키워드 좁혀 검색', '멘트 패러프레이즈', '마지막 CTA'],
+    avoid: ['댓글 달면 꿀팁·DM 유도', '공익·운동-only 영상', '저반응 베이스라인', '100% 동일 복붙']
+  },
+  hook_templates: [
+    '아직도 ~만 하고 계신가요?',
+    '이거 모르면 계속 구경만 합니다',
+    '벽 직접 뜯지 마세요 — 이 방법이 훨씬 빠릅니다'
+  ],
+  links: [
+    { label_ko: '가이드 영상 (전체)', url: 'https://youtu.be/hkYCHhWK5hE', badge: 'Video' },
+    { label_ko: 'TikTok · 벤치마크 검색', url: 'https://www.tiktok.com/search', badge: '틱톡' },
+    { label_ko: 'CapCut · 최종 편집', url: 'https://www.capcut.com/', badge: '편집' },
+    { label_ko: '망고보드 · 콘티 보드', url: 'https://www.mangoboard.net/', badge: '보드' }
+  ]
+};
+const CIRCLE_NUMS = ['①', '②', '③', '④', '⑤', '⑥'];
+/** 워크플로 단계 SSoT — 파이프라인·버튼·empty·허브 mapping 공통 */
+const WORKFLOW_STEP_DEFS = {
+  conti: {
+    key: 'conti',
+    short: '콘티',
+    pipeSub: '대본',
+    buttonLabel: '콘티 생성',
+    buttonHint: '대본·장면표만 (이미지·MP4 없음)',
+    mappingMalva: '후킹·장면·FLOW 프롬프트 설계',
+    mappingShopping: '인기 쇼핑쇼츠 구조·후킹·장면별 나레이션 (쇼핑쇼츠 모드 ON)'
+  },
+  board: {
+    key: 'board',
+    short: '보드',
+    pipeSub: '이미지',
+    buttonLabel: '스토리보드 이미지',
+    buttonHint: '장면별 사진 (Gemini, 30~90초/장)',
+    mappingMalva: '시네마틱 정지컷 (Gemini)',
+    mappingShopping: '제품·전후·사용 장면 정지컷'
+  },
+  detail: {
+    key: 'detail',
+    short: '상세',
+    pipeSub: 'HTML',
+    optional: true,
+    mappingMalva: '스마트스토어 HTML',
+    mappingShopping: '스마트스토어 HTML · 링크 CTA (광고·제휴 문구 표기)'
+  },
+  reel: {
+    key: 'reel',
+    short: '릴',
+    pipeSub: 'MP4',
+    buttonLabel: '미리보기 MP4',
+    buttonHint: 'B-roll 우선 · 없으면 사진+TTS',
+    mappingMalva: 'Higgsfield/FLOW 실사 클립 · MP4 미리보기',
+    mappingShopping: 'FLOW/CapCut 합성·자막·인기 음원 · MP4 미리보기'
+  }
+};
+
+function wantDetail() {
+  return !!($('makeDetail') && $('makeDetail').checked);
+}
+
+function wantShopping() {
+  return !!($('shoppingShortsMode') && $('shoppingShortsMode').checked);
+}
+
+function getActiveWorkflowStepKeys(detailOn = wantDetail()) {
+  const keys = ['conti', 'board'];
+  if (detailOn) keys.push('detail');
+  keys.push('reel');
+  return keys;
+}
+
+function getWorkflowSteps(detailOn = wantDetail()) {
+  return getActiveWorkflowStepKeys(detailOn).map((key, i) => {
+    const def = WORKFLOW_STEP_DEFS[key];
+    const num = i + 1;
+    const circle = CIRCLE_NUMS[i] || String(num);
+    return {
+      ...def,
+      num,
+      circle,
+      pipe: num,
+      label: `${circle} ${def.short}`,
+      labelWithSub: `${circle} ${def.short} ${def.pipeSub}`
+    };
+  });
+}
+
+function getWorkflowStep(key, detailOn = wantDetail()) {
+  return getWorkflowSteps(detailOn).find(s => s.key === key) || null;
+}
+
+function buildLoopreelMapping(mode, detailOn = wantDetail()) {
+  const shopping = mode === 'shopping';
+  return getWorkflowSteps(detailOn).map(s => {
+    const desc = shopping ? s.mappingShopping : s.mappingMalva;
+    return `${s.circle} ${s.short} = ${desc}`;
+  });
+}
+
+function syncWorkflowStepButtons(detailOn = wantDetail()) {
+  const byKey = Object.fromEntries(getWorkflowSteps(detailOn).map(s => [s.key, s]));
+  const conti = $('btnConti');
+  if (conti) {
+    const sn = conti.querySelector('.step-num');
+    if (sn && byKey.conti) sn.textContent = String(byKey.conti.num);
+    const hint = conti.querySelector('.step-hint');
+    if (hint) hint.textContent = WORKFLOW_STEP_DEFS.conti.buttonHint;
+  }
+  const board = $('btnStoryboard');
+  if (board) {
+    const sn = board.querySelector('.step-num');
+    if (sn && byKey.board) sn.textContent = String(byKey.board.num);
+    const hint = board.querySelector('.step-hint');
+    if (hint) hint.textContent = WORKFLOW_STEP_DEFS.board.buttonHint;
+  }
+  const mp4 = $('btnMp4');
+  if (mp4) {
+    const sn = mp4.querySelector('.step-num');
+    if (sn && byKey.reel) sn.textContent = String(byKey.reel.num);
+    const hint = mp4.querySelector('.step-hint');
+    if (hint) hint.textContent = WORKFLOW_STEP_DEFS.reel.buttonHint;
+  }
+  const detailLabel = $('detailStudioBox')?.querySelector('.section-label');
+  if (detailLabel && byKey.detail) {
+    detailLabel.textContent = `${byKey.detail.circle} 스마트스토어 상세 (API 거의 없음)`;
+  }
+  const stockDesc = $('stockHubDesc') || $('stockHub')?.querySelector('.hub-desc');
+  if (stockDesc && byKey.reel) {
+    stockDesc.innerHTML = `장면 키워드로 <strong>무료 영상</strong> 검색·다운로드. 지정한 클립은 <strong>${byKey.reel.circle} ${byKey.reel.short}</strong>에 우선 반영됩니다.`;
+  }
+}
+
+function resolveLoopreelMapping(data, mode, detailOn = wantDetail()) {
+  const expected = getWorkflowSteps(detailOn).length;
+  const mapping = data?.loopreel_mapping;
+  if (Array.isArray(mapping) && mapping.length === expected) return mapping;
+  return buildLoopreelMapping(mode, detailOn);
+}
+
+function syncWorkflowHints(detailOn = wantDetail()) {
+  const conti = getWorkflowStep('conti', detailOn);
+  const main = $('workflowHintMain');
+  if (main && conti) {
+    main.innerHTML = `완성본: <strong>무료 B-roll</strong> · Google FLOW · <strong>Higgsfield Supercomputer</strong>(Malva AI). MP4는 B-roll·사진+나레이션 미리보기. 상세는 체크 시 ${conti.circle} 콘티 직후 자동 생성.`;
+  }
+  const detailHint = $('detailStudioBox')?.querySelector('.workflow-hint');
+  if (detailHint && conti) {
+    detailHint.innerHTML = `위 <strong>상세페이지 만들기</strong> 체크 시 ${conti.circle} 콘티 직후 자동 실행 · 고급 UI는 <strong>view_detail_page.bat</strong>`;
+  }
+  const emptyP = $('empty')?.querySelector('p');
+  if (emptyP) {
+    const steps = getWorkflowSteps(detailOn);
+    const flow = steps.map(s => {
+      if (s.key === 'detail') return '(선택) 상세 HTML';
+      if (s.key === 'reel') return 'MP4';
+      return `${s.circle} ${s.short}`;
+    }).join(' → ');
+    emptyP.innerHTML = `왼쪽에서 ${flow}. <strong>상세페이지 만들기</strong>를 켜면 콘티 직후 자동 생성. 실사 영상은 <strong>Google FLOW</strong>에서.`;
+  }
+}
+
+function toastNeedConti() {
+  const s = getWorkflowStep('conti');
+  toast(`먼저 ${s?.circle || '①'} 콘티를 생성하세요`);
+}
+
+function stepCircle(key, detailOn = wantDetail()) {
+  return getWorkflowStep(key, detailOn)?.circle || '';
+}
+
+function workflowStatusPair(keys, detailOn = wantDetail()) {
+  return keys.map(k => stepCircle(k, detailOn)).filter(Boolean).join('·');
+}
+
+function toastContiComplete(detailOn = wantDetail()) {
+  const board = getWorkflowStep('board', detailOn);
+  const reel = getWorkflowStep('reel', detailOn);
+  toast(`콘티 완료 — 확인 후 ${board?.circle || ''}${reel?.circle || ''}`);
+}
+
+function stepStatusLabel(key, detailOn = wantDetail()) {
+  const s = getWorkflowStep(key, detailOn);
+  return s ? `${s.circle} ${s.short}` : '';
+}
+
+function feedbackLoopHint(detailOn = wantDetail()) {
+  return getWorkflowSteps(detailOn).map(s => `${s.circle} ${s.short}`).join(' → ');
+}
+
+function toastStepComplete(key, detailOn = wantDetail()) {
+  const s = getWorkflowStep(key, detailOn);
+  toast(s ? `${s.short} 완료` : '완료');
+}
+
+function toastDetailComplete(detailOn = wantDetail()) {
+  const s = getWorkflowStep('detail', detailOn);
+  toast(s ? `${s.short}페이지 생성 완료` : '상세페이지 생성 완료');
+}
+
+function toastBoardDetailComplete(detailOn = wantDetail()) {
+  const board = getWorkflowStep('board', detailOn);
+  const detail = getWorkflowStep('detail', detailOn);
+  toast(board && detail ? `${board.short}·${detail.short} 완료` : '스토리보드·상세 완료');
+}
+
+function toastDetailFailedAfterConti(detailOn = wantDetail()) {
+  const detail = getWorkflowStep('detail', detailOn);
+  toast(detail ? `${detail.short} 생성 실패 — 수동 버튼으로 재시도` : '상세 생성 실패 — 수동 버튼으로 재시도');
+}
+
+function toastBoardCompleteDetailManual(detailOn = wantDetail()) {
+  const board = getWorkflowStep('board', detailOn);
+  const detail = getWorkflowStep('detail', detailOn);
+  toast(board && detail ? `${board.short} 완료 · ${detail.short}는 수동 실행` : '스토리보드 완료 · 상세는 수동 실행');
+}
+
+function statusBoardGenerating(detailOn = wantDetail()) {
+  const s = getWorkflowStep('board', detailOn);
+  const def = WORKFLOW_STEP_DEFS.board;
+  return s ? `${s.circle} ${def.buttonLabel} 생성 중…` : `${def.buttonLabel} 생성 중…`;
+}
+
+const LS_PRODUCT = 'loopreel_product';
+const LS_MAKE_DETAIL = 'loopreel_make_detail';
+const LS_SHOPPING = 'loopreel_shopping_shorts';
+let products = {};
+let brand = {};
+let videoStudios = {};
+let malvaHub = {};
+let shoppingHub = {};
+let stockSources = {};
+let stockKeyStatus = {};
+let selected = localStorage.getItem(LS_PRODUCT) || localStorage.getItem('shorts_studio_product') || 'living';
+let currentPlan = null;
+let currentSlug = '';
+let pipeState = { conti: false, board: false, detail: false, reel: false };
+
+const $ = id => document.getElementById(id);
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function buildShoppingBrief() {
+  if (!currentPlan) return '';
+  const p = products[selected] || {};
+  const scenes = currentPlan.scenes || [];
+  const hook = currentPlan.hook_line || currentPlan.hook || $('hook')?.value || '';
+  const name = p.full_name || p.label || selected || 'product';
+  const sceneLines = scenes.map((s, i) => {
+    const role = i < 2 ? 'hook/problem' : (i >= scenes.length - 1 ? 'CTA' : 'product demo');
+    return `[${i + 1}] (${role}) ${(s.narration || s.subtitle || '').trim()} | visual: ${(s.visual_desc || s.flow_prompt || '').trim()}`;
+  }).join('\n');
+  return [
+    `TikTok Shopping Short — ${name}`,
+    'Reference workflow: https://youtu.be/hkYCHhWK5hE',
+    hook ? `Hook (first 1s): ${hook}` : '',
+    'Structure: problem/hook → product use & before-after → profile/smartstore CTA',
+    'Rules: paraphrase only (no verbatim copy), NO "comment for tips"/DM bait, ad disclosure required',
+    sceneLines ? `Scenes:\n${sceneLines}` : '',
+    'Edit: CapCut 9:16, short subtitles, trending audio optional',
+    'Publish: TikTok profile link → Smartstore / Coupang Partners'
+  ].filter(Boolean).join('\n\n');
+}
+
+function buildSupercomputerBrief() {
+  if (!currentPlan) return '';
+  const p = products[selected] || {};
+  const scenes = currentPlan.scenes || [];
+  const hook = currentPlan.hook || $('hook')?.value || '';
+  const name = p.full_name || p.label || selected || 'product';
+  const sceneLines = scenes.map((s, i) =>
+    `Scene ${i + 1}: ${(s.narration || s.subtitle || '').trim()} | visual: ${(s.flow_prompt || s.search_keyword || '').trim()}`
+  ).join('\n');
+  return [
+    `Create a vertical 9:16 short-form product ad (reel) for: ${name}.`,
+    hook ? `Hook: ${hook}` : '',
+    currentPlan.flow_master_prompt_en ? `Master visual: ${currentPlan.flow_master_prompt_en}` : '',
+    sceneLines ? `Scenes:\n${sceneLines}` : '',
+    'Deliver: cinematic product images, model/product video clips, and optional outreach email draft.'
+  ].filter(Boolean).join('\n\n');
+}
+
+function getCopyTextForStudio(studio, sceneIdx) {
+  if (!currentPlan || !studio) return '';
+  const scenes = currentPlan.scenes || [];
+  if (studio.copy_field === 'supercomputer_brief') return buildSupercomputerBrief();
+  if (studio.copy_field === 'shopping_brief') return buildShoppingBrief();
+  if (sceneIdx != null && sceneIdx >= 0 && scenes[sceneIdx]) {
+    const sc = scenes[sceneIdx];
+    if (studio.copy_field === 'narration') return sc.narration || sc.subtitle || '';
+    return sc.flow_prompt || sc.storyboard_image_prompt || sc.search_keyword || '';
+  }
+  if (studio.copy_field === 'flow_master_prompt_en') {
+    return currentPlan.flow_master_prompt_en || currentPlan.master_prompt || '';
+  }
+  if (studio.copy_field === 'narration') {
+    return scenes.map(s => s.narration).filter(Boolean).join('\n\n');
+  }
+  return currentPlan.flow_master_prompt_en || '';
+}
+
+async function openAiStudio(studioId, sceneIdx) {
+  const studio = (videoStudios.studios || []).find(s => s.id === studioId);
+  if (!studio) return;
+  if (!currentPlan) { toastNeedConti(); return; }
+  const text = getCopyTextForStudio(studio, sceneIdx);
+  if (text) {
+    try { await copyText(text); } catch (_) { /* clipboard blocked */ }
+  }
+  window.open(studio.url, '_blank', 'noopener,noreferrer');
+  toast(`${studio.name_ko || studio.name} 열림${text ? ' · 프롬프트 복사됨' : ''}`);
+}
+
+function renderVideoStudiosSidebar() {
+  const wf = $('hubWorkflow');
+  const box = $('studioButtons');
+  if (!wf || !box) return;
+  wf.innerHTML = (videoStudios.workflow || []).map(s => `<li>${esc(s)}</li>`).join('');
+  const hasConti = !!currentPlan;
+  const rec = videoStudios.recommended || 'google_flow';
+  const studios = videoStudios.studios || [];
+  const primary = studios.filter(s => s.id === rec || s.badge === '권장' || s.badge === '올인원');
+  const secondary = studios.filter(s => !primary.includes(s));
+  const mkBtn = (s, cls) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'studio-btn' + (cls ? ' ' + cls : '') + (s.badge === '올인원' && s.id !== rec ? ' recommended' : '');
+    b.disabled = !hasConti;
+    b.innerHTML = `<span>${esc(s.name_ko || s.name)}${s.badge ? ` <span class="badge">${esc(s.badge)}</span>` : ''}</span><span class="ext">열기 ↗</span>`;
+    b.title = (s.description || '') + (s.tips ? '\n' + s.tips : '');
+    b.onclick = () => openAiStudio(s.id);
+    return b;
+  };
+  box.innerHTML = '';
+  primary.forEach(s => box.appendChild(mkBtn(s, s.id === rec ? 'recommended' : '')));
+  if (secondary.length) {
+    const row = document.createElement('div');
+    row.className = 'studio-btn-row';
+    secondary.forEach(s => row.appendChild(mkBtn(s, '')));
+    box.appendChild(row);
+  }
+  const fb = $('btnFlowBoard');
+  if (fb) {
+    fb.disabled = !currentSlug;
+    fb.onclick = () => {
+      if (!currentSlug) return;
+      window.open(assetSrc('flow_board.html'), '_blank', 'noopener,noreferrer');
+    };
+  }
+}
+
+function renderShoppingHub() {
+  const data = { ...FALLBACK_SHOPPING, ...(shoppingHub || {}) };
+  const desc = $('shopDesc');
+  if (desc) {
+    const sv = data.source_video;
+    desc.innerHTML = esc(data.tagline || '') +
+      (sv?.url ? ` · <a href="${esc(sv.url)}" target="_blank" rel="noopener" style="color:#fdba74">${esc(sv.title || '가이드 영상')}</a>` : '');
+  }
+  const links = $('shopLinks');
+  if (links) {
+    links.innerHTML = '';
+    (data.links || []).forEach(l => {
+      const a = document.createElement('a');
+      a.className = 'malva-link';
+      a.href = l.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.innerHTML = esc(l.label_ko || l.label || l.url) + (l.badge ? ` <span class="badge" style="color:#fdba74">${esc(l.badge)}</span>` : '');
+      links.appendChild(a);
+    });
+  }
+  const rules = $('shopRules');
+  if (rules) {
+    const rr = data.reference_rules || {};
+    rules.innerHTML = [
+      `<div><strong>✓ 따라할 것</strong><ul>${(rr.follow || []).map(s => `<li>${esc(s)}</li>`).join('')}</ul></div>`,
+      `<div><strong>✗ 피할 것</strong><ul>${(rr.avoid || []).map(s => `<li>${esc(s)}</li>`).join('')}</ul></div>`
+    ].join('');
+  }
+  const chips = $('shopHookChips');
+  if (chips) {
+    chips.innerHTML = '';
+    (data.hook_templates || []).forEach(t => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'shop-hook-chip';
+      b.textContent = t;
+      b.title = '후킹 입력란에 적용';
+      b.onclick = () => { $('hook').value = t; toast('후킹 적용됨'); };
+      chips.appendChild(b);
+    });
+  }
+  const map = $('shopMapping');
+  if (map) map.innerHTML = resolveLoopreelMapping(data, 'shopping').map(s => `<li>${esc(s)}</li>`).join('');
+  const briefBtn = $('btnShopBrief');
+  if (briefBtn) {
+    briefBtn.disabled = !currentPlan;
+    briefBtn.onclick = async () => {
+      const text = buildShoppingBrief();
+      if (!text) { toastNeedConti(); return; }
+      try {
+        await copyText(text);
+        toast('쇼핑쇼츠 브리프 복사됨');
+      } catch (_) { toast('복사 실패 — 클립보드 권한 확인'); }
+    };
+  }
+}
+
+function renderMalvaHub() {
+  const data = { ...FALLBACK_MALVA, ...(malvaHub || {}) };
+  const desc = $('malvaDesc');
+  if (desc) {
+    const gv = data.guide_video;
+    desc.innerHTML = esc(data.tagline || '') +
+      (gv?.url ? ` · <a href="${esc(gv.url)}" target="_blank" rel="noopener" style="color:#c4b5fd">${esc(gv.title_ko || gv.title || '가이드 영상')}</a>` : '');
+  }
+  const links = $('malvaLinks');
+  if (links) {
+    links.innerHTML = '';
+    const home = data.home_url || 'https://malvaai.com/';
+    const homeA = document.createElement('a');
+    homeA.className = 'malva-link';
+    homeA.href = home;
+    homeA.target = '_blank';
+    homeA.rel = 'noopener';
+    homeA.textContent = 'Malva AI 홈';
+    links.appendChild(homeA);
+    (data.links || []).forEach(l => {
+      const a = document.createElement('a');
+      a.className = 'malva-link';
+      a.href = l.url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.innerHTML = esc(l.label_ko || l.label || l.url) + (l.badge ? ` <span class="badge">${esc(l.badge)}</span>` : '');
+      links.appendChild(a);
+    });
+  }
+  const map = $('malvaMapping');
+  if (map) map.innerHTML = resolveLoopreelMapping(data, 'malva').map(s => `<li>${esc(s)}</li>`).join('');
+  const feat = $('malvaFeatured');
+  if (!feat) return;
+  feat.innerHTML = '';
+  const hasConti = !!currentPlan;
+  (data.featured_for_loopreel || []).forEach(f => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'malva-feature-btn' + (f.badge === '올인원' ? ' highlight' : '');
+    b.disabled = !hasConti && f.copy_field !== 'flow_master_prompt_en';
+    b.innerHTML = `<span>${esc(f.name_ko || f.name)}${f.badge ? ` <span class="badge">${esc(f.badge)}</span>` : ''}</span><span class="ext">열기 ↗</span>`;
+    b.title = f.description || '';
+    b.onclick = () => openMalvaFeatured(f);
+    feat.appendChild(b);
+  });
+}
+
+async function openMalvaFeatured(item) {
+  if (!item?.url) return;
+  if (item.copy_field === 'supercomputer_brief' && !currentPlan) {
+    toastNeedConti();
+    return;
+  }
+  const studio = { copy_field: item.copy_field, name_ko: item.name_ko || item.name };
+  let copied = false;
+  if (currentPlan && item.copy_field) {
+    const text = getCopyTextForStudio(studio);
+    if (text) {
+      try { await copyText(text); copied = true; } catch (_) { /* clipboard blocked */ }
+    }
+  }
+  window.open(item.url, '_blank', 'noopener,noreferrer');
+  toast(`${item.name_ko || item.name} 열림${copied ? ' · 브리프 복사됨' : ''}`);
+}
+
+function renderBrollPanel(plan) {
+  if (!currentSlug || !(plan.scenes || []).length) return '';
+  const rows = (plan.scenes || []).map(sc => {
+    const kw = esc(sc.search_keyword || sc.flow_prompt?.split(',')[0] || '');
+    return `<div class="broll-scene-row" data-scene="${sc.scene_no}">
+      <strong>장면 ${sc.scene_no}</strong>
+      <span>${kw}</span>
+      <button type="button" class="rerender broll-search-scene" data-kw="${kw}" data-scene="${sc.scene_no}">검색</button>
+    </div>`;
+  }).join('');
+  const reel = getWorkflowStep('reel');
+  const reelHint = reel ? `${reel.circle} ${reel.short}` : '릴';
+  return `<div class="broll-panel" id="brollPanel">
+    <h3>무료 B-roll — 장면별 클립</h3>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Pexels·Pixabay API 또는 Mixkit·Coverr 등에서 다운로드 후 장면에 지정. ${reelHint} 렌더 시 우선 사용.</p>
+    ${rows}
+    <div class="broll-results" id="brollResults"></div>
+    <div id="brollLocalClips" style="margin-top:10px;font-size:11px;color:var(--muted)"></div>
+  </div>`;
+}
+
+async function refreshLocalClips() {
+  if (!currentSlug) return;
+  const box = document.getElementById('brollLocalClips');
+  if (!box) return;
+  try {
+    const res = await api('/api/stock/clips?slug=' + encodeURIComponent(currentSlug));
+    const clips = res.clips || [];
+    if (!clips.length) { box.textContent = '다운로드된 B-roll 없음'; return; }
+    box.innerHTML = '<strong>저장된 클립:</strong> ' + clips.map(c =>
+      `${esc(c.filename)}${c.assigned_scene ? ` → 장면${c.assigned_scene}` : ''}`
+    ).join(' · ');
+  } catch (_) {}
+}
+
+async function runStockSearch(query, sceneNo) {
+  const q = (query || $('stockQuery').value || '').trim();
+  if (!q) { toast('검색어를 입력하세요'); return; }
+  const source = $('stockSource').value || 'pexels';
+  $('status').innerHTML = '<span class="spinner"></span>B-roll 검색 중…';
+  try {
+    const res = await api('/api/stock/search?q=' + encodeURIComponent(q) + '&source=' + encodeURIComponent(source));
+    const box = document.getElementById('brollResults');
+    if (!box) return;
+    if (!res.ok && !(res.results || []).length) {
+      box.innerHTML = `<p style="color:#f87171;font-size:12px">${esc(res.error || '검색 실패')}</p>` +
+        (res.browse_links || []).slice(0, 6).map(l =>
+          `<a href="${esc(l.url)}" target="_blank" rel="noopener" style="font-size:11px;margin-right:8px">${esc(l.name_ko)} ↗</a>`
+        ).join('');
+      $('status').textContent = res.error || 'API 키 없음 — 웹 링크 사용';
+      return;
+    }
+    const hits = (res.results || []).slice(0, 6);
+    box.innerHTML = hits.length ? hits.map(h => `
+      <div class="broll-hit">
+        ${h.preview_url ? `<img src="${esc(h.preview_url)}" alt=""/>` : ''}
+        <span>${esc(h.title || h.source)} · ${h.duration || '?'}s · ${h.width}x${h.height}</span>
+        <button type="button" class="broll-dl" data-source="${esc(h.source)}" data-url="${esc(h.download_url)}"
+          data-id="${esc(String(h.id))}" data-title="${esc(h.title)}" data-scene="${sceneNo || ''}">장면에 저장</button>
+      </div>`).join('') : '<p style="font-size:12px;color:var(--muted)">결과 없음 — 아래 Mixkit·Coverr 링크 시도</p>';
+    box.querySelectorAll('.broll-dl').forEach(btn => {
+      btn.onclick = async () => {
+        if (!currentSlug) return;
+        btn.disabled = true;
+        try {
+          const body = {
+            slug: currentSlug,
+            source: btn.dataset.source,
+            download_url: btn.dataset.url,
+            video_id: btn.dataset.id,
+            title: btn.dataset.title,
+          };
+          if (btn.dataset.scene) body.scene_no = +btn.dataset.scene;
+          const dl = await api('/api/stock/download', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+          });
+          if (!dl.ok) throw new Error(dl.error || '다운로드 실패');
+          toast(`저장: ${dl.filename}`);
+          await refreshLocalClips();
+        } catch (e) { toast(String(e.message || e)); }
+        finally { btn.disabled = false; }
+      };
+    });
+    $('status').textContent = `B-roll ${hits.length}건 — ${source}`;
+  } catch (e) { $('status').textContent = '오류: ' + e.message; }
+}
+
+function renderStockKeyStatus() {
+  const el = $('stockKeyStatus');
+  if (!el) return;
+  const p = stockKeyStatus.pexels;
+  const x = stockKeyStatus.pixabay;
+  el.innerHTML =
+    `Pexels: <span class="${p ? 'ok' : 'no'}">${p ? 'API 연결됨' : '키 없음'}</span> · ` +
+    `Pixabay: <span class="${x ? 'ok' : 'no'}">${x ? 'API 연결됨' : '키 없음'}</span>` +
+    (p || x ? '' : ' — <code>data/shorts_factory/stock_api_keys.json</code> 참고');
+}
+
+function renderStockBrowseLinks() {
+  const box = $('stockBrowseLinks');
+  if (!box) return;
+  const q = encodeURIComponent(($('stockQuery') && $('stockQuery').value) || 'lifestyle');
+  const browse = stockSources.browse_sources || [];
+  const editors = stockSources.editors || [];
+  box.innerHTML = browse.slice(0, 6).map(s => {
+    const url = (s.search_url || s.url || '').replace('{query}', q);
+    return `<a href="${esc(url)}" target="_blank" rel="noopener" title="${esc(s.attribution || '')}">${esc(s.name_ko || s.name)}</a>`;
+  }).join('') + editors.slice(0, 2).map(s =>
+    `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name_ko || s.name)}</a>`
+  ).join('');
+}
+
+function bindBrollPanelEvents() {
+  document.querySelectorAll('.broll-search-scene').forEach(btn => {
+    btn.onclick = () => {
+      if ($('stockQuery')) $('stockQuery').value = btn.dataset.kw || '';
+      runStockSearch(btn.dataset.kw, +btn.dataset.scene);
+    };
+  });
+  refreshLocalClips();
+}
+
+function renderAiVideoBanner(plan) {
+  const rec = (videoStudios.studios || []).find(s => s.id === (videoStudios.recommended || 'google_flow'));
+  const others = (videoStudios.studios || []).filter(s => s !== rec).slice(0, 3);
+  const btns = [rec, ...others].filter(Boolean).map(s =>
+    `<button type="button" class="studio-btn${s.id === (videoStudios.recommended || 'google_flow') ? ' recommended' : ''}" data-studio="${esc(s.id)}">${esc(s.name_ko || s.name)} ↗</button>`
+  ).join('');
+  return `<div class="ai-video-banner">
+    <h3>실사 AI 영상 — 여기서 완성본을 만드세요</h3>
+    <p>아래 MP4는 <strong>미리보기</strong>입니다. YouTube·릴스용 실사 B-roll은 Google FLOW 또는 Meta AI에서 장면별 클립을 생성하세요. 버튼 클릭 시 <strong>FLOW 프롬프트가 복사</strong>되고 사이트가 열립니다.</p>
+    <div class="studio-grid">${btns}
+      <button type="button" class="studio-btn" data-action="flow-board">FLOW 보드 ↗</button>
+    </div>
+  </div>`;
+}
+
+function renderPipelineBar() {
+  const bar = $('pipeline');
+  if (!bar) return;
+  const detailOn = wantDetail();
+  const steps = getWorkflowSteps(detailOn);
+  bar.innerHTML = steps.map((s, i) => {
+    const arrow = i < steps.length - 1 ? '<span class="pipe-arrow">›</span>' : '';
+    return `<div class="pipe-node" data-pipe="${s.pipe}" data-step-key="${s.key}"><span class="pipe-label">${s.label}</span>${s.pipeSub}</div>${arrow}`;
+  }).join('');
+  const emptySteps = $('emptySteps');
+  if (emptySteps) {
+    emptySteps.innerHTML = steps.map(s => `<span class="empty-step">${s.label} ${s.pipeSub}</span>`).join('');
+  }
+  syncWorkflowStepButtons(detailOn);
+  syncWorkflowHints(detailOn);
+  updatePipeline();
+}
+
+function syncDetailOptionUI() {
+  const on = wantDetail();
+  $('detailStudioBox')?.classList.toggle('enabled', on);
+  renderPipelineBar();
+  renderShoppingHub();
+  renderMalvaHub();
+}
+
+function initMakeDetailToggle() {
+  const el = $('makeDetail');
+  if (!el) return;
+  const saved = localStorage.getItem(LS_MAKE_DETAIL);
+  el.checked = saved === '1';
+  el.addEventListener('change', () => {
+    localStorage.setItem(LS_MAKE_DETAIL, el.checked ? '1' : '0');
+    syncDetailOptionUI();
+  });
+  syncDetailOptionUI();
+}
+
+function initShoppingToggle() {
+  const el = $('shoppingShortsMode');
+  if (!el) return;
+  const saved = localStorage.getItem(LS_SHOPPING);
+  el.checked = saved === '1';
+  el.addEventListener('change', () => {
+    localStorage.setItem(LS_SHOPPING, el.checked ? '1' : '0');
+  });
+}
+
+async function buildDetailPage(slug, opts = {}) {
+  const { openPreview = true, silent = false } = opts;
+  if (!slug) return false;
+  const detailTimeoutMs = 180000;
+  let detailTick = null;
+  const detailStarted = Date.now();
+  const setDetailStatus = () => {
+    if (silent) return;
+    const sec = Math.floor((Date.now() - detailStarted) / 1000);
+    const d = getWorkflowStep('detail');
+    const label = d ? `${d.circle} ${d.short}` : '상세';
+    $('status').innerHTML = `<span class="spinner"></span>${label} 분석 + HTML 생성 중… (${formatElapsed(sec)})`;
+  };
+  if (!silent) setDetailStatus();
+  detailTick = silent ? null : setInterval(setDetailStatus, 1000);
+  let buildRes;
+  try {
+    buildRes = await api('/api/detail', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, use_llm: false })
+    }, { timeoutMs: detailTimeoutMs });
+  } finally {
+    if (detailTick) clearInterval(detailTick);
+  }
+  if (!buildRes.ok) throw new Error(buildRes.error || '생성 실패');
+  currentPlan = buildRes.plan || currentPlan;
+  pipeState.detail = true;
+  if (currentPlan) {
+    currentPlan.detail_analyzed = true;
+    currentPlan.detail_analysis_file = currentPlan.detail_analysis_file || 'detail_analysis.json';
+  }
+  if (openPreview && currentPlan?.detail_file) {
+    window.open(assetSrc('detail_preview.html'), '_blank', 'noopener,noreferrer');
+  }
+  return true;
+}
+
+function updatePipeline() {
+  const has = !!currentSlug;
+  const imgs = currentPlan && (currentPlan.images_ready || 0) > 0;
+  const detail = pipeState.detail || (currentPlan && currentPlan.detail_ready);
+  const vid = currentPlan && currentPlan.video_file;
+  const detailOn = wantDetail();
+  const doneByKey = { conti: has, board: imgs, detail: !!detail, reel: !!vid };
+  let activeKey = null;
+  if (!has) activeKey = 'conti';
+  else if (!imgs) activeKey = 'board';
+  else if (detailOn && !detail) activeKey = 'detail';
+  else if (!vid) activeKey = 'reel';
+
+  document.querySelectorAll('.pipe-node').forEach(n => {
+    const key = n.dataset.stepKey;
+    if (!key) return;
+    n.classList.remove('active', 'done');
+    if (doneByKey[key]) n.classList.add('done');
+    if (key === activeKey) n.classList.add('active');
+  });
+}
+
+function refTypeLabel(type) {
+  const map = { video: '영상', hub: '허브', guide: '가이드', cdb: 'CDB', store: '스토어' };
+  return map[type] || '링크';
+}
+
+function renderChangelog() {
+  const box = $('updatesDashboard');
+  if (!box) return;
+  const entries = brand.changelog || FALLBACK_BRAND.changelog || [];
+  const latest = entries[0];
+  if (!latest || !(latest.features || []).length) {
+    box.innerHTML = '';
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = 'block';
+  const cards = (latest.features || []).map(f => {
+    const tags = (f.tags || []).map(t => `<span class="ftag">${esc(t)}</span>`).join('');
+    const inner = `<h4>${esc(f.title)}</h4><p>${esc(f.summary || '')}</p>${tags ? `<div class="ftags">${tags}</div>` : ''}`;
+    if (f.href) {
+      const ext = /^https?:\/\//i.test(f.href);
+      const tgt = ext ? ' target="_blank" rel="noopener"' : '';
+      return `<a class="feature-card is-link" href="${esc(f.href)}"${tgt}>${inner}</a>`;
+    }
+    return `<div class="feature-card">${inner}</div>`;
+  }).join('');
+  box.innerHTML = `<div class="updates-head">
+    <h3>✓ 적용된 기능 <span style="color:var(--accent3)">v${esc(latest.version || brand.version || '')}</span></h3>
+    <span class="meta">${esc(latest.title || '')} · ${esc(latest.date || '')}</span>
+  </div><div class="feature-grid">${cards}</div>`;
+}
+
+function renderAppliedStrip() {
+  const strip = $('appliedStrip');
+  if (!strip) return;
+  const entries = brand.changelog || FALLBACK_BRAND.changelog || [];
+  const feats = (entries[0] && entries[0].features) || [];
+  if (!feats.length) { strip.style.display = 'none'; return; }
+  strip.style.display = 'block';
+  const pills = feats.map(f => {
+    if (f.href) {
+      const ext = /^https?:\/\//i.test(f.href);
+      const tgt = ext ? ' target="_blank" rel="noopener"' : '';
+      return `<a class="applied-pill is-link" href="${esc(f.href)}"${tgt} title="${esc(f.summary || '')}">✓ ${esc(f.title)}</a>`;
+    }
+    return `<span class="applied-pill" title="${esc(f.summary || '')}">✓ ${esc(f.title)}</span>`;
+  }).join('');
+  const ver = brand.version || (entries[0] && entries[0].version) || '';
+  strip.innerHTML = `<div class="applied-strip-head"><strong>적용됨 v${esc(ver)}</strong><span>${feats.length}개</span></div><div class="applied-pills">${pills}</div>`;
+}
+
+function applyBrand(b) {
+  const data = { ...FALLBACK_BRAND, ...(b || {}) };
+  if (!Array.isArray(data.references) || !data.references.length) {
+    data.references = FALLBACK_BRAND.references;
+  }
+  if (!Array.isArray(data.changelog) || !data.changelog.length) {
+    data.changelog = FALLBACK_BRAND.changelog;
+  }
+  brand = data;
+  if (data.name) $('brandName').textContent = data.name;
+  if (data.name_en) $('brandEn').textContent = data.name_en;
+  if (data.tagline) $('brandTagline').textContent = data.tagline;
+  if (data.byline) $('brandByline').textContent = data.byline;
+  const verEl = $('brandVersion');
+  if (verEl && data.version) {
+    verEl.textContent = `v${data.version} · 적용 기능 ${(data.changelog?.[0]?.features || []).length || 0}개`;
+    verEl.hidden = false;
+  }
+  document.title = `${data.name || '루프릴'} ${data.name_en || 'LoopReel'} — 쇼츠 스튜디오`;
+  const pills = $('loopPills');
+  pills.innerHTML = '';
+  (data.loop_principles || []).forEach(p => {
+    const el = document.createElement('span');
+    el.className = 'loop-pill';
+    const hint = p.key === 'feedback' ? feedbackLoopHint() : (p.hint || '');
+    el.innerHTML = `${esc(p.label)}<span>${esc(hint)}</span>`;
+    pills.appendChild(el);
+  });
+  renderChangelog();
+  renderAppliedStrip();
+  renderReferences();
+}
+
+function renderReferences() {
+  const refs = $('refsList');
+  if (!refs) return;
+  refs.innerHTML = '';
+  const items = [...(brand.references || [])];
+  const p = products[selected];
+  if (p && p.smartstore) {
+    items.unshift({
+      title: `${p.label || p.full_name || selected} · 스마트스토어`,
+      url: p.smartstore,
+      type: 'store'
+    });
+  }
+  items.forEach(r => {
+    const a = document.createElement('a');
+    const t = r.type || 'link';
+    a.className = 'ref-link' + (t === 'store' ? ' ref-store' : t === 'hub' ? ' ref-hub' : t === 'cdb' ? ' ref-cdb' : '');
+    a.href = r.url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.title = r.url;
+    a.innerHTML = `<span class="ref-type">${esc(refTypeLabel(t))}</span>${esc(r.title)}`;
+    refs.appendChild(a);
+  });
+  const label = $('refsLabel');
+  if (label) label.textContent = items.length ? `참고 자료 (${items.length})` : '참고 자료';
+  if (!items.length) {
+    refs.innerHTML = '<p class="tagline" style="font-size:11px;padding:4px 0">링크 없음 — 서버 연결 후 새로고침</p>';
+  }
+}
+
+async function api(path, opts, config) {
+  const timeoutMs = (config && config.timeoutMs) || 0;
+  const controller = timeoutMs > 0 ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  const fetchOpts = { ...opts };
+  if (controller) fetchOpts.signal = controller.signal;
+  let r;
+  try { r = await fetch(path, fetchOpts); }
+  catch (e) {
+    if (e && e.name === 'AbortError') {
+      throw new Error(`요청 시간 초과 (${Math.round(timeoutMs / 1000)}초). Fable 루프를 끄거나 Ollama 상태를 확인하세요.`);
+    }
+    throw new Error('서버에 연결할 수 없습니다. view_shorts_factory.bat 을 실행하세요.');
+  }
+  finally { if (timer) clearTimeout(timer); }
+  let j;
+  try { j = await r.json(); }
+  catch (_) { throw new Error('서버 응답 오류 — http://127.0.0.1:8766/ 로 접속하세요.'); }
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+
+function formatElapsed(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return m ? `${m}분 ${s}초` : `${s}초`;
+}
+
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  return Promise.resolve();
+}
+
+function presetKeywords(id) {
+  const p = products[id];
+  if (p && Array.isArray(p.preset_keywords) && p.preset_keywords.length) return p.preset_keywords;
+  return FALLBACK_PRESETS[id] || [];
+}
+
+function applyAllPresetKeywords() {
+  const kws = presetKeywords(selected);
+  $('keywords').value = kws.join(', ');
+  toast(`영어 키워드 ${kws.length}개 적용`);
+}
+
+function updateKeywordPlaceholder() {
+  const sample = presetKeywords(selected).slice(0, 2).join(', ');
+  $('keywords').placeholder = sample || '장면별 키워드를 쉼표로 구분';
+}
+
+function selectProduct(id, opts = {}) {
+  const {
+    updateKeywords = true,
+    reloadHistory = true,
+    loadBoard = true,
+  } = opts;
+  if (!products[id]) return;
+  const changed = selected !== id;
+  selected = id;
+  localStorage.setItem(LS_PRODUCT, id);
+  renderProductUI();
+  renderPresets();
+  renderReferences();
+  updateKeywordPlaceholder();
+  if (updateKeywords) $('keywords').value = presetKeywords(id).join(', ');
+  const sel = $('productSelect');
+  if (sel) sel.value = id;
+
+  if (changed && loadBoard) {
+    loadProductWorkspace({ reloadHistory }).catch(() => showEmptyCanvas());
+  } else if (reloadHistory) {
+    loadHistory().catch(() => {});
+  }
+}
+
+function updateStepButtons() {
+  const has = !!currentSlug;
+  const imgs = currentPlan && (currentPlan.images_ready || 0) > 0;
+  $('btnStoryboard').disabled = !has;
+  $('btnDetail').disabled = !has;
+  $('btnDetailAnalyze').disabled = !has;
+  $('btnDetailBuild').disabled = !has;
+  $('btnMp4').disabled = !has;
+  $('btnStockSearch').disabled = !has;
+  if ($('stockQuery') && currentPlan && (currentPlan.scenes || []).length) {
+    const sc = currentPlan.scenes[0];
+    if (!$('stockQuery').value.trim()) $('stockQuery').value = sc.search_keyword || sc.flow_prompt?.split(',')[0] || '';
+  }
+  const board = getWorkflowStep('board');
+  $('btnMp4').title = has && !imgs && board
+    ? `${board.circle} 스토리보드 이미지를 먼저 실행하세요 (없으면 MP4 시 자동 생성 시도)`
+    : '';
+  syncWorkflowStepButtons();
+  renderVideoStudiosSidebar();
+  renderShoppingHub();
+  renderMalvaHub();
+  updatePipeline();
+}
+
+function syncSidebarFromPlan(plan, opts = {}) {
+  const { syncKeywords = true } = opts;
+  if (!plan) return;
+  const pid = String(plan.product_id || 'living').toLowerCase();
+  if (!products[pid]) return;
+  selectProduct(pid, { updateKeywords: !syncKeywords, reloadHistory: false, loadBoard: false });
+  if (syncKeywords) {
+    const kws = plan.input_keywords;
+    if (Array.isArray(kws) && kws.length) $('keywords').value = kws.join(', ');
+    else if (typeof kws === 'string' && kws.trim()) $('keywords').value = kws.trim();
+  }
+  if (plan.hook) $('hook').value = plan.hook;
+  const shopEl = $('shoppingShortsMode');
+  if (shopEl && (plan.shopping_shorts || plan.style === 'shopping_shorts')) {
+    shopEl.checked = true;
+    localStorage.setItem(LS_SHOPPING, '1');
+  }
+  const n = (plan.scenes || []).length;
+  if (n >= 3 && n <= 8) { $('scenes').value = String(n); $('sceneVal').textContent = String(n); }
+  updateSceneCountHint();
+  pipeState.conti = true;
+  pipeState.board = (plan.images_ready || 0) > 0;
+  pipeState.detail = !!plan.detail_ready;
+  pipeState.reel = !!plan.video_file;
+}
+
+function renderProductUI() {
+  const active = $('productActive');
+  const sel = $('productSelect');
+  const p = products[selected];
+  if (!p) { active.innerHTML = '<p class="tagline">제품을 선택하세요.</p>'; sel.innerHTML = ''; return; }
+  const locale = p.image_locale;
+  let localeHtml = '';
+  if (locale) {
+    const scenes = (locale.preferred_scenes || []).slice(0, 4).map(s => `<span class="locale-chip">${esc(s)}</span>`).join('');
+    localeHtml = `<div class="locale-badge" title="금지: ${esc((locale.forbidden_scenes || []).join(' · '))}">🇰🇷 ${esc(locale.market || '한국형 장면')}</div><div class="locale-scenes">${scenes}</div>`;
+  }
+  active.innerHTML = `<div class="pcard active" data-id="${esc(selected)}"><div class="name">${esc(p.label)}</div><div class="desc">${esc(p.full_name)}</div>${localeHtml}</div>`;
+  const entries = Object.entries(products).sort((a, b) => String(a[1].label || '').localeCompare(String(b[1].label || ''), 'ko'));
+  sel.innerHTML = entries.map(([id, prod]) => `<option value="${esc(id)}"${id === selected ? ' selected' : ''}>${esc(prod.label)}</option>`).join('');
+  const hf = $('historyFilter');
+  if (hf) hf.textContent = `「${p.label}」 작업만 표시`;
+}
+
+function renderPresets() {
+  const box = $('presets');
+  box.innerHTML = '';
+  const en = presetKeywords(selected);
+  const p = products[selected];
+  const ko = (p && p.preset_keywords_ko) || [];
+  const count = Math.max(en.length, ko.length);
+  if (!count) return;
+
+  const allBtn = document.createElement('button');
+  allBtn.type = 'button';
+  allBtn.className = 'chip';
+  allBtn.style.borderColor = 'rgba(56,189,248,.45)';
+  allBtn.style.color = '#7dd3fc';
+  allBtn.textContent = `전체 프리셋 (${en.length})`;
+  allBtn.onclick = () => applyAllPresetKeywords();
+  box.appendChild(allBtn);
+
+  const limit = 24;
+  for (let i = 0; i < Math.min(count, limit); i++) {
+    const enKw = en[i] || '';
+    const koKw = ko[i] || '';
+    const c = document.createElement('button');
+    c.type = 'button';
+    c.className = 'chip' + (koKw ? ' chip-ko' : '');
+    c.textContent = koKw || enKw;
+    if (koKw && enKw) c.title = `FLOW: ${enKw}`;
+    else if (enKw) c.title = enKw;
+    const addKw = enKw || koKw;
+    if (!addKw) continue;
+    c.onclick = () => {
+      const ta = $('keywords');
+      const cur = ta.value.trim();
+      ta.value = cur ? cur + ', ' + addKw : addKw;
+    };
+    box.appendChild(c);
+  }
+  if (count > limit) {
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'chip';
+    more.textContent = `+${count - limit} · 전체 넣기`;
+    more.onclick = () => applyAllPresetKeywords();
+    box.appendChild(more);
+  }
+}
+
+function totalDuration(plan) {
+  return (plan.scenes || []).reduce((s, x) => s + (x.duration_sec || 4), 0);
+}
+
+function getDesiredSceneCount() {
+  const v = parseInt($('scenes')?.value, 10);
+  return Math.max(3, Math.min(8, Number.isFinite(v) ? v : 4));
+}
+
+function scheduleResizePlanScenes(desired) {
+  if (!currentSlug) return;
+  clearTimeout(resizeScenesTimer);
+  const seq = ++resizeScenesSeq;
+  resizeScenesTimer = setTimeout(() => resizePlanScenes(desired, seq), 280);
+}
+
+function updateSceneCountHint() {
+  const hint = $('sceneCountHint');
+  const slider = $('scenes');
+  if (!hint || !slider) return;
+  const desired = parseInt(slider.value, 10) || 4;
+  const actual = currentPlan && Array.isArray(currentPlan.scenes) ? currentPlan.scenes.length : 0;
+  if (!currentPlan || !actual) {
+    hint.style.display = 'none';
+    hint.textContent = '';
+    return;
+  }
+  if (desired === actual) {
+    hint.style.display = 'none';
+    hint.textContent = '';
+    return;
+  }
+  hint.style.display = 'block';
+  if (resizeScenesBusy) {
+    hint.style.display = 'block';
+    hint.innerHTML = `장면 수를 <strong>${desired}</strong>개로 맞추는 중…`;
+    return;
+  }
+  hint.innerHTML = `슬라이더 <strong>${desired}</strong>장면 — 잠시 후 보드가 자동으로 맞춰집니다.`;
+}
+
+function assetSrc(rel) {
+  if (!rel || !currentSlug) return '';
+  const parts = currentSlug.split('/').map(encodeURIComponent).concat(String(rel).replace(/^\//, '').split('/').map(encodeURIComponent));
+  return '/' + parts.join('/');
+}
+
+function sceneImgSrc(sc) { return assetSrc(sc.image_file); }
+function videoSrc(plan) { return plan && plan.video_file ? assetSrc(plan.video_file) : ''; }
+
+function updateSidebarVideo(plan, opts = {}) {
+  const box = $('sidebarVideo');
+  const vsrc = videoSrc(plan);
+  if (!vsrc) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  const ts = Date.now();
+  const autoplay = opts.focusVideo ? ' autoplay muted' : '';
+  box.style.display = 'block';
+  box.innerHTML = `<h4>▶ 완성 릴</h4><video controls playsinline id="sidebarVideoPlayer" src="${esc(vsrc)}?t=${ts}"${autoplay}></video><p class="vid-note">왼쪽 미리보기 · 오른쪽 메인 플레이어</p>`;
+}
+
+function focusVideoPlayback(opts = {}) {
+  const { autoplay = true } = opts;
+  $('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+  const vid = document.getElementById('mainVideoPlayer');
+  if (vid) {
+    vid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (autoplay) { vid.muted = true; const p = vid.play(); if (p && p.catch) p.catch(() => {}); }
+  }
+  const sv = document.getElementById('sidebarVideoPlayer');
+  if (sv && autoplay) { sv.muted = true; const p = sv.play(); if (p && p.catch) p.catch(() => {}); }
+}
+
+function renderBoard(plan, slug, opts = {}) {
+  const focusVideo = !!opts.focusVideo;
+  const skipSceneSliderSync = !!opts.skipSceneSliderSync;
+  if (!skipSceneSliderSync && slug && (plan.scenes || []).length) {
+    const desired = getDesiredSceneCount();
+    if (desired !== plan.scenes.length) {
+      plan = applySceneCountLocally(plan, desired);
+      if (slug) currentSlug = slug;
+      currentPlan = plan;
+      scheduleResizePlanScenes(desired);
+    }
+  }
+  currentPlan = plan;
+  if (slug) currentSlug = slug;
+  pipeState.conti = true;
+  pipeState.board = (plan.images_ready || 0) > 0;
+  pipeState.detail = !!plan.detail_ready;
+  pipeState.reel = !!plan.video_file;
+  updateStepButtons();
+  $('empty').style.display = 'none';
+  $('mainHeader').style.display = 'block';
+  $('mainSlug').textContent = slug || '';
+  const canvas = $('canvas');
+  canvas.style.display = 'block';
+  const total = totalDuration(plan);
+  const segs = (plan.scenes || []).map(sc =>
+    `<div class="tseg" style="flex:${sc.duration_sec||4}"><div class="fill"></div><span>${sc.duration_sec}s</span></div>`
+  ).join('');
+
+  const scenes = (plan.scenes || []).map((sc, i) => {
+    const panels = [
+      `<p>${esc(sc.conti)}</p><p class="mention">제품: ${esc(sc.product_mention||'—')}</p><p style="margin-top:6px;color:var(--dim)">${esc(sc.visual_desc)}</p>`,
+      `<p><strong>${esc(sc.narration)}</strong></p><p style="margin-top:8px;color:var(--muted)">자막: ${esc(sc.subtitle)} · ${esc(sc.speaker)}</p>`,
+      `<pre id="flow-${i}">${esc(sc.flow_prompt)}</pre>
+       <div class="flow-actions">
+         <button type="button" class="copy" data-copy="flow-${i}">FLOW 복사</button>
+         <button type="button" class="flow-open" data-scene="${i}">Google FLOW ↗</button>
+       </div>`
+    ];
+    const tabHtml = ['콘티', '나레이션', 'FLOW'].map((t, ti) =>
+      `<button type="button" class="tab${ti===0?' active':''}" data-sc="${i}" data-tab="${ti}">${t}</button>`
+    ).join('');
+    const panelHtml = panels.map((p, pi) => `<div class="panel${pi===0?' active':''}" data-sc="${i}" data-panel="${pi}">${p}</div>`).join('');
+    const img = sceneImgSrc(sc);
+    return `<article class="scene"><div class="${img ? 'frame' : 'frame no-img'}">${img ? `<img class="frame-img" src="${esc(img)}" alt="scene ${sc.scene_no}" loading="lazy"/>` : ''}<span class="kw">${esc(sc.search_keyword)}</span><span class="num">${sc.scene_no}</span><p class="sub">${esc(sc.subtitle || sc.narration)}</p><span class="dur">${sc.duration_sec}s</span></div><div class="body"><div class="tabs">${tabHtml}</div>${panelHtml}</div></article>`;
+  }).join('');
+
+  const vsrc = videoSrc(plan);
+  const vts = Date.now();
+  const videoBlock = vsrc ? `
+    <div class="video-box sticky-player${focusVideo ? ' is-new' : ''}" id="videoBox">
+      <h3>▶ 미리보기 MP4 (슬라이드쇼+나레이션)</h3>
+      <p class="video-hint">실사 완성본은 위 <strong>Google FLOW / Meta AI</strong>에서 만드세요.</p>
+      <video controls playsinline id="mainVideoPlayer" src="${esc(vsrc)}?t=${vts}"${focusVideo ? ' autoplay muted' : ''}></video>
+      <div class="actions">
+        <a class="dl" href="${esc(vsrc)}?t=${vts}" download>다운로드</a>
+        <button type="button" class="rerender" id="btnVideoInline">MP4 다시 생성</button>
+      </div>
+    </div>` : (plan._video_error ? `<div class="video-box"><p style="color:#f87171;font-size:13px">영상 오류: ${esc(plan._video_error)}</p><button type="button" class="rerender" id="btnVideoInline">MP4 다시 시도</button></div>` : '');
+
+  canvas.innerHTML = `${renderBrollPanel(plan)}${renderAiVideoBanner(plan)}${videoBlock}
+    <div class="hook-box">
+      <div class="tag">Hook · 첫 1초</div>
+      <h2>${esc(plan.hook_line || plan.video_title)}</h2>
+      <div class="meta-row">
+        <span class="pill">${esc(plan.video_title)}</span>
+        <span class="pill">${(plan.input_keywords||[]).join(' · ')}</span>
+        ${plan._fallback ? '<span class="pill">빠른 모드</span>' : '<span class="pill">AI 콘티</span>'}
+        ${plan._fable_loop ? `<span class="pill">Fable ${plan._fable_loop.final_score}점 · ${plan._fable_loop.iterations}회</span>` : ''}
+        ${plan.images_ready != null ? `<span class="pill">이미지 ${plan.images_ready}장</span>` : ''}
+        ${plan.detail_ready ? '<span class="pill">상세 완료</span>' : ''}
+        ${plan.video_file ? '<span class="pill">릴 완료</span>' : ''}
+      </div>
+    </div>
+    <div class="timeline">${segs}<span style="font-size:11px;color:var(--dim);margin-left:8px">총 ${total.toFixed(1)}초</span></div>
+    <div class="master"><h3>FLOW 마스터 (영어)</h3><pre id="flow-master">${esc(plan.flow_master_prompt_en || plan.master_prompt)}</pre><button type="button" class="copy" data-copy="flow-master">마스터 복사</button></div>
+    <div class="board">${scenes}</div>`;
+
+  canvas.querySelectorAll('.tab').forEach(btn => {
+    btn.onclick = () => {
+      const sc = btn.dataset.sc, tab = btn.dataset.tab;
+      canvas.querySelectorAll(`.tab[data-sc="${sc}"]`).forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      canvas.querySelectorAll(`.panel[data-sc="${sc}"]`).forEach(p => p.classList.toggle('active', p.dataset.panel === tab));
+    };
+  });
+  canvas.querySelectorAll('[data-copy]').forEach(btn => {
+    btn.onclick = () => copyText(document.getElementById(btn.dataset.copy).innerText).then(() => toast('FLOW 복사됨')).catch(() => toast('복사 실패'));
+  });
+  canvas.querySelectorAll('[data-studio]').forEach(btn => {
+    btn.onclick = () => openAiStudio(btn.dataset.studio);
+  });
+  const flowBoardBtn = canvas.querySelector('[data-action="flow-board"]');
+  if (flowBoardBtn) {
+    flowBoardBtn.onclick = () => {
+      if (!currentSlug) return;
+      window.open(assetSrc('flow_board.html'), '_blank', 'noopener,noreferrer');
+    };
+  }
+  canvas.querySelectorAll('.flow-open').forEach(btn => {
+    btn.onclick = () => openAiStudio(videoStudios.recommended || 'google_flow', +btn.dataset.scene);
+  });
+  const inlineVid = canvas.querySelector('#btnVideoInline');
+  if (inlineVid) inlineVid.onclick = () => $('btnMp4').click();
+  bindBrollPanelEvents();
+  updateSidebarVideo(plan, { focusVideo });
+  updateSceneCountHint();
+  if (focusVideo && vsrc) requestAnimationFrame(() => focusVideoPlayback({ autoplay: true }));
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showEmptyCanvas() {
+  currentPlan = null;
+  currentSlug = '';
+  pipeState = { conti: false, board: false, detail: false, reel: false };
+  if ($('canvas')) $('canvas').style.display = 'none';
+  if ($('empty')) $('empty').style.display = 'block';
+  if ($('mainHeader')) $('mainHeader').style.display = 'none';
+  updateSidebarVideo(null);
+  updateSceneCountHint();
+  updateStepButtons();
+  updatePipeline();
+}
+
+function renderHistoryList(projects) {
+  const box = $('history');
+  if (!box) return;
+  if (!projects.length) {
+    box.innerHTML = '<p class="tagline" style="font-size:11px">이 제품 작업 없음</p>';
+    return;
+  }
+  box.innerHTML = projects.slice(0, 12).map(p =>
+    `<a class="hitem" href="#" data-slug="${esc(p.slug)}"><strong>${esc(p.title)}</strong><span>${esc(p.slug)} · ${p.scenes}장</span></a>`
+  ).join('');
+  box.querySelectorAll('.hitem').forEach(a => {
+    a.onclick = async e => {
+      e.preventDefault();
+      const { plan } = await api('/api/plan?slug=' + encodeURIComponent(a.dataset.slug));
+      syncSidebarFromPlan(plan);
+      renderBoard(plan, a.dataset.slug);
+    };
+  });
+}
+
+async function loadProductWorkspace(opts = {}) {
+  const { reloadHistory = true, loadBoard = true } = opts;
+  const q = selected ? `?product=${encodeURIComponent(selected)}` : '';
+  const { projects } = await api('/api/projects' + q);
+  if (reloadHistory) renderHistoryList(projects);
+  if (!loadBoard) return projects;
+  if (projects.length) {
+    const { plan } = await api('/api/plan?slug=' + encodeURIComponent(projects[0].slug));
+    syncSidebarFromPlan(plan, { syncKeywords: false });
+    renderBoard(plan, projects[0].slug);
+  } else {
+    showEmptyCanvas();
+  }
+  return projects;
+}
+
+async function loadHistory() {
+  await loadProductWorkspace({ loadBoard: false });
+}
+
+let resizeScenesTimer = null;
+let resizeScenesBusy = false;
+let resizeScenesSeq = 0;
+
+/** 슬라이더만 움직였을 때 보드가 즉시 따라오도록 (서버 저장은 resizePlanScenes) */
+function applySceneCountLocally(plan, desired) {
+  const out = JSON.parse(JSON.stringify(plan));
+  const n = Math.max(3, Math.min(8, parseInt(desired, 10) || 4));
+  let scenes = Array.isArray(out.scenes) ? [...out.scenes] : [];
+  if (!scenes.length) return out;
+  if (scenes.length > n) {
+    scenes = scenes.slice(0, n);
+  } else if (scenes.length < n) {
+    const tail = scenes[scenes.length - 1];
+    while (scenes.length < n) {
+      const i = scenes.length;
+      const dup = JSON.parse(JSON.stringify(tail));
+      dup.scene_no = i + 1;
+      dup.image_file = null;
+      dup.duration_sec = i === n - 1 ? 5 : (tail.duration_sec || 4);
+      scenes.push(dup);
+    }
+  }
+  scenes.forEach((sc, i) => { sc.scene_no = i + 1; });
+  out.scenes = scenes;
+  return out;
+}
+
+async function resizePlanScenes(desired, seq) {
+  if (!currentSlug || !currentPlan) return;
+  resizeScenesBusy = true;
+  updateSceneCountHint();
+  try {
+    const res = await api('/api/resize-scenes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: currentSlug, scenes: desired }),
+    });
+    if (seq !== resizeScenesSeq) return;
+    if (res.plan) {
+      const desired = getDesiredSceneCount();
+      let plan = res.plan;
+      const got = (plan.scenes || []).length;
+      if (got !== desired) {
+        plan = applySceneCountLocally(plan, desired);
+      }
+      renderBoard(plan, res.slug || currentSlug);
+      const n = (plan.scenes || []).length;
+      $('status').textContent = got === desired
+        ? `장면 ${n}개로 맞춤 (슬라이더 반영)`
+        : `장면 ${n}개 표시 (서버 ${got}개 → 슬라이더 ${desired}개)`;
+    }
+  } catch (err) {
+    if (seq !== resizeScenesSeq) return;
+    $('status').textContent = '장면 수 조정 실패: ' + (err.message || err);
+    updateSceneCountHint();
+  } finally {
+    if (seq === resizeScenesSeq) resizeScenesBusy = false;
+    updateSceneCountHint();
+  }
+}
+
+$('scenes').oninput = e => {
+  const v = parseInt(e.target.value, 10) || 4;
+  $('sceneVal').textContent = String(v);
+  clearTimeout(resizeScenesTimer);
+  if (!currentPlan || !currentSlug) {
+    updateSceneCountHint();
+    return;
+  }
+  const actual = (currentPlan.scenes || []).length;
+  if (v === actual) {
+    resizeScenesSeq += 1;
+    resizeScenesBusy = false;
+    updateSceneCountHint();
+    return;
+  }
+  renderBoard(applySceneCountLocally(currentPlan, v), currentSlug);
+  updateSceneCountHint();
+  scheduleResizePlanScenes(v);
+};
+
+$('btnConti').onclick = async () => {
+  const keywords = $('keywords').value.trim();
+  if (!keywords) { $('status').textContent = '키워드를 입력하세요.'; return; }
+  const btn = $('btnConti');
+  btn.disabled = true;
+  const useLlm = $('useLlm').checked;
+  const useFable = $('useFableLoop').checked;
+  const contiCircle = stepCircle('conti');
+  const statusLabel = useFable
+    ? `${contiCircle} Fable 로컬 루프 (Ollama, 2~5분)…`
+    : (useLlm ? `${contiCircle} AI 콘티 생성 중…` : `${contiCircle} 빠른 콘티 생성 중…`);
+  const timeoutMs = useFable ? 360000 : (useLlm ? 180000 : 90000);
+  let tick = null;
+  const started = Date.now();
+  const setBusyStatus = () => {
+    const sec = Math.floor((Date.now() - started) / 1000);
+    $('status').innerHTML = '<span class="spinner"></span>' + statusLabel + ' (' + formatElapsed(sec) + ')';
+  };
+  setBusyStatus();
+  tick = setInterval(setBusyStatus, 1000);
+  try {
+    let st = { busy: false };
+    try {
+      st = await api('/api/status?lite=1', {}, { timeoutMs: 3000 });
+    } catch (_) { /* Ollama 체크 없이 생성 진행 */ }
+    if (st.busy) throw new Error('서버에서 다른 콘티를 생성 중입니다. 완료 후 다시 시도하세요.');
+    const res = await api('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product: selected, keywords, scenes: +$('scenes').value,
+        hook: $('hook').value.trim(), use_llm: useLlm, use_fable_loop: useFable,
+        shopping_shorts: $('shoppingShortsMode')?.checked || false,
+        use_images: false, use_video: false
+      })
+    }, { timeoutMs });
+    pipeState = { conti: true, board: false, detail: false, reel: false };
+    renderBoard(res.plan, res.slug);
+    if (tick) { clearInterval(tick); tick = null; }
+    $('status').textContent = `${stepCircle('conti')} 완료 — ${res.slug}`;
+    if (wantDetail()) {
+      try {
+        await buildDetailPage(res.slug);
+        renderBoard(currentPlan || res.plan, res.slug);
+        $('status').textContent = `${workflowStatusPair(['conti', 'detail'])} 완료 — 콘티 + 상세 HTML (${res.slug})`;
+        toastDetailComplete();
+      } catch (de) {
+        $('status').textContent = `${stepCircle('conti')} 완료 · 상세 실패: ${de.message}`;
+        toastDetailFailedAfterConti();
+      }
+    } else {
+      $('status').textContent = `${stepCircle('conti')} 완료 — ${res.slug}`;
+      toastContiComplete();
+    }
+    try {
+      await loadHistory();
+    } catch (he) {
+      console.warn('history reload failed', he);
+      toast('히스토리 새로고침 실패 (콘티는 완료됨)');
+    }
+  } catch (e) { $('status').textContent = '오류: ' + e.message; }
+  finally {
+    if (tick) clearInterval(tick);
+    btn.disabled = false;
+  }
+};
+
+$('productSelect').onchange = e => selectProduct(e.target.value);
+$('btnRestorePresets').onclick = () => applyAllPresetKeywords();
+$('btnToggleAdd').onclick = () => $('addProductForm').classList.toggle('open');
+
+$('btnSaveProduct').onclick = async () => {
+  const label = $('newLabel').value.trim();
+  const preset_keywords = $('newKeywords').value.trim();
+  if (!label) { toast('제품명을 입력하세요'); return; }
+  if (!preset_keywords) { toast('프리셋 키워드를 입력하세요'); return; }
+  $('btnSaveProduct').disabled = true;
+  try {
+    const res = await api('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        label, full_name: $('newFullName').value.trim() || label,
+        preset_keywords, forbidden: $('newForbidden').value.trim()
+      })
+    });
+    products = res.products;
+    ['newLabel','newFullName','newKeywords','newForbidden'].forEach(id => $(id).value = '');
+    $('addProductForm').classList.remove('open');
+    selectProduct(res.product_id);
+    toast('제품 추가됨');
+  } catch (e) { toast('저장 실패: ' + e.message); }
+  finally { $('btnSaveProduct').disabled = false; }
+};
+
+$('refsToggle').onclick = () => {
+  const list = $('refsList');
+  const open = list.classList.toggle('open');
+  $('refsChevron').textContent = open ? '▲' : '▼';
+  $('refsToggle').setAttribute('aria-expanded', open);
+};
+
+function renderFableStatus(info) {
+  const el = $('fableStatus');
+  const cb = $('useFableLoop');
+  if (!el || !cb) return;
+  if (!info || !info.available) {
+    el.innerHTML = '⚠ Ollama 미실행 — <code>ollama serve</code> 후 <code>ollama pull qwen3:4b</code>. Fable 루프는 1회 생성으로 대체됩니다.';
+    cb.checked = false;
+    cb.disabled = true;
+    return;
+  }
+  cb.disabled = false;
+  const models = (info.models || []).slice(0, 2).join(', ') || '모델 확인됨';
+  el.innerHTML = `✓ Fable 로컬 준비됨 (${models}) — Anthropic Fable5 API 대신 무료 루프`;
+}
+
+async function loadFableStatus() {
+  try {
+    const info = await api('/api/fable', {}, { timeoutMs: 8000 });
+    renderFableStatus(info);
+  } catch (_) {
+    renderFableStatus(null);
+  }
+}
+
+async function fetchBootstrap(maxAttempts) {
+  const attempts = maxAttempts || 3;
+  let lastErr = null;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await api('/api/bootstrap', {}, { timeoutMs: 45000 });
+    } catch (e) {
+      lastErr = e;
+      if (i + 1 < attempts) await new Promise(r => setTimeout(r, 800 * (i + 1)));
+    }
+  }
+  throw lastErr || new Error('bootstrap 실패');
+}
+
+/** /api/bootstrap 이 ok 를 반환하는지 짧게 확인 */
+async function probeBootstrapReady(timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs || 8000);
+  try {
+    const r = await fetch('/api/bootstrap', { signal: controller.signal });
+    clearTimeout(timer);
+    if (!r.ok) return false;
+    const j = await r.json();
+    return j && j.ok === true;
+  } catch (_) {
+    clearTimeout(timer);
+    return false;
+  }
+}
+
+/** 서버 HTTP 리스너·bootstrap 준비 여부 (가벼운 헬스체크) */
+async function waitForServerHealth(maxWaitMs) {
+  const deadline = Date.now() + (maxWaitMs || 20000);
+  while (Date.now() < deadline) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 3000);
+    try {
+      const r = await fetch('/api/status?lite=1', { signal: controller.signal });
+      clearTimeout(timer);
+      if (r.ok) {
+        const j = await r.json();
+        if (j.bootstrap_v === 1) return true;
+        if (await probeBootstrapReady(12000)) return true;
+      }
+    } catch (_) {
+      clearTimeout(timer);
+    }
+    await new Promise(r => setTimeout(r, 350));
+  }
+  return false;
+}
+
+(async () => {
+  if (location.protocol === 'file:') {
+    $('bootErr').style.display = 'block';
+    $('bootErr').innerHTML = '⚠ 이 HTML 파일을 직접 열면 API에 연결할 수 없습니다. <code>view_shorts_factory.bat</code> 실행 후 <a href="http://127.0.0.1:8766/" target="_blank" rel="noopener">http://127.0.0.1:8766/</a> 로 접속하세요.';
+    $('btnConti').disabled = true;
+    $('empty').innerHTML = '<div class="empty-icon">⚠</div><h2>서버 URL로 접속하세요</h2><p>파일 더블클릭 대신 배치 파일로 서버를 띄운 뒤 브라우저 주소창에 <code>http://127.0.0.1:8766/</code> 를 입력하세요.</p>';
+    return;
+  }
+  initMakeDetailToggle();
+  initShoppingToggle();
+  applyBrand(FALLBACK_BRAND);
+  shoppingHub = FALLBACK_SHOPPING;
+  malvaHub = FALLBACK_MALVA;
+  renderShoppingHub();
+  renderMalvaHub();
+  let bootErr = null;
+  const serverReady = await waitForServerHealth(60000);
+  if (!serverReady) {
+    bootErr = '서버에 연결할 수 없습니다. view_shorts_factory.bat 을 실행하세요.';
+    renderFableStatus(null);
+  } else {
+    try {
+      const boot = await fetchBootstrap(3);
+      products = boot.products || {};
+      if (boot.brand) applyBrand(boot.brand);
+      videoStudios = boot.video_studios || {};
+      stockSources = boot.stock || {};
+      stockKeyStatus = stockSources.api_keys || {};
+      if (boot.malva_hub && Object.keys(boot.malva_hub).length) malvaHub = boot.malva_hub;
+      if (boot.shopping_shorts_hub && Object.keys(boot.shopping_shorts_hub).length) {
+        shoppingHub = boot.shopping_shorts_hub;
+      }
+      loadFableStatus();
+    } catch (e) {
+      bootErr = e.message || String(e);
+      renderFableStatus(null);
+    }
+  }
+  renderStockKeyStatus();
+  renderStockBrowseLinks();
+  renderVideoStudiosSidebar();
+  renderShoppingHub();
+  renderMalvaHub();
+  if (Object.keys(products).length) {
+    if (!products[selected]) selected = Object.keys(products)[0] || 'living';
+    selectProduct(selected, { reloadHistory: false, loadBoard: false });
+    try {
+      await loadProductWorkspace();
+    } catch (e) {
+      console.warn('workspace load:', e);
+    }
+  }
+  if (bootErr) {
+    $('bootErr').style.display = 'block';
+    $('bootErr').innerHTML = '⚠ ' + esc(bootErr) + ' — <code>view_shorts_factory.bat</code> 실행 후 <code>http://127.0.0.1:8766/</code> (서버 대기·자동 재연결 중…)';
+    if (!Object.keys(products).length) {
+      $('btnConti').disabled = true;
+      $('empty').innerHTML = '<div class="empty-icon">⚠</div><h2>서버 연결 필요</h2><p>배치 파일로 서버를 띄우면 이 페이지가 자동으로 다시 연결됩니다. 주소창이 <code>http://127.0.0.1:8766/</code> 인지 확인하세요.</p>';
+    }
+    let tries = 0;
+    (async () => {
+      while (tries++ < 24) {
+        await new Promise(r => setTimeout(r, 1500));
+        try {
+          const boot = await fetchBootstrap(1);
+          products = boot.products || {};
+          if (boot.brand) applyBrand(boot.brand);
+          videoStudios = boot.video_studios || {};
+          stockSources = boot.stock || {};
+          stockKeyStatus = stockSources.api_keys || {};
+          if (boot.malva_hub && Object.keys(boot.malva_hub).length) malvaHub = boot.malva_hub;
+          if (boot.shopping_shorts_hub && Object.keys(boot.shopping_shorts_hub).length) {
+            shoppingHub = boot.shopping_shorts_hub;
+          }
+          $('bootErr').style.display = 'none';
+          renderStockKeyStatus();
+          renderStockBrowseLinks();
+          renderVideoStudiosSidebar();
+          renderShoppingHub();
+          renderMalvaHub();
+          if (Object.keys(products).length) {
+            if (!products[selected]) selected = Object.keys(products)[0] || 'living';
+            selectProduct(selected, { reloadHistory: false, loadBoard: false });
+            try { await loadProductWorkspace(); } catch (_) {}
+            $('btnConti').disabled = false;
+          }
+          loadFableStatus();
+          return;
+        } catch (_) {}
+      }
+      const el = $('bootErr');
+      if (el && el.style.display !== 'none') {
+        el.innerHTML = '⚠ ' + esc(bootErr) + ' — <code>view_shorts_factory.bat</code> 실행 후 <a href="http://127.0.0.1:8766/">http://127.0.0.1:8766/</a> 에서 F5 새로고침';
+      }
+    })();
+  }
+})();
+
+$('btnMp4').onclick = async () => {
+  if (!currentSlug) return;
+  $('btnMp4').disabled = true;
+  const needImg = !currentPlan || !(currentPlan.images_ready > 0);
+  const reelLabel = stepStatusLabel('reel');
+  $('status').innerHTML = needImg
+    ? `<span class="spinner"></span>${reelLabel} — 장면 이미지 확인·생성 후 렌더… (2~4분)`
+    : `<span class="spinner"></span>${reelLabel} 렌더 중… (1~3분)`;
+  try {
+    const res = await api('/api/video', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: currentSlug }) });
+    currentPlan = res.plan;
+    pipeState.board = (res.plan.images_ready || 0) > 0;
+    pipeState.reel = !!res.plan.video_file;
+    renderBoard(res.plan, res.slug, { focusVideo: !!res.plan.video_file });
+    $('status').textContent = res.plan.video_file ? `${reelLabel} 완료` : `${reelLabel} 실패`;
+    toast(res.plan.video_file ? 'MP4 완료' : (res.plan._video_error || '영상 생성 실패'));
+  } catch (e) { $('status').textContent = '오류: ' + e.message; }
+  finally { updateStepButtons(); }
+};
+
+$('btnStoryboard').onclick = async () => {
+  if (!currentSlug) return;
+  $('btnStoryboard').disabled = true;
+  $('status').innerHTML = `<span class="spinner"></span>${statusBoardGenerating()}`;
+  try {
+    const res = await api('/api/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: currentSlug }) });
+    pipeState.board = (res.plan.images_ready || 0) > 0;
+    renderBoard(res.plan, res.slug);
+    if (wantDetail() && !(res.plan.detail_ready || pipeState.detail)) {
+      try {
+        await buildDetailPage(res.slug, { openPreview: false });
+        renderBoard(currentPlan || res.plan, res.slug);
+        $('status').textContent = `${workflowStatusPair(['board', 'detail'])} 완료 — 이미지 ${res.plan.images_ready || 0}장 + 상세 HTML`;
+        toastBoardDetailComplete();
+      } catch (de) {
+        $('status').textContent = `${stepCircle('board')} 완료 · 상세 실패: ${de.message}`;
+        toastBoardCompleteDetailManual();
+      }
+    } else {
+      $('status').textContent = `${stepCircle('board')} 완료 — 이미지 ${res.plan.images_ready || 0}장`;
+      toastStepComplete('board');
+    }
+  } catch (e) { $('status').textContent = '오류: ' + e.message; }
+  finally { updateStepButtons(); }
+};
+
+$('btnDetail').onclick = () => {
+  if (!currentSlug) return;
+  window.open(`/detail/?slug=${encodeURIComponent(currentSlug)}`, '_blank', 'noopener,noreferrer');
+  toast('상세페이지 스튜디오 열림');
+};
+
+$('btnStockSearch').onclick = () => runStockSearch();
+$('stockQuery').addEventListener('keydown', e => { if (e.key === 'Enter') runStockSearch(); });
+
+$('btnDetailAnalyze').onclick = async () => {
+  if (!currentSlug) return;
+  $('btnDetailAnalyze').disabled = true;
+  try {
+    await buildDetailPage(currentSlug, { openPreview: false });
+    $('status').textContent = '상세 분석·HTML 완료';
+    toast('detail_analysis.json · detail_preview.html');
+    if (currentPlan) renderBoard(currentPlan, currentSlug);
+  } catch (e) { $('status').textContent = '오류: ' + e.message; }
+  finally { $('btnDetailAnalyze').disabled = false; updateStepButtons(); }
+};
+
+$('btnDetailBuild').onclick = async () => {
+  if (!currentSlug) return;
+  $('btnDetailBuild').disabled = true;
+  try {
+    await buildDetailPage(currentSlug);
+    renderBoard(currentPlan, currentSlug);
+    $('status').textContent = '상세 HTML 완료';
+    toast('detail_preview.html 생성');
+  } catch (e) { $('status').textContent = '오류: ' + e.message; }
+  finally { $('btnDetailBuild').disabled = false; updateStepButtons(); }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+---
+description: Autoblog login2 에이전트 컨텍스트 — 프로젝트 스킬과 AGENTS.md 우선 참조
+globs:
+alwaysApply: true
+---
+
+# Autoblog Agent Context
+
+- 프로젝트 루트 `AGENTS.md`와 `.cursor/skills/` 스킬을 작업 전에 확인한다.
+- Vercel 트래픽·Base44·클라우드 연동: `.cursor/skills/vercel-traffic/SKILL.md`
+- 네이버 글 리프레시: `.cursor/skills/naver-blog-refresh/SKILL.md`
+- Vercel 연동 변경 후: `python scripts/verify_vercel_traffic.py`

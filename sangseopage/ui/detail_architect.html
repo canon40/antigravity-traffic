@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>상세페이지 아키텍트 — sangseopage × LoopReel</title>
+<style>
+:root{
+  --bg:#0b1220;--panel:#111827;--card:#1e293b;--border:#334155;
+  --text:#e2e8f0;--muted:#94a3b8;--accent:#38bdf8;--accent2:#34d399;--warn:#fbbf24;
+  --pillar-done:#064e3b;--pillar-miss:#451a03;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Malgun Gothic',system-ui,sans-serif;line-height:1.5}
+a{color:var(--accent);text-decoration:none}
+.top{background:#0f172a;border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+.top h1{font-size:16px;margin:0;font-weight:700}
+.top .sub{font-size:12px;color:var(--muted)}
+.badge-api{font-size:11px;background:#065f46;color:#6ee7b7;padding:2px 8px;border-radius:99px}
+.layout{display:grid;grid-template-columns:280px 1fr 300px;gap:0;min-height:calc(100vh - 52px)}
+@media(max-width:1100px){.layout{grid-template-columns:1fr}}
+.col{border-right:1px solid var(--border);padding:16px;overflow:auto}
+.col:last-child{border-right:none}
+.col h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 12px}
+.pillar{margin-bottom:10px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.pillar-head{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.pillar.done{border-color:#059669;background:var(--pillar-done)}
+.pillar.partial{border-color:#d97706}
+.pillar-item{font-size:12px;color:var(--muted);padding:2px 0 2px 12px;position:relative}
+.pillar-item.ok{color:#6ee7b7}
+.pillar-item.ok::before{content:'✓';position:absolute;left:0;color:#34d399}
+.pillar-item.miss::before{content:'○';position:absolute;left:0;color:#fbbf24}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:12px}
+.card h3{font-size:14px;margin:0 0 8px;color:var(--accent)}
+.card p,.card li{font-size:13px;color:var(--muted);margin:4px 0}
+.card ul{padding-left:18px;margin:6px 0}
+.hook-list{display:flex;flex-direction:column;gap:6px}
+.hook{padding:8px 10px;background:#0f172a;border:1px solid var(--border);border-radius:8px;font-size:13px;cursor:pointer;transition:.15s}
+.hook:hover,.hook.selected{border-color:var(--accent);background:rgba(56,189,248,.08)}
+.hook.selected{box-shadow:0 0 0 1px var(--accent)}
+.strategy-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.strat{padding:10px;border:1px solid var(--border);border-radius:10px;background:#0f172a;cursor:pointer;font-size:12px}
+.strat strong{display:block;font-size:13px;margin-bottom:4px}
+.strat:hover{border-color:var(--accent)}
+.strat.on{border-color:var(--accent2);background:rgba(52,211,153,.08)}
+.strat.rec::after{content:'추천';font-size:10px;background:var(--accent2);color:#064e3b;padding:1px 6px;border-radius:99px;margin-left:6px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.btn{border:none;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-primary{background:linear-gradient(135deg,#0284c7,#0369a1);color:#fff}
+.btn-secondary{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+textarea,input[type=text],select{width:100%;background:#0f172a;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px;font-size:13px;font-family:inherit}
+textarea{min-height:72px;resize:vertical}
+label.toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin:8px 0}
+.status{font-size:12px;color:var(--muted);min-height:18px;margin-top:8px}
+.summary{font-size:14px;color:var(--text);line-height:1.6}
+.empty-state{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty-state p{margin:8px 0}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.pill{font-size:11px;padding:3px 8px;border-radius:99px;background:#0f172a;border:1px solid var(--border);color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>상세페이지 아키텍트 <span class="badge-api">API 없음 · 로컬 분석</span></h1>
+    <div class="sub">sangseopage 기획 지침 × 쇼츠 plan 연동</div>
+  </div>
+  <a href="/">← 쇼츠 스튜디오</a>
+  <span id="slugLabel" class="sub"></span>
+</header>
+
+<div class="layout" id="app">
+  <aside class="col" id="colPillars">
+    <h2>5대 기둥 · 체크리스트</h2>
+    <div id="pillars"><p class="sub">프로젝트를 불러오면 표시됩니다.</p></div>
+  </aside>
+
+  <main class="col" id="colMain">
+    <div class="toolbar">
+      <input type="text" id="slugInput" placeholder="프로젝트 slug (URL ?slug=...)" style="flex:1;min-width:200px"/>
+      <button type="button" class="btn btn-secondary" id="btnLoad">불러오기</button>
+      <button type="button" class="btn btn-primary" id="btnAnalyze">① 니즈·후킹 분석</button>
+      <button type="button" class="btn btn-primary" id="btnBuild" disabled>② HTML 생성</button>
+    </div>
+    <label class="toggle"><input type="checkbox" id="useLlm"/> AI 카피 보강 (Ollama/Gemini — 선택)</label>
+
+    <label style="font-size:12px;color:var(--muted);display:block;margin:8px 0 4px">경쟁사·레퍼런스 메모 (선택, 스크래핑 없음)</label>
+    <textarea id="competitorNotes" placeholder="예: 타사 A는 전후 비교가 강함. 우리는 바이크 전용·혼용 금지를 강조."></textarea>
+
+    <div class="status" id="status"></div>
+
+    <div id="mainContent" class="empty-state">
+      <p><strong>쇼츠 스튜디오</strong>에서 ① 콘티를 만든 뒤, 이 화면에서 상세페이지까지 이어갑니다.</p>
+      <p>분석·후킹·니즈 파악은 <strong>API 없이</strong> plan.json + 제품 데이터로 처리됩니다.</p>
+    </div>
+
+    <div id="analysisPanel" style="display:none">
+      <div class="card">
+        <h3>분석 요약</h3>
+        <p class="summary" id="summary"></p>
+        <div class="pill-row" id="winningStrategy"></div>
+      </div>
+      <div class="card">
+        <h3>고객 니즈 · Pain</h3>
+        <ul id="needsList"></ul>
+        <ul id="painsList"></ul>
+      </div>
+      <div class="card">
+        <h3>후킹 문구 후보 (클릭 = 메인 후킹)</h3>
+        <div class="hook-list" id="hookList"></div>
+      </div>
+      <div class="card">
+        <h3>소구점 · 차별</h3>
+        <p id="selling"></p>
+        <p id="diff"></p>
+      </div>
+      <div class="toolbar" id="outputLinks" style="display:none">
+        <a class="btn btn-secondary" id="linkPreview" target="_blank" rel="noopener">미리보기 ↗</a>
+        <a class="btn btn-secondary" id="linkStore" target="_blank" rel="noopener">스마트스토어 HTML ↗</a>
+      </div>
+    </div>
+  </main>
+
+  <aside class="col" id="colStrategy">
+    <h2>설득 전략</h2>
+    <div class="strategy-grid" id="strategyGrid"></div>
+    <p class="sub" style="margin-top:12px">전략을 바꾼 뒤 「니즈·후킹 분석」을 다시 실행하면 카피 톤이 반영됩니다.</p>
+  </aside>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let currentSlug = '';
+let analysis = null;
+let planning = { strategies: [] };
+let selectedStrategy = null;
+let selectedHook = null;
+
+function qsSlug() {
+  return new URLSearchParams(location.search).get('slug') || '';
+}
+
+function asset(path) {
+  if (!currentSlug) return path;
+  return currentSlug + '/' + path;
+}
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  return r.json();
+}
+
+function setStatus(msg, ok) {
+  $('status').textContent = msg || '';
+  $('status').style.color = ok === false ? '#f87171' : 'var(--muted)';
+}
+
+function renderStrategies(recId) {
+  const grid = $('strategyGrid');
+  grid.innerHTML = '';
+  (planning.strategies || []).forEach(s => {
+    const el = document.createElement('div');
+    el.className = 'strat' + (selectedStrategy === s.id ? ' on' : '') + (recId === s.id ? ' rec' : '');
+    el.innerHTML = `<strong>${s.name}</strong>${s.description || ''}`;
+    el.onclick = () => {
+      selectedStrategy = s.id;
+      renderStrategies(recId);
+    };
+    grid.appendChild(el);
+  });
+}
+
+function renderPillars(checklist) {
+  const box = $('pillars');
+  if (!checklist || !checklist.covered) {
+    box.innerHTML = '<p class="sub">분석 후 표시</p>';
+    return;
+  }
+  const missingSet = new Set((checklist.missing || []).map(m => m.item));
+  const pillars = analysis?.pillars || planning.pillars || [];
+  box.innerHTML = pillars.map(p => {
+    const cov = checklist.covered.find(c => c.pillarId === p.id);
+    const coveredItems = cov?.coveredItems || [];
+    const items = (p.items || []).map(item => {
+      const ok = coveredItems.some(c => c.includes(item) || item.includes(c)) && !missingSet.has(item);
+      const miss = missingSet.has(item);
+      return `<div class="pillar-item ${ok ? 'ok' : miss ? 'miss' : ''}">${item}</div>`;
+    }).join('');
+    const cls = coveredItems.length >= (p.items||[]).length ? 'done' : coveredItems.length ? 'partial' : '';
+    return `<div class="pillar ${cls}"><div class="pillar-head"><span>${p.id}. ${p.title}</span><span>${coveredItems.length}/${(p.items||[]).length}</span></div>${items}</div>`;
+  }).join('');
+}
+
+function renderAnalysis(a) {
+  analysis = a;
+  $('analysisPanel').style.display = 'block';
+  $('mainContent').style.display = 'none';
+  $('btnBuild').disabled = !currentSlug;
+
+  selectedStrategy = a.recommendedStrategyId;
+  selectedHook = a.hookingStrategyDeepDive?.recommendedHook;
+  renderStrategies(a.recommendedStrategyId);
+
+  $('summary').textContent = a.summary || '';
+  $('winningStrategy').innerHTML = `<span class="pill">${a.recommendedStrategyName || a.recommendedStrategyId}</span><span class="pill">${a.winningStrategy || ''}</span>`;
+
+  const needs = [...(a.persona?.needs || []), ...(a.needsComparison?.sharedNeeds || [])];
+  $('needsList').innerHTML = needs.slice(0, 6).map(n => `<li>${n}</li>`).join('');
+  $('painsList').innerHTML = (a.persona?.pains || []).slice(0, 5).map(n => `<li>${n}</li>`).join('');
+
+  const hooks = a.hookingStrategyDeepDive?.copyHooks || [];
+  $('hookList').innerHTML = hooks.map(h => {
+    const sel = h === selectedHook ? ' selected' : '';
+    return `<div class="hook${sel}" data-hook="${encodeURIComponent(h)}">${h}</div>`;
+  }).join('');
+  $('hookList').querySelectorAll('.hook').forEach(el => {
+    el.onclick = () => {
+      selectedHook = decodeURIComponent(el.dataset.hook);
+      $('hookList').querySelectorAll('.hook').forEach(x => x.classList.toggle('selected', x === el));
+    };
+  });
+
+  const our = a.ourProduct || {};
+  $('selling').textContent = our.sellingPoints || '';
+  $('diff').textContent = our.differentiation || '';
+
+  renderPillars(a.checklist);
+}
+
+async function loadPlanning() {
+  planning = await api('/api/detail/planning');
+  renderStrategies(null);
+}
+
+async function loadProject(slug) {
+  if (!slug) return;
+  currentSlug = slug;
+  $('slugInput').value = slug;
+  $('slugLabel').textContent = '프로젝트: ' + slug;
+  setStatus('plan 불러오는 중…');
+  const res = await api('/api/plan?slug=' + encodeURIComponent(slug));
+  if (res.error) { setStatus(res.error, false); return; }
+  setStatus('plan 로드 완료 — 「니즈·후킹 분석」을 실행하세요.');
+  if (res.plan?.detail_analysis_file) {
+    try {
+      const a = await fetch(asset('detail_analysis.json')).then(r => r.json());
+      renderAnalysis(a);
+      if (res.plan.detail_ready) showOutputLinks();
+    } catch (_) {}
+  }
+}
+
+async function runAnalyze() {
+  if (!currentSlug) { setStatus('slug를 입력하세요.', false); return; }
+  setStatus('로컬 분석 중… (API 호출 없음)');
+  $('btnAnalyze').disabled = true;
+  try {
+    const res = await api('/api/detail/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slug: currentSlug,
+        strategy: selectedStrategy,
+        competitor_notes: $('competitorNotes').value.trim(),
+        selected_hook: selectedHook,
+      }),
+    });
+    if (!res.ok) throw new Error(res.error || '분석 실패');
+    renderAnalysis(res.analysis);
+    setStatus('분석 저장됨 (detail_analysis.json) — 「HTML 생성」을 눌러야 페이지에 반영됩니다');
+  } catch (e) {
+    setStatus(String(e.message || e), false);
+  } finally {
+    $('btnAnalyze').disabled = false;
+  }
+}
+
+function showOutputLinks() {
+  $('outputLinks').style.display = 'flex';
+  $('linkPreview').href = asset('detail_preview.html');
+  $('linkStore').href = asset('detail_smartstore.html');
+}
+
+async function runBuild() {
+  if (!currentSlug) return;
+  setStatus('상세 HTML 생성 중…');
+  $('btnBuild').disabled = true;
+  try {
+    const res = await api('/api/detail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        slug: currentSlug,
+        use_llm: $('useLlm').checked,
+        strategy: selectedStrategy,
+        competitor_notes: $('competitorNotes').value.trim(),
+        selected_hook: selectedHook,
+      }),
+    });
+    if (!res.ok) throw new Error(res.error || '생성 실패');
+    if (res.analysis) renderAnalysis(res.analysis);
+    showOutputLinks();
+    setStatus(res.applied ? '분석 반영 + HTML 생성 완료 (detail.json · preview · smartstore)' : 'HTML 생성 완료');
+    window.open(asset('detail_preview.html'), '_blank', 'noopener,noreferrer');
+  } catch (e) {
+    setStatus(String(e.message || e), false);
+  } finally {
+    $('btnBuild').disabled = false;
+  }
+}
+
+$('btnLoad').onclick = () => loadProject($('slugInput').value.trim());
+$('btnAnalyze').onclick = runAnalyze;
+$('btnBuild').onclick = runBuild;
+
+(async () => {
+  await loadPlanning();
+  const s = qsSlug() || $('slugInput').value.trim();
+  if (s) await loadProject(s);
+})();
+</script>
+</body>
+</html>
