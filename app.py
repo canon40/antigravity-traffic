@@ -37,7 +37,8 @@ scheduler_running = False
 scheduler_thread = None
 traffic_loop_running = False
 traffic_thread = None
-stop_event = threading.Event()
+rank_stop_event = threading.Event()
+traffic_stop_event = threading.Event()
 last_completion_report = None
 _boot_auto_started = False
 
@@ -83,7 +84,7 @@ def scheduler_loop():
     add_log("🚀 순위 추적 스케줄러가 시작되었습니다.")
     cycle = 0
 
-    while not stop_event.is_set():
+    while not rank_stop_event.is_set():
         cycle += 1
         config = load_config()
         interval = max(5, int(config.get("track_interval_minutes", 60)))
@@ -107,7 +108,7 @@ def scheduler_loop():
 
         add_log(f"😴 다음 추적까지 {interval}분 대기")
         for _ in range(interval * 6):
-            if stop_event.is_set():
+            if rank_stop_event.is_set():
                 break
             time.sleep(10)
 
@@ -124,7 +125,7 @@ def traffic_loop():
     add_log("🚗 로컬 트래픽 루프 시작 (20분 간격)")
     interval_sec = max(300, int(os.environ.get("TRAFFIC_INTERVAL_SEC", "1200")))
 
-    while not stop_event.is_set():
+    while not traffic_stop_event.is_set():
         target_url = _traffic_target_url()
         add_log(f"🚗 자동 트래픽: {target_url}")
         try:
@@ -137,7 +138,7 @@ def traffic_loop():
             add_log(f"❌ 트래픽 실패: {exc}")
 
         waited = 0
-        while waited < interval_sec and not stop_event.is_set():
+        while waited < interval_sec and not traffic_stop_event.is_set():
             time.sleep(10)
             waited += 10
 
@@ -146,48 +147,50 @@ def traffic_loop():
 
 
 def ensure_background_services(*, log_boot: bool = False) -> None:
-    """서버 기동 시 순위 추적·트래픽을 자동 시작 (웹 UI 없이 24시간 동작)."""
+    """서버 기동 시 순위·트래픽을 각각 독립적으로 시작 (탭/워크스페이스 전환과 무관)."""
     global scheduler_running, scheduler_thread, traffic_loop_running, traffic_thread
-    global stop_event, _boot_auto_started
+    global rank_stop_event, traffic_stop_event, _boot_auto_started
+
+    state = load_hub_state()
+    rank_on = state.get("auto_enabled", True) is not False
+    traffic_on = state.get("traffic_enabled", True) is not False
 
     if is_cron_mode():
-        state = load_hub_state()
         if state.get("auto_enabled") is None:
             state["auto_enabled"] = True
-            save_hub_state(state)
-            if log_boot:
-                add_log("▶️ Vercel Cron 24시간 자동 추적·트래픽 (기본 켜짐)")
+        if state.get("traffic_enabled") is None:
+            state["traffic_enabled"] = True
+        save_hub_state(state)
+        if log_boot:
+            add_log("▶️ Vercel Cron 24시간 — 순위·트래픽 독립 제어 (기본 켜짐)")
         _boot_auto_started = True
         return
 
-    state = load_hub_state()
-    if state.get("auto_enabled") is False:
-        if log_boot:
-            plat = cloud_platform()
-            add_log(f"⏸️ 자동 추적·트래픽 꺼짐 ({plat})")
-        _boot_auto_started = False
-        return
-
     started = False
-    if not scheduler_running:
-        stop_event.clear()
+    if rank_on and not scheduler_running:
+        rank_stop_event.clear()
         scheduler_running = True
         scheduler_thread = threading.Thread(target=scheduler_loop, daemon=True)
         scheduler_thread.start()
         started = True
+    elif not rank_on and log_boot:
+        add_log("⏸️ 순위 추적 꺼짐 (트래픽은 traffic_enabled 기준)")
 
-    if run_traffic_session is not None and not traffic_loop_running:
+    if traffic_on and run_traffic_session is not None and not traffic_loop_running:
+        traffic_stop_event.clear()
         traffic_loop_running = True
         traffic_thread = threading.Thread(target=traffic_loop, daemon=True)
         traffic_thread.start()
         started = True
+    elif not traffic_on and log_boot:
+        add_log("⏸️ 트래픽 루프 꺼짐")
 
     if started and log_boot:
         plat = cloud_platform()
         if is_cloudtype():
             add_log("▶️ Cloudtype 기동 — 순위·트래픽 24시간 백그라운드 (Cron 불필요)")
         else:
-            add_log("▶️ 서버 기동 — 순위 추적·트래픽 백그라운드 시작 (브라우저 불필요)")
+            add_log("▶️ 서버 기동 — 순위·트래픽 백그라운드 (브라우저·탭 전환과 무관)")
     _boot_auto_started = started or scheduler_running or traffic_loop_running
 
 
@@ -249,15 +252,24 @@ def api_status():
         track_count = min(len(keywords), int(config.get("priority_track_limit") or 10))
 
     state = load_hub_state()
+    rank_on = state.get("auto_enabled", True) is not False
+    traffic_on = state.get("traffic_enabled", True) is not False
     running = scheduler_running
     if on_cron:
-        running = bool(state.get("auto_enabled", True))
+        running = rank_on
+
+    traffic_running = traffic_loop_running
+    if on_cron:
+        traffic_running = traffic_on
 
     report = last_completion_report or state.get("last_report")
     auto_mode = "cron" if on_cron else ("daemon" if is_cloudtype() else "local")
 
     return jsonify({
         "running": running,
+        "traffic_running": traffic_running,
+        "traffic_enabled": traffic_on,
+        "rank_enabled": rank_on,
         "traffic_loop": traffic_loop_running,
         "auto_started": _boot_auto_started or running,
         "last_rank": last_rank,
@@ -326,44 +338,87 @@ def api_seo_audit_latest():
     return jsonify({"audit": audit})
 
 
+def _parse_scope(body: dict | None, default: str) -> str:
+    scope = (body or {}).get("scope", default).strip().lower()
+    if scope not in ("rank", "traffic", "all"):
+        return default
+    return scope
+
+
 @app.route("/api/start", methods=["POST"])
 def api_start():
-    global scheduler_running, scheduler_thread, traffic_loop_running, traffic_thread, stop_event
-    if is_serverless():
-        state = load_hub_state()
+    global scheduler_running, scheduler_thread, traffic_loop_running, traffic_thread
+    global rank_stop_event, traffic_stop_event
+    body = request.get_json(silent=True) or {}
+    scope = _parse_scope(body, "all")
+
+    state = load_hub_state()
+    if scope in ("rank", "all"):
         state["auto_enabled"] = True
-        save_hub_state(state)
-        add_log("▶️ 24시간 Cron 자동 추적 활성화")
+    if scope in ("traffic", "all"):
+        state["traffic_enabled"] = True
+    save_hub_state(state)
+
+    if is_serverless():
+        add_log(f"▶️ Cron 활성화 (scope={scope})")
         return jsonify({
             "success": True,
-            "message": "24시간 자동 추적이 켜졌습니다. JARVIS 작업 중에도 순위·트래픽 Cron이 백그라운드에서 계속됩니다.",
+            "message": "24시간 Cron이 켜졌습니다. JARVIS 탭을 봐도 트래픽은 백그라운드에서 계속됩니다.",
             "mode": "cron",
+            "scope": scope,
         })
+
+    if scope in ("rank", "all"):
+        rank_stop_event.clear()
+    if scope in ("traffic", "all"):
+        traffic_stop_event.clear()
     ensure_background_services()
-    if scheduler_running:
-        add_log("▶️ 자동 순위 추적·트래픽 실행 중")
-        return jsonify({"success": True, "message": "자동 순위 추적·트래픽이 실행 중입니다."})
-    return jsonify({"success": False, "message": "시작에 실패했습니다."})
+
+    ok = (scope in ("traffic", "all") and traffic_loop_running) or (
+        scope in ("rank", "all") and scheduler_running
+    ) or (scope == "all" and (scheduler_running or traffic_loop_running))
+    if ok:
+        add_log(f"▶️ 시작 (scope={scope})")
+        return jsonify({"success": True, "message": "백그라운드 작업이 실행 중입니다.", "scope": scope})
+    return jsonify({"success": False, "message": "시작에 실패했습니다.", "scope": scope})
 
 
 @app.route("/api/stop", methods=["POST"])
 def api_stop():
-    global scheduler_running, traffic_loop_running, stop_event
-    if is_serverless():
-        state = load_hub_state()
+    global scheduler_running, traffic_loop_running
+    global rank_stop_event, traffic_stop_event
+    body = request.get_json(silent=True) or {}
+    scope = _parse_scope(body, "rank")
+
+    state = load_hub_state()
+    if scope in ("rank", "all"):
         state["auto_enabled"] = False
-        save_hub_state(state)
-        add_log("⏸️ 24시간 Cron 자동 추적 비활성화")
-        return jsonify({
-            "success": True,
-            "message": "자동 추적이 꺼졌습니다. 「지금 추적」으로 수동 실행은 가능합니다.",
-            "mode": "cron",
-        })
-    if scheduler_running or traffic_loop_running:
-        stop_event.set()
-        add_log("⏸️ 자동 추적·트래픽 중지 요청")
-        return jsonify({"success": True, "message": "중지 명령이 전달되었습니다."})
-    return jsonify({"success": False, "message": "실행 중이 아닙니다."})
+        rank_stop_event.set()
+    if scope in ("traffic", "all"):
+        state["traffic_enabled"] = False
+        traffic_stop_event.set()
+    save_hub_state(state)
+
+    if is_serverless():
+        if scope == "traffic":
+            msg = "트래픽 Cron이 꺼졌습니다. 순위 추적 Cron은 유지됩니다."
+        elif scope == "rank":
+            msg = "순위 Cron이 꺼졌습니다. 트래픽 Cron은 계속 동작합니다."
+        else:
+            msg = "순위·트래픽 Cron이 모두 꺼졌습니다."
+        add_log(f"⏸️ Cron 중지 (scope={scope})")
+        return jsonify({"success": True, "message": msg, "mode": "cron", "scope": scope})
+
+    if scope == "traffic" and traffic_loop_running:
+        add_log("⏸️ 트래픽 루프 중지 (순위 추적 유지)")
+        return jsonify({"success": True, "message": "트래픽만 중지했습니다. 순위 추적은 계속됩니다.", "scope": scope})
+    if scope == "rank" and scheduler_running:
+        add_log("⏸️ 순위 추적 중지 (트래픽 유지)")
+        return jsonify({"success": True, "message": "순위 추적만 중지했습니다. 트래픽은 계속됩니다.", "scope": scope})
+    if scope == "all" and (scheduler_running or traffic_loop_running):
+        add_log("⏸️ 순위·트래픽 모두 중지")
+        return jsonify({"success": True, "message": "순위·트래픽이 모두 중지됩니다.", "scope": scope})
+    return jsonify({"success": True, "message": "중지 상태로 저장했습니다.", "scope": scope})
 
 
 @app.route("/api/logs")
@@ -510,6 +565,7 @@ def api_health():
         "auto_mode": "cron" if is_cron_mode() else ("daemon" if is_cloudtype() else "local"),
         "scheduler_running": scheduler_running,
         "traffic_loop_running": traffic_loop_running,
+        "traffic_enabled": load_hub_state().get("traffic_enabled", True),
     })
 
 
@@ -554,9 +610,9 @@ def api_cron_traffic():
         return jsonify({"success": False, "error": "unauthorized"}), 401
 
     state = load_hub_state()
-    if not state.get("auto_enabled", True):
-        add_log("⏭️ 트래픽 Cron 건너뜀 (자동 추적 꺼짐)")
-        return jsonify({"success": True, "skipped": True, "reason": "auto_disabled"})
+    if not state.get("traffic_enabled", True):
+        add_log("⏭️ 트래픽 Cron 건너뜀 (traffic_enabled 꺼짐)")
+        return jsonify({"success": True, "skipped": True, "reason": "traffic_disabled"})
 
     if run_traffic_session is None:
         return jsonify({"success": False, "error": "traffic_session 미설치"}), 500

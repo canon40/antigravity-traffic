@@ -142,6 +142,7 @@ def default_hub_state() -> dict[str, Any]:
     return {
         "id": _STATE_ID,
         "auto_enabled": True,
+        "traffic_enabled": True,
         "last_cron_at": None,
         "last_traffic_at": None,
         "last_report": None,
@@ -162,6 +163,7 @@ def load_hub_state() -> dict[str, Any]:
             row = res["rows"][0]
             return {
                 "auto_enabled": bool(row.get("auto_enabled", True)),
+                "traffic_enabled": bool(row.get("traffic_enabled", True)),
                 "last_cron_at": row.get("last_cron_at"),
                 "last_traffic_at": row.get("last_traffic_at"),
                 "last_report": row.get("last_report"),
@@ -183,6 +185,7 @@ def save_hub_state(state: dict[str, Any]) -> dict[str, Any]:
     payload = {
         "id": _STATE_ID,
         "auto_enabled": bool(state.get("auto_enabled", True)),
+        "traffic_enabled": bool(state.get("traffic_enabled", True)),
         "last_cron_at": state.get("last_cron_at"),
         "last_traffic_at": state.get("last_traffic_at"),
         "last_report": state.get("last_report"),

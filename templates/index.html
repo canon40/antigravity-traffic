@@ -230,13 +230,16 @@
                 <div id="trafficBgPill" class="bg-pill off"><i class="fa-solid fa-circle"></i> 백그라운드 대기</div>
                 <div class="sidebar-actions">
                     <div class="btn-grid" style="margin:0;">
-                        <button id="startBtn" class="btn btn-start" onclick="toggleScheduler(true)">
+                        <button id="startBtn" class="btn btn-start" onclick="toggleScheduler(true, 'all')">
                             <i class="fa-solid fa-play"></i> 24h 시작
                         </button>
-                        <button id="stopBtn" class="btn btn-stop" onclick="toggleScheduler(false)" disabled>
-                            <i class="fa-solid fa-pause"></i> 중지
+                        <button id="stopBtn" class="btn btn-stop" onclick="toggleScheduler(false, 'rank')" disabled>
+                            <i class="fa-solid fa-pause"></i> 순위 중지
                         </button>
                     </div>
+                    <button class="btn" style="background:linear-gradient(135deg,#475569,#64748b);font-size:0.78rem;padding:10px;" id="stopTrafficBtn" onclick="toggleScheduler(false, 'traffic')">
+                        <i class="fa-solid fa-road"></i> 트래픽만 중지
+                    </button>
                     <button class="btn btn-track" onclick="trackNow()">
                         <i class="fa-solid fa-magnifying-glass-chart"></i> 지금 추적
                     </button>
@@ -524,14 +527,15 @@
         }
 
         function updateTrafficBgPill() {
-            const running = document.getElementById('engineStatus')?.classList.contains('running');
+            const pillOn = document.getElementById('trafficBgPill')?.dataset?.trafficOn === '1'
+                || document.getElementById('compactEngineStatus')?.classList.contains('running');
             const labelOn = '<i class="fa-solid fa-circle"></i> Traffic 백그라운드 동작 중';
             const labelOff = '<i class="fa-solid fa-circle"></i> Traffic 대기';
             ['trafficBgPill', 'trafficBgPillCompact'].forEach(id => {
                 const pill = document.getElementById(id);
                 if (!pill) return;
-                pill.className = running ? 'bg-pill' : 'bg-pill off';
-                pill.innerHTML = running ? labelOn : labelOff;
+                pill.className = pillOn ? 'bg-pill' : 'bg-pill off';
+                pill.innerHTML = pillOn ? labelOn : labelOff;
             });
         }
 
@@ -539,17 +543,20 @@
             return data && (data.auto_mode === 'cron' || data.auto_mode === 'daemon');
         }
 
-        function syncCompactTrafficStatus(data, running) {
+        function syncCompactTrafficStatus(data, rankRunning) {
+            const trafficOn = !!(data && (data.traffic_running || data.traffic_loop));
             const compactBadge = document.getElementById('compactEngineStatus');
             const compactText = document.getElementById('compactEngineStatusText');
             const compactRank = document.getElementById('compactRankVal');
+            const trafficPill = document.getElementById('trafficBgPill');
+            if (trafficPill) trafficPill.dataset.trafficOn = trafficOn ? '1' : '0';
             if (compactBadge && compactText) {
-                if (running) {
+                if (trafficOn) {
                     compactBadge.className = 'status-badge running';
-                    compactText.textContent = hubAuto24h(data) ? '24h 동작' : '추적 중';
+                    compactText.textContent = hubAuto24h(data) ? '24h 트래픽' : '트래픽 중';
                 } else {
                     compactBadge.className = 'status-badge stopped';
-                    compactText.textContent = hubAuto24h(data) ? '24h 꺼짐' : '중지됨';
+                    compactText.textContent = '트래픽 꺼짐';
                 }
             }
             if (compactRank && data) {
@@ -575,17 +582,8 @@
         }
 
         async function ensureTrafficRunning() {
-            try {
-                const res = await fetch('/api/status');
-                if (!res.ok) return;
-                const data = await res.json();
-                if (!data.running) {
-                    const start = await fetch('/api/start', { method: 'POST' });
-                    const started = await start.json();
-                    if (started.success) showToast(started.message || '24시간 Traffic 시작');
-                }
-                updateStatus();
-            } catch (e) { /* 서버 미기동 */ }
+            /* 서버(Cloudtype/Vercel/로컬)가 기동 시 자동 시작 — 페이지 로드 시 강제 시작하지 않음 */
+            updateStatus();
         }
 
         function switchTab(tabId, btn) {
@@ -829,9 +827,14 @@
             }
         }
 
-        async function toggleScheduler(start) {
+        async function toggleScheduler(start, scope) {
             try {
-                const res = await fetch(start ? '/api/start' : '/api/stop', { method: 'POST' });
+                const body = scope ? JSON.stringify({ scope: scope || (start ? 'all' : 'rank') }) : JSON.stringify({ scope: start ? 'all' : 'rank' });
+                const res = await fetch(start ? '/api/start' : '/api/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body,
+                });
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 const data = await res.json();
                 showToast(data.message || (data.success ? '완료' : '실패'));
@@ -1007,6 +1010,9 @@
             const badge = document.getElementById('engineStatus');
             const text = document.getElementById('engineStatusText');
             const running = !!data.running;
+            const trafficOn = !!(data.traffic_running || data.traffic_loop);
+            const trafficPill = document.getElementById('trafficBgPill');
+            if (trafficPill) trafficPill.dataset.trafficOn = trafficOn ? '1' : '0';
             if (running) {
                 badge.className = 'status-badge running';
                 const label24 = data.auto_mode === 'cron' ? '24h Cron' : (data.auto_mode === 'daemon' ? '24h 백그라운드' : (data.traffic_loop ? '추적·트래픽' : '추적 중'));
@@ -1164,7 +1170,7 @@
             const defaultTab = currentWorkspace === 'javis' ? 'tab-javis' : 'tab-dashboard';
             const defaultBtn = document.querySelector(`.tab-btn[data-tab="${defaultTab}"]`);
             if (defaultBtn) switchTab(defaultTab, defaultBtn);
-            await ensureTrafficRunning();
+            updateStatus();
             loadLatestAudit();
             loadConfig();
         })();

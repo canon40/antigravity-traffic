@@ -33,6 +33,9 @@ on conflict (id) do nothing;
 alter table public.rank_hub_state
   add column if not exists last_traffic_at timestamptz;
 
+alter table public.rank_hub_state
+  add column if not exists traffic_enabled boolean not null default true;
+
 -- RLS: 서비스 롤 키 사용 시 우회. anon 키만 쓸 경우 정책 추가 필요.
 alter table public.rank_history enable row level security;
 alter table public.rank_hub_state enable row level security;

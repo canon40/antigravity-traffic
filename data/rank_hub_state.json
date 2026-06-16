@@ -1,5 +1,6 @@
 {
   "auto_enabled": true,
+  "traffic_enabled": true,
   "last_cron_at": null,
   "last_report": null,
   "logs": [],
