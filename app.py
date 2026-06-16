@@ -16,6 +16,7 @@ from seo_checker import get_latest_audit, run_full_audit
 from keyword_analyzer import analyze_keyword, suggest_keywords_for_product, analyze_all_products
 from seo_content_builder import generate_content, list_workflows, save_content
 from rank_tracker import check_product_rank
+from javis_programs import get_catalog, launch_program
 
 app = Flask(__name__)
 
@@ -275,6 +276,25 @@ def service_worker():
 @app.route("/openapi.json")
 def openapi_spec():
     return send_from_directory(".", "openapi.json")
+
+
+@app.route("/api/javis/programs")
+def api_javis_programs():
+    return jsonify(get_catalog())
+
+
+@app.route("/api/javis/launch", methods=["POST"])
+def api_javis_launch():
+    data = request.get_json(silent=True) or {}
+    program_id = (data.get("id") or data.get("program_id") or "").strip()
+    if not program_id:
+        return jsonify({"success": False, "error": "program id 필요"}), 400
+    result = launch_program(program_id)
+    if result.get("success"):
+        add_log(f"🚀 JARVIS/로컬 프로그램 실행: {program_id}")
+    else:
+        add_log(f"⚠️ 프로그램 실행 실패: {result.get('error', program_id)}")
+    return jsonify(result)
 
 
 if __name__ == "__main__":

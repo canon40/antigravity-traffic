@@ -50,7 +50,9 @@ agent_dialogue.jsonl
 .javis/
 .openclaw/
 
-# OS
-Thumbs.db
+blog_drafts/
+naver_response.html
+seo_strategy_report.html
+
 Desktop.ini
 .DS_Store

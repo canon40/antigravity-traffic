@@ -107,6 +107,28 @@
             background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px; margin-bottom: 10px;
             border-left: 3px solid #a855f7;
         }
+        .hub-status { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+        .hub-pill {
+            font-size: 0.72rem; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.04); color: var(--text-sub);
+        }
+        .hub-pill.ok { color: var(--accent-green); border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.1); }
+        .hub-pill.warn { color: var(--accent-yellow); border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.1); }
+        .hub-cat-title { font-size: 0.8rem; color: #c4b5fd; margin: 14px 0 8px; font-weight: 700; letter-spacing: 0.02em; }
+        .program-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        @media (min-width: 520px) { .program-grid { grid-template-columns: 1fr 1fr; } }
+        .program-card {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
+            padding: 14px; display: flex; flex-direction: column; gap: 8px; min-height: 120px;
+        }
+        .program-card.unavailable { opacity: 0.45; }
+        .program-card h4 { font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        .program-card p { font-size: 0.78rem; color: var(--text-sub); line-height: 1.45; flex: 1; }
+        .program-card .btn-launch {
+            border: none; border-radius: 10px; padding: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff;
+        }
+        .program-card .btn-launch:disabled { opacity: 0.35; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -120,8 +142,8 @@
         </div>
 
         <header>
-            <h1>PERMACOAT SEO MONITOR</h1>
-            <p>네이버 쇼핑 순위 추적 · SEO 체크리스트 · 모바일 리포트</p>
+            <h1>나눔랩 SEO · JARVIS 허브</h1>
+            <p>순위 추적 · SEO · 블로그 · JARVIS 프로그램 런처</p>
         </header>
 
         <div class="glass-panel">
@@ -165,6 +187,7 @@
             <button class="tab-btn" data-tab="tab-chart">순위 그래프</button>
             <button class="tab-btn" data-tab="tab-seo">SEO 체크</button>
             <button class="tab-btn" data-tab="tab-blog">블로그</button>
+            <button class="tab-btn" data-tab="tab-javis">JARVIS</button>
             <button class="tab-btn" data-tab="tab-report">일일 리포트</button>
             <button class="tab-btn" data-tab="tab-logs">로그</button>
         </div>
@@ -246,6 +269,18 @@
             </div>
         </div>
 
+        <div id="tab-javis" class="tab-content">
+            <div class="glass-panel">
+                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-robot"></i> JARVIS · 로컬 프로그램</h3>
+                <div id="javisHubStatus" class="hub-status">
+                    <span class="hub-pill">연동 상태 확인 중...</span>
+                </div>
+                <div id="javisProgramList">
+                    <div class="empty-state">프로그램 목록 로딩 중...</div>
+                </div>
+            </div>
+        </div>
+
         <div id="tab-report" class="tab-content">
             <div class="glass-panel">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -296,6 +331,7 @@
             if (tabId === 'tab-report') loadReport();
             if (tabId === 'tab-seo') loadLatestAudit();
             if (tabId === 'tab-blog') initBlogTab();
+            if (tabId === 'tab-javis') loadJavisHub();
         }
 
         async function loadConfig() {
@@ -378,6 +414,56 @@
                 data.saved_path ? '저장 완료' : '',
             ].filter(Boolean).map(t => `<span class="blog-chip">${t}</span>`).join('');
             showToast('블로그 초안이 생성되었습니다.');
+            updateLogs();
+        }
+
+        async function loadJavisHub() {
+            const statusBox = document.getElementById('javisHubStatus');
+            const listBox = document.getElementById('javisProgramList');
+            try {
+                const res = await fetch('/api/javis/programs');
+                const data = await res.json();
+                const pills = [];
+                pills.push(`<span class="hub-pill ${data.jarvis_installed ? 'ok' : 'warn'}">JARVIS ${data.jarvis_installed ? '설치됨' : '경로 없음'}</span>`);
+                pills.push(`<span class="hub-pill ${data.bridge?.ok ? 'ok' : 'warn'}">${data.bridge?.detail || '브리지'}</span>`);
+                pills.push(`<span class="hub-pill">${(data.programs || []).filter(p => p.available).length}개 실행 가능</span>`);
+                statusBox.innerHTML = pills.join('');
+
+                const byCat = {};
+                (data.programs || []).forEach(p => {
+                    if (!byCat[p.category]) byCat[p.category] = { label: p.category_label, items: [] };
+                    byCat[p.category].items.push(p);
+                });
+                let html = '';
+                Object.values(byCat).forEach(group => {
+                    html += `<div class="hub-cat-title">${group.label}</div><div class="program-grid">`;
+                    group.items.forEach(p => {
+                        html += `<div class="program-card ${p.available ? '' : 'unavailable'}">
+                            <h4><i class="fa-solid ${p.icon || 'fa-play'}"></i> ${p.name}</h4>
+                            <p>${p.description}</p>
+                            <button class="btn-launch" ${p.available ? '' : 'disabled'} onclick="launchJavisProgram('${p.id}')">
+                                <i class="fa-solid fa-rocket"></i> 실행
+                            </button>
+                        </div>`;
+                    });
+                    html += '</div>';
+                });
+                listBox.innerHTML = html || '<div class="empty-state">등록된 프로그램이 없습니다.</div>';
+            } catch (e) {
+                statusBox.innerHTML = '<span class="hub-pill warn">목록 로드 실패</span>';
+                listBox.innerHTML = '<div class="empty-state">서버 연결을 확인하세요.</div>';
+            }
+        }
+
+        async function launchJavisProgram(id) {
+            showToast('프로그램 실행 중...');
+            const res = await fetch('/api/javis/launch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id }),
+            });
+            const data = await res.json();
+            showToast(data.message || data.error || '요청 완료');
             updateLogs();
         }
 
