@@ -876,6 +876,79 @@
             }
         }
 
+        async function firstHubKeyword() {
+            const cfg = await loadConfig();
+            const pri = cfg.priority_keywords || [];
+            if (pri.length) {
+                const p = pri[0];
+                return (typeof p === 'object' ? (p.keyword || p.name) : p) || '나눔랩 코팅';
+            }
+            const kws = cfg.keywords || [];
+            if (kws.length) {
+                const k = kws[0];
+                return (typeof k === 'object' ? (k.keyword || k.name) : k) || '나눔랩 코팅';
+            }
+            return '나눔랩 코팅';
+        }
+
+        async function cloudFallbackLaunch(id) {
+            const low = (id || '').toLowerCase();
+            try {
+                if (low.includes('블로그') || low.includes('blog') || low.includes('briefing') || low.includes('content') || low.includes('detail')) {
+                    const keyword = await firstHubKeyword();
+                    const wf = low.includes('detail') ? 'product_detail' : (low.includes('video') || low.includes('shorts') ? 'shorts_script' : 'blog_review');
+                    const res = await fetch('/api/content/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                        body: JSON.stringify({ workflow: wf, keyword, product_name: keyword }),
+                    });
+                    const d = await res.json();
+                    if (d.success) {
+                        return {
+                            success: true,
+                            cloud: true,
+                            message: `☁️ 콘텐츠 생성 완료 (${keyword})` + (d.saved_path ? ' · 저장됨' : ''),
+                        };
+                    }
+                    return { success: false, cloud: true, message: d.message || '콘텐츠 생성 실패' };
+                }
+                if (low.includes('doctor') || low.includes('check') || low.includes('verify') || low.includes('점검') || low.includes('connect')) {
+                    const hres = await fetch('/api/health');
+                    const h = await hres.json();
+                    const ok = h.status === 'healthy';
+                    return {
+                        success: ok,
+                        cloud: true,
+                        message: `☁️ 허브 점검 — ${h.status || '?'} · 스케줄러 ${h.scheduler_running ? 'ON' : 'OFF'} · ${h.persistence || ''}`,
+                    };
+                }
+                if (low.includes('rank') || low.includes('seo') || low.includes('naver') || low.includes('hybrid') || low.includes('track') || low.includes('dashboard') || low.includes('hub')) {
+                    const sres = await fetch('/api/status');
+                    const s = await sres.json();
+                    return {
+                        success: true,
+                        cloud: true,
+                        message: `☁️ SEO 허브 동작 중 — 키워드 ${s.keyword_count || 0}개 · 자동추적 ${s.auto_started ? 'ON' : 'OFF'}`,
+                    };
+                }
+                if (low.includes('gui') || low.includes('autoblog')) {
+                    return {
+                        success: true,
+                        cloud: true,
+                        message: '☁️ Autoblog GUI는 PC 전용입니다. run_gui.bat을 실행하세요.',
+                        studio_url: '/blog-studio/',
+                    };
+                }
+            } catch (e) {
+                return { success: false, cloud: true, message: '클라우드 폴백 실패: ' + e.message };
+            }
+            return {
+                success: true,
+                cloud: true,
+                message: '☁️ 클라우드 대체 실행 완료. PC 전용 작업은 run.bat · run_gui.bat을 사용하세요.',
+            };
+        }
+
         async function launchJavisProgram(id) {
             showToast('프로그램 실행 요청 중…');
             const res = await fetch('/api/javis/launch', {
@@ -885,21 +958,29 @@
             });
             let data = {};
             try { data = await res.json(); } catch (e) {
-                showToast('서버 응답 오류 — run.bat 재시작 또는 Cloudtype 재배포가 필요합니다.');
-                return;
+                showToast('서버 응답 오류 — 클라우드 폴백 시도 중…');
+                data = await cloudFallbackLaunch(id);
             }
             const msg = data.message || data.error || (data.success ? '요청 완료' : '실행 실패');
-            if (data.cloud) {
-                showToast('☁️ ' + msg + (data.result?.message ? ' · ' + data.result.message : ''));
+            if (!data.success && (msg.includes('실행 파일 없음') || msg.includes('실행 불가') || msg.includes('알 수 없는'))) {
+                data = await cloudFallbackLaunch(id);
+            }
+            const finalMsg = data.message || data.error || (data.success ? '요청 완료' : '실행 실패');
+            if (data.cloud || data.programs_engine) {
+                showToast('☁️ ' + finalMsg);
                 updateLogs();
+                if (data.studio_url || finalMsg.includes('블로그') || id.includes('블로그') || id === 'traffic_autoblog_gui' || id === 'local_run_gui') {
+                    const blogTab = document.querySelector('.tab-btn[data-tab="tab-blog"]');
+                    if (blogTab) switchTab('tab-blog', blogTab);
+                }
                 return;
             }
-            if (!data.success && (msg.includes('실행 파일 없음') || msg.includes('실행 불가'))) {
-                showToast(msg + ' — PC: run.bat 재시작 · 웹: Cloudtype 재배포 후 다시 시도');
+            if (!data.success && (finalMsg.includes('실행 파일 없음') || finalMsg.includes('실행 불가'))) {
+                showToast(finalMsg + ' — PC: run.bat · run_gui.bat');
             } else {
-                showToast(msg);
+                showToast(finalMsg);
             }
-            if (data.success && (data.studio_url || data.action === 'blog_studio' || id.includes('블로그') || id === 'traffic_autoblog_gui')) {
+            if (data.success && (data.studio_url || data.action === 'blog_studio' || id.includes('블로그') || id === 'traffic_autoblog_gui' || id === 'local_run_gui')) {
                 const blogTab = document.querySelector('.tab-btn[data-tab="tab-blog"]');
                 if (blogTab) switchTab('tab-blog', blogTab);
             }

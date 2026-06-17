@@ -22,7 +22,9 @@ echo.
 
 echo [2] 서버 시작 (http://127.0.0.1:5000)
 echo     휴대폰: 같은 Wi-Fi에서 PC IP:5000
+echo     permacoat.shop 과 별도 — 로컬은 아래 주소 사용
 echo.
 set PORT=5000
+start "" "http://127.0.0.1:5000"
 "%PY%" app.py
 pause

@@ -21,6 +21,14 @@
   ],
   "routes": [
     {
+      "src": "/api/javis/launch",
+      "dest": "/api/javis_hub"
+    },
+    {
+      "src": "/api/javis/programs",
+      "dest": "/api/javis_hub"
+    },
+    {
       "src": "/static/(.*)",
       "dest": "/static/$1"
     },
