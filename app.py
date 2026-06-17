@@ -3,6 +3,7 @@ import sys
 import threading
 import time
 import traceback
+import locale
 from datetime import datetime
 from pathlib import Path
 
@@ -114,12 +115,7 @@ _bootstrap_from_persistence()
 def add_log(msg):
     timestamp = datetime.now().strftime("%H:%M:%S")
     formatted_msg = f"[{timestamp}] {msg}"
-    try:
-        print(formatted_msg)
-    except UnicodeEncodeError:
-        enc = getattr(sys.stdout, "encoding", None) or "utf-8"
-        safe = formatted_msg.encode(enc, errors="replace").decode(enc, errors="replace")
-        print(safe)
+    _safe_console_print(formatted_msg)
     logs_queue.append(formatted_msg)
     if len(logs_queue) > 150:
         logs_queue.pop(0)
@@ -130,6 +126,28 @@ def add_log(msg):
             save_hub_state(state)
         except Exception:
             pass
+
+
+def _safe_console_print(text: str) -> None:
+    """cp949 콘솔에서도 UnicodeEncodeError 없이 출력."""
+    stream = sys.stdout
+    encoding = (
+        getattr(stream, "encoding", None)
+        or locale.getpreferredencoding(False)
+        or "utf-8"
+    )
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        safe = text.encode(encoding, errors="backslashreplace").decode(encoding, errors="replace")
+        try:
+            print(safe)
+        except Exception:
+            # stdout 자체가 비정상일 때 최후 수단으로 stderr 사용
+            try:
+                sys.stderr.write(safe + "\n")
+            except Exception:
+                pass
 
 
 def scheduler_loop():
