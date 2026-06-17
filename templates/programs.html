@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>독립 프로그램 허브</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #111a2c;
+      --line: #22314f;
+      --text: #e8eefc;
+      --sub: #9fb0d3;
+      --accent: #4f8cff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 800px at 20% -10%, #17274a 0%, var(--bg) 60%);
+      color: var(--text);
+      font-family: "Segoe UI", "Noto Sans KR", sans-serif;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+    .head { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .title { font-size: 24px; font-weight: 700; }
+    .sub { color: var(--sub); font-size: 14px; }
+    .actions { display: flex; gap: 8px; }
+    .btn {
+      border: 1px solid var(--line);
+      background: #0f1728;
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .tools { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+    input, select {
+      background: #0f1728;
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+    #query { min-width: 260px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(19,31,54,.95), rgba(14,23,40,.95));
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 166px;
+    }
+    .card h3 { margin: 0; font-size: 16px; }
+    .meta { color: var(--sub); font-size: 12px; }
+    .desc { color: #c8d6f5; font-size: 13px; line-height: 1.45; min-height: 38px; }
+    .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .badge {
+      font-size: 11px;
+      border: 1px solid var(--line);
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: var(--sub);
+    }
+    .badge.ok { color: #70dfa6; border-color: #2b6d4b; }
+    .badge.off { color: #f2b56c; border-color: #7a4f1a; }
+    .empty {
+      border: 1px dashed var(--line);
+      color: var(--sub);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <div class="title">독립 프로그램 허브</div>
+        <div class="sub">각 프로그램을 별도 UI/UX 페이지로 독립 실행할 수 있습니다.</div>
+      </div>
+      <div class="actions">
+        <a class="btn" href="/">통합 허브</a>
+        <button class="btn" onclick="loadPrograms()">새로고침</button>
+      </div>
+    </div>
+
+    <div class="tools">
+      <input id="query" placeholder="프로그램 검색 (이름, ID, 설명)">
+      <select id="workspace">
+        <option value="all">전체 워크스페이스</option>
+        <option value="traffic">traffic</option>
+        <option value="javis">javis</option>
+      </select>
+      <select id="category">
+        <option value="all">전체 카테고리</option>
+      </select>
+    </div>
+
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <script>
+    let programs = [];
+
+    function escapeHtml(v) {
+      return String(v || "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    }
+
+    function uniqueValues(list, key) {
+      const set = new Set();
+      list.forEach(item => set.add((item[key] || "").toLowerCase()));
+      return [...set].filter(Boolean).sort();
+    }
+
+    function refillCategoryOptions(list) {
+      const sel = document.getElementById("category");
+      const keep = sel.value;
+      sel.innerHTML = '<option value="all">전체 카테고리</option>';
+      uniqueValues(list, "category").forEach(cat => {
+        const op = document.createElement("option");
+        op.value = cat;
+        op.textContent = cat;
+        sel.appendChild(op);
+      });
+      if ([...sel.options].some(o => o.value === keep)) sel.value = keep;
+    }
+
+    function applyFilters() {
+      const q = document.getElementById("query").value.trim().toLowerCase();
+      const ws = document.getElementById("workspace").value;
+      const cat = document.getElementById("category").value;
+      const filtered = programs.filter(p => {
+        if (ws !== "all" && (p.workspace || "").toLowerCase() !== ws) return false;
+        if (cat !== "all" && (p.category || "").toLowerCase() !== cat) return false;
+        if (!q) return true;
+        return [p.id, p.name, p.description, p.launcher].some(v => String(v || "").toLowerCase().includes(q));
+      });
+      renderGrid(filtered);
+    }
+
+    function renderGrid(items) {
+      const box = document.getElementById("grid");
+      if (!items.length) {
+        box.innerHTML = '<div class="empty">표시할 프로그램이 없습니다.</div>';
+        return;
+      }
+      box.innerHTML = items.map(p => {
+        const badge = p.available ? '<span class="badge ok">실행 가능</span>' : '<span class="badge off">제한됨</span>';
+        return `
+          <article class="card">
+            <h3>${escapeHtml(p.name)}</h3>
+            <div class="meta">${escapeHtml(p.id)}</div>
+            <div class="desc">${escapeHtml(p.description || "")}</div>
+            <div class="row">
+              <span class="badge">${escapeHtml(p.workspace || "unknown")}</span>
+              <span class="badge">${escapeHtml(p.category || "etc")}</span>
+              ${badge}
+            </div>
+            <div class="row">
+              <a class="btn" href="/program/${encodeURIComponent(p.id)}">독립 UI 열기</a>
+              <button class="btn" onclick="launchProgram('${encodeURIComponent(p.id)}')">즉시 실행</button>
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    async function launchProgram(id) {
+      const decodedId = decodeURIComponent(id);
+      try {
+        const res = await fetch("/api/javis/launch", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({id: decodedId})
+        });
+        const data = await res.json();
+        const msg = data.message || data.error || "응답 없음";
+        alert(`[${decodedId}] ${msg}`);
+      } catch (e) {
+        alert(`[${decodedId}] 실행 요청 실패: ${e}`);
+      }
+    }
+
+    async function loadPrograms() {
+      const box = document.getElementById("grid");
+      box.innerHTML = '<div class="empty">불러오는 중...</div>';
+      try {
+        const res = await fetch("/api/programs");
+        const data = await res.json();
+        programs = data.programs || [];
+        refillCategoryOptions(programs);
+        applyFilters();
+      } catch (e) {
+        box.innerHTML = `<div class="empty">프로그램 로드 실패: ${escapeHtml(e)}</div>`;
+      }
+    }
+
+    document.getElementById("query").addEventListener("input", applyFilters);
+    document.getElementById("workspace").addEventListener("change", applyFilters);
+    document.getElementById("category").addEventListener("change", applyFilters);
+    loadPrograms();
+  </script>
+</body>
+</html>
