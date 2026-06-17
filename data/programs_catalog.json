@@ -2,7 +2,7 @@
   "version": 1,
   "jarvis_root_hint": "D:\\@code\\javis",
   "jarvis_remote": "https://github.com/FatihMakes/Mark-XXXIX.git",
-  "traffic_count": 33,
+  "traffic_count": 4,
   "javis_count": 94,
   "programs": [
     {
@@ -16,136 +16,6 @@
       "icon": "fa-gauge-high"
     },
     {
-      "id": "local_run_blog_post",
-      "name": "blog post",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_blog_post.bat",
-      "category": "blog",
-      "description": "run_blog_post.bat — traffic 로컬 실행",
-      "icon": "fa-blog"
-    },
-    {
-      "id": "local_run_boost",
-      "name": "boost",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_boost.bat",
-      "category": "agent",
-      "description": "run_boost.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "local_run_boot",
-      "name": "boot",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_boot.bat",
-      "category": "agent",
-      "description": "run_boot.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "traffic_content_factory",
-      "name": "콘텐츠 팩토리",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_content_factory.bat",
-      "category": "blog",
-      "description": "상품·블로그용 콘텐츠 생성 파이프라인",
-      "icon": "fa-industry"
-    },
-    {
-      "id": "local_run_daily_ops",
-      "name": "daily ops",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_daily_ops.bat",
-      "category": "agent",
-      "description": "run_daily_ops.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "local_run_daily_weekday",
-      "name": "daily weekday",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_daily_weekday.bat",
-      "category": "agent",
-      "description": "run_daily_weekday.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "local_run_dev_pipeline",
-      "name": "dev pipeline",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_dev_pipeline.bat",
-      "category": "agent",
-      "description": "run_dev_pipeline.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "local_run_draft",
-      "name": "draft",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_draft.bat",
-      "category": "agent",
-      "description": "run_draft.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "local_run_drawer",
-      "name": "drawer",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_drawer.bat",
-      "category": "agent",
-      "description": "run_drawer.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "local_run_fable5",
-      "name": "fable5",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_fable5.bat",
-      "category": "agent",
-      "description": "run_fable5.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "local_run_fable_local",
-      "name": "fable local",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_fable_local.bat",
-      "category": "agent",
-      "description": "run_fable_local.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "traffic_autoblog_gui",
-      "name": "Autoblog GUI",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_gui.bat",
-      "category": "blog",
-      "description": "네이버·티스토리 블로그 자동화 데스크톱 GUI",
-      "icon": "fa-window-maximize"
-    },
-    {
-      "id": "local_run_gui_full",
-      "name": "gui full",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_gui_full.bat",
-      "category": "agent",
-      "description": "run_gui_full.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
       "id": "local_run_install",
       "name": "install",
       "workspace": "traffic",
@@ -156,184 +26,24 @@
       "icon": "fa-plug"
     },
     {
-      "id": "local_run_jarvis_detail_page",
-      "name": "jarvis detail page",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_jarvis_detail_page.bat",
-      "category": "studio",
-      "description": "run_jarvis_detail_page.bat — traffic 로컬 실행",
-      "icon": "fa-store"
-    },
-    {
-      "id": "local_run_jarvis_video_studio",
-      "name": "jarvis video studio",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_jarvis_video_studio.bat",
-      "category": "video",
-      "description": "run_jarvis_video_studio.bat — traffic 로컬 실행",
-      "icon": "fa-film"
-    },
-    {
-      "id": "traffic_javis_connect",
-      "name": "JARVIS 연동 점검",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_javis_connect.bat",
-      "category": "ops",
-      "description": "Supabase·환경변수 동기화 및 연결 확인",
-      "icon": "fa-plug"
-    },
-    {
-      "id": "local_run_mobile",
-      "name": "mobile",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_mobile.bat",
-      "category": "agent",
-      "description": "run_mobile.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "traffic_monitor_auto",
-      "name": "순위 자동 모니터 (PC)",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_monitor_auto.bat",
-      "category": "seo",
-      "description": "로컬 PC 24시간 순위 모니터링",
-      "icon": "fa-clock"
-    },
-    {
-      "id": "local_run_open_supabase_sql",
-      "name": "open supabase sql",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_open_supabase_sql.bat",
-      "category": "agent",
-      "description": "run_open_supabase_sql.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "local_run_openclaw",
-      "name": "openclaw",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_openclaw.bat",
-      "category": "agent",
-      "description": "run_openclaw.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
       "id": "traffic_programs_check",
       "name": "프로그램 점검",
       "workspace": "traffic",
       "source": "local",
       "launcher": "run_programs_check.bat",
       "category": "ops",
-      "description": "Python·Ollama·Playwright·브리지 순차 점검",
+      "description": "허브 모듈·API 순차 점검",
       "icon": "fa-stethoscope"
     },
     {
-      "id": "traffic_rank_check",
-      "name": "순위 1회 점검",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_rank_check.bat",
-      "category": "seo",
-      "description": "CLI 순위 추적 1회 실행",
-      "icon": "fa-ranking-star"
-    },
-    {
       "id": "local_run_seo_hub_verify",
-      "name": "seo hub verify",
+      "name": "허브 배포 검증",
       "workspace": "traffic",
       "source": "local",
       "launcher": "run_seo_hub_verify.bat",
-      "category": "seo",
-      "description": "run_seo_hub_verify.bat — traffic 로컬 실행",
-      "icon": "fa-magnifying-glass-chart"
-    },
-    {
-      "id": "traffic_seo_pipeline",
-      "name": "SEO 파이프라인",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_seo_pipeline.bat",
-      "category": "seo",
-      "description": "키워드·순위·콘텐츠 일괄 SEO 작업",
-      "icon": "fa-diagram-project"
-    },
-    {
-      "id": "local_run_setup_check",
-      "name": "setup check",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_setup_check.bat",
       "category": "ops",
-      "description": "run_setup_check.bat — traffic 로컬 실행",
-      "icon": "fa-plug"
-    },
-    {
-      "id": "traffic_shorts_factory",
-      "name": "숏츠 팩토리 (로컬)",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_shorts_factory.bat",
-      "category": "video",
-      "description": "쇼핑·숏츠 영상 제작 (로컬 연동)",
-      "icon": "fa-film"
-    },
-    {
-      "id": "local_run_store_detail_preview",
-      "name": "store detail preview",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_store_detail_preview.bat",
-      "category": "studio",
-      "description": "run_store_detail_preview.bat — traffic 로컬 실행",
-      "icon": "fa-store"
-    },
-    {
-      "id": "local_run_store_pipeline",
-      "name": "store pipeline",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_store_pipeline.bat",
-      "category": "agent",
-      "description": "run_store_pipeline.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "local_run_super_agents",
-      "name": "super agents",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_super_agents.bat",
-      "category": "agent",
-      "description": "run_super_agents.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "local_run_traffic_focus",
-      "name": "traffic focus",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_traffic_focus.bat",
-      "category": "agent",
-      "description": "run_traffic_focus.bat — traffic 로컬 실행",
-      "icon": "fa-robot"
-    },
-    {
-      "id": "local_run_youtube_evolution",
-      "name": "youtube evolution",
-      "workspace": "traffic",
-      "source": "local",
-      "launcher": "run_youtube_evolution.bat",
-      "category": "video",
-      "description": "run_youtube_evolution.bat — traffic 로컬 실행",
-      "icon": "fa-film"
+      "description": "로컬/프로덕션 SEO 허브 API 점검",
+      "icon": "fa-stethoscope"
     },
     {
       "id": "javis_run_1인홈페이지_수익",

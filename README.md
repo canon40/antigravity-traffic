@@ -1,54 +1,58 @@
-# Antigravity Traffic
+# Permacoat SEO 허브 (antigravity-traffic)
 
-[canon40/antigravity-traffic](https://github.com/canon40/antigravity-traffic) — 네이버 쇼핑 SEO·트래픽·블로그 자동화 통합 저장소입니다.
+네이버 쇼핑 **순위 추적**, **SEO 점검**, **블로그 초안 생성**을 한 화면에서 운영하는 프로그램입니다.
 
-이 저장소에는 **두 계열**이 공존합니다.
-
-| 계열 | 대상 | 빠른 시작 |
-|------|------|-----------|
-| **Autoblog (login2)** | 네이버·티스토리 발행, Vercel 트래픽, 쇼츠, 모바일 원격 | `run_install.bat` → `run_gui.bat` |
-| **SEO Rank Tools** | 순위 체크, 트래픽 집중, 블로그 초안 | `run_rank_check.bat`, `run_traffic_focus.bat` |
-
-에이전트·개발자는 Autoblog 작업 시 [`AGENTS.md`](AGENTS.md)를 먼저 읽으세요.
+- **웹:** [permacoat.shop](https://permacoat.shop)
+- **백엔드 24h:** Cloudtype (`app.py` + gunicorn)
+- **프론트·블로그 API:** Vercel (`vercel.json`)
 
 ---
 
-## Autoblog (login2)
+## 이 폴더에 남은 것 (핵심만)
 
-네이버·티스토리 블로그 자동 발행, 상품 트래픽(Vercel), 쇼츠 콘티·FLOW, 모바일 원격 제어.
-
-```bash
-copy accounts.json.example accounts.json   # 값 입력 후
-run_install.bat
-run_gui.bat
+```
+login2/
+├── app.py                 # Flask 메인 (순위·SEO·블로그 API)
+├── templates/index.html   # 대시보드 UI
+├── static/                # PWA manifest, service worker
+├── api/hub_content.py     # Vercel 블로그 초안 API
+├── vercel.json            # permacoat.shop 배포 설정
+├── .cloudtype/app.yaml    # Cloudtype gunicorn 설정
+├── config.defaults.json   # 기본 키워드·상품
+├── data/                  # 프로그램 카탈로그·상태 시드
+├── vercel_traffic/
+│   └── traffic_session.py # HTTP 트래픽 1회 방문
+└── scripts/               # 검증·일일 순위 스크립트
 ```
 
-| 모듈 | 설명 |
-|------|------|
-| `blog_main.py` | Tk GUI 메인 |
-| `vercel_traffic_client.py` | Vercel 클라우드 트래픽 |
-| `vercel_traffic/` | Vercel 배포용 API + Traffic Hub UI |
-| `mobile_server.py` | 모바일 원격 (8787) |
-| `shorts_factory/` | 쇼츠 콘티·FLOW 보드 |
+---
 
-- Vercel Root Directory: **`vercel_traffic`**
-- 연동 검증: `python scripts/verify_vercel_traffic.py`
-- 문서: [`wiki/04_ai_briefing_geo.md`](wiki/04_ai_briefing_geo.md), [`docs/checklists/youtube_4videos_blog_shorts.md`](docs/checklists/youtube_4videos_blog_shorts.md)
+## 실행 방법 (PC 로컬)
 
-`accounts.json`과 `.env`는 커밋하지 마세요.
+```bat
+run_install.bat   :: 최초 1회
+run.bat           :: http://127.0.0.1:5000
+```
+
+| BAT | 용도 |
+|-----|------|
+| `run.bat` | 로컬 SEO 허브 서버 |
+| `run_install.bat` | venv + 패키지 설치 |
+| `run_seo_hub_verify.bat` | API 배포 검증 |
+| `rank_daily.bat` | 순위 1회 추적 |
+| `traffic_once.bat` | 트래픽 1회 테스트 |
+| `run_programs_check.bat` | 모듈 점검 |
 
 ---
 
-## SEO Rank Tools (레거시 루트 스크립트)
+## 배포
 
-네이버 쇼핑 순위·트래픽·블로그 초안 (기존 `rank_*.py`, `traffic_single.py` 등).
+- **Cloudtype Start command:** `gunicorn app:app -b 0.0.0.0:8000 --timeout 120 --workers 1 --access-logfile -`
+- 문서: `docs/setup-cloudtype.md`, `docs/setup-vercel.md`
 
-| BAT | 기능 |
-|-----|------|
-| `run_rank_check.bat` | 순위 즉시 체크 |
-| `run_traffic_focus.bat` | 자동차코팅제 집중 트래픽 |
-| `run_blog_post.bat` | SEO 블로그 글 생성 |
+---
 
-보안 설정: `security_vault/credentials.json` (커밋 금지)
+## 삭제된 것 (레거시)
 
-자세한 루틴·옵션은 원격 초기 README 내용을 참고하거나 각 스크립트 `--help`를 사용하세요.
+Autoblog GUI, 숏츠 팩토리, Playwright 블로그 발행, 모바일 앱, 영상 스튜디오 등은 이 저장소에서 제거했습니다.  
+JARVIS 전체 기능은 `D:\@code\javis` 저장소를 사용하세요.

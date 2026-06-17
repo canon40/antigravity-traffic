@@ -108,6 +108,10 @@
         .result-card.down { border-left-color: var(--accent-red); }
         .result-card .kw { font-weight: 700; font-size: 0.95rem; }
         .result-card .detail { font-size: 0.82rem; color: var(--text-sub); margin-top: 4px; }
+        .kw-chip { display: inline-block; font-size: 0.72rem; padding: 4px 8px; margin: 3px 4px 3px 0; border-radius: 999px; background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
+        .kw-chip small { color: #64748b; margin-left: 4px; }
+        .rank-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.8rem; }
+        .rank-row:last-child { border-bottom: none; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; }
         .badge-up { background: rgba(16,185,129,0.2); color: var(--accent-green); }
         .badge-down { background: rgba(239,68,68,0.2); color: var(--accent-red); }
@@ -224,9 +228,11 @@
                     <div style="text-align:right;">
                         <div style="font-size:0.72rem;color:var(--text-sub);">최근 순위</div>
                         <div id="currentRankVal" class="rank-big" style="font-size:1.4rem;">--</div>
+                        <div id="currentRankKw" class="sidebar-mini" style="margin-top:2px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
                     </div>
                 </div>
                 <div id="cronHint" class="sidebar-mini" style="display:none;"></div>
+                <div id="trafficTargetHint" class="sidebar-mini" style="display:none;margin-top:6px;padding:8px;background:rgba(59,130,246,0.08);border-radius:8px;"></div>
                 <div id="trafficBgPill" class="bg-pill off"><i class="fa-solid fa-circle"></i> 백그라운드 대기</div>
                 <div class="sidebar-actions">
                     <div class="btn-grid" style="margin:0;">
@@ -311,6 +317,10 @@
         </div>
 
         <div id="tab-dashboard" class="tab-content active">
+            <div class="glass-panel" id="keywordTrafficPanel" style="margin-bottom:16px;">
+                <h3 style="font-size:0.95rem;margin-bottom:10px;"><i class="fa-solid fa-key"></i> 추적 키워드 · 트래픽 대상</h3>
+                <div id="keywordTrafficBox" class="sidebar-mini">설정 로딩 중...</div>
+            </div>
             <div class="glass-panel">
                 <div class="btn-grid btn-grid-3" style="margin-bottom:14px;">
                     <button class="btn btn-audit" onclick="runSeoAudit()">
@@ -345,6 +355,10 @@
         </div>
 
         <div id="tab-chart" class="tab-content">
+            <div class="glass-panel" style="margin-bottom:16px;">
+                <h3 style="font-size:0.95rem;margin-bottom:8px;"><i class="fa-solid fa-list"></i> 키워드별 최근 순위</h3>
+                <div id="keywordRankTable" class="sidebar-mini">「지금 추적」 후 표시됩니다.</div>
+            </div>
             <div class="glass-panel">
                 <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-chart-line"></i> 순위 변동 (낮을수록 상위)</h3>
                 <div style="height:260px;"><canvas id="rankingChart"></canvas></div>
@@ -602,6 +616,73 @@
             if (tabId === 'tab-blog') initBlogTab();
             if (tabId === 'tab-javis' || tabId === 'tab-javis-bridge') loadProgramHub('javis');
             if (tabId === 'tab-local') loadProgramHub('traffic');
+        }
+
+        function renderKeywordTrafficPanel(data, config) {
+            const box = document.getElementById('keywordTrafficBox');
+            if (!box) return;
+            const priority = (data.priority_keywords && data.priority_keywords.length)
+                ? data.priority_keywords
+                : (config.priority_keywords || []).slice(0, 12).map(p => ({
+                    keyword: p.keyword,
+                    product_id: p.product_id,
+                }));
+            const reportItems = (data.last_report && data.last_report.items) || [];
+            const rankByKw = {};
+            reportItems.forEach(item => {
+                if (item.keyword) rankByKw[item.keyword] = item.rank_text || item.rank || '—';
+            });
+
+            let html = '<div style="margin-bottom:10px;"><strong style="color:#e2e8f0;font-size:0.82rem;">순위 추적 키워드</strong> ';
+            html += `<span style="color:#94a3b8;">(우선 ${priority.length || data.priority_count || 0}개 · 전체 ${data.keyword_count || 0}개)</span></div>`;
+            if (!priority.length) {
+                html += '<div style="color:#94a3b8;">config.json → priority_keywords 가 비어 있습니다.</div>';
+            } else {
+                html += '<div style="margin-bottom:12px;">';
+                priority.forEach(p => {
+                    const rk = rankByKw[p.keyword];
+                    const rkLabel = rk ? `<small>${rk}</small>` : '';
+                    html += `<span class="kw-chip">${p.keyword}${rkLabel}</span>`;
+                });
+                html += '</div>';
+            }
+
+            const trafficUrl = data.traffic_target_url || '—';
+            html += '<div style="margin-bottom:6px;"><strong style="color:#e2e8f0;font-size:0.82rem;">트래픽 대상 (클라우드)</strong></div>';
+            html += `<div style="font-size:0.75rem;color:#93c5fd;word-break:break-all;margin-bottom:6px;">${trafficUrl}</div>`;
+            html += `<div style="font-size:0.72rem;color:#94a3b8;">${data.traffic_mode || '상품 URL 방문'}</div>`;
+            html += '<div style="font-size:0.72rem;color:#94a3b8;margin-top:8px;">키워드 검색 트래픽은 PC에서 <code style="color:#93c5fd;">run_traffic_focus.bat</code> (traffic_single.py)</div>';
+            box.innerHTML = html;
+        }
+
+        function renderKeywordRankTable(report, history) {
+            const box = document.getElementById('keywordRankTable');
+            if (!box) return;
+            const items = (report && report.items) ? report.items.filter(i => i.status !== '실패') : [];
+            if (items.length) {
+                box.innerHTML = items.map(item => `
+                    <div class="rank-row">
+                        <span>${item.keyword}</span>
+                        <span><strong>${item.rank_text || '—'}</strong> <span style="color:#94a3b8;">${item.status || ''}</span></span>
+                    </div>`).join('');
+                return;
+            }
+            if (history && history.length) {
+                const seen = new Set();
+                const rows = [];
+                for (let i = history.length - 1; i >= 0 && rows.length < 12; i--) {
+                    const r = history[i];
+                    const kw = r['키워드'] || r.keyword;
+                    if (!kw || seen.has(kw)) continue;
+                    seen.add(kw);
+                    const rank = parseInt(r['순위'] || r.rank) || 100;
+                    const rankText = rank >= 100 ? '100위 밖' : `${rank}위`;
+                    rows.push(`<div class="rank-row"><span>${kw}</span><strong>${rankText}</strong></div>`);
+                }
+                box.innerHTML = rows.length ? rows.join('') : '기록 없음';
+                return;
+            }
+            box.textContent = '「지금 추적」 후 키워드별 순위가 표시됩니다.';
         }
 
         async function loadConfig() {
@@ -1056,6 +1137,19 @@
             if (cloudBtn) cloudBtn.style.display = data.auto_mode === 'cron' ? 'flex' : 'none';
             const rank = data.last_rank;
             document.getElementById('currentRankVal').textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
+            const rankKw = document.getElementById('currentRankKw');
+            if (rankKw) {
+                rankKw.textContent = data.last_rank_keyword ? `「${data.last_rank_keyword}」` : '';
+                rankKw.title = data.last_rank_keyword || '';
+            }
+            const trafficHint = document.getElementById('trafficTargetHint');
+            if (trafficHint && data.traffic_target_url) {
+                trafficHint.style.display = 'block';
+                const short = data.traffic_target_url.replace('https://', '');
+                trafficHint.innerHTML = `<i class="fa-solid fa-road"></i> 트래픽: <span style="color:#93c5fd;">${short}</span><br><span style="opacity:0.85;">키워드 검색 아님 · URL 방문만</span>`;
+            }
+            const config = await loadConfig();
+            renderKeywordTrafficPanel(data, config);
             document.getElementById('totalTracksVal').textContent = data.total_tracks || 0;
             document.getElementById('keywordCountVal').textContent = data.keyword_count || 0;
             const hint = document.getElementById('kwHint');
@@ -1071,6 +1165,7 @@
                 lastReport = data.last_report;
                 renderRecentResults(data.last_report);
             }
+            renderKeywordRankTable(data.last_report, null);
             updateTrafficBgPill();
             } catch (e) {
                 const text = document.getElementById('engineStatusText');
@@ -1100,8 +1195,16 @@
                 return;
             }
             if (chartEmpty) chartEmpty.style.display = 'none';
-            const labels = data.map(r => (r.날짜 || '').split(' ')[1] || r.날짜);
-            const ranks = data.map(r => parseInt(r.순위) || 100);
+            const labels = data.map(r => {
+                const t = (r.날짜 || '').split(' ')[1] || r.날짜 || '';
+                const kw = (r.키워드 || '').slice(0, 8);
+                return kw ? `${t}\n${kw}` : t;
+            });
+            const ranks = data.map(r => {
+                const n = parseInt(r.순위);
+                return Number.isFinite(n) && n > 0 ? Math.min(n, 100) : 100;
+            });
+            const keywords = data.map(r => r.키워드 || '');
             const ctx = document.getElementById('rankingChart').getContext('2d');
             if (chart) chart.destroy();
             chart = new Chart(ctx, {
@@ -1121,13 +1224,25 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#e2e8f0', font: { size: 10 } } } },
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0', font: { size: 10 } } },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => {
+                                    const i = items[0]?.dataIndex;
+                                    return keywords[i] ? `키워드: ${keywords[i]}` : '순위';
+                                },
+                                label: (item) => `순위: ${item.raw >= 100 ? '100위 밖' : item.raw + '위'}`,
+                            },
+                        },
+                    },
                     scales: {
                         y: { reverse: true, min: 1, max: 100, ticks: { color: '#94a3b8', stepSize: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } },
                         x: { ticks: { color: '#94a3b8', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.05)' } }
                     }
                 }
             });
+            renderKeywordRankTable(lastReport, data);
         }
 
         async function loadReport() {

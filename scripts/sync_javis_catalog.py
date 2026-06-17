@@ -8,6 +8,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 JARVIS_ROOT = Path(os.environ.get("JARVIS_ROOT", r"D:\@code\javis"))
@@ -78,61 +79,40 @@ def _scan_bats(base: Path, *, source: str, workspace: str, extra: dict | None = 
 
 
 TRAFFIC_OVERRIDES = {
-    "run_gui.bat": {
-        "id": "traffic_autoblog_gui",
-        "name": "Autoblog GUI",
-        "category": "blog",
-        "description": "네이버·티스토리 블로그 자동화 데스크톱 GUI",
-        "icon": "fa-window-maximize",
+    "run.bat": {
+        "id": "traffic_web_hub",
+        "name": "웹 SEO 허브",
+        "category": "traffic",
+        "description": "순위·SEO·블로그 PWA (permacoat.shop)",
+        "icon": "fa-gauge-high",
     },
-    "run_seo_pipeline.bat": {
-        "id": "traffic_seo_pipeline",
-        "name": "SEO 파이프라인",
-        "category": "seo",
-        "description": "키워드·순위·콘텐츠 일괄 SEO 작업",
-        "icon": "fa-diagram-project",
-    },
-    "run_content_factory.bat": {
-        "id": "traffic_content_factory",
-        "name": "콘텐츠 팩토리",
-        "category": "blog",
-        "description": "상품·블로그용 콘텐츠 생성 파이프라인",
-        "icon": "fa-industry",
-    },
-    "run_javis_connect.bat": {
-        "id": "traffic_javis_connect",
-        "name": "JARVIS 연동 점검",
+    "run_seo_hub_verify.bat": {
+        "id": "local_run_seo_hub_verify",
+        "name": "허브 배포 검증",
         "category": "ops",
-        "description": "Supabase·환경변수 동기화 및 연결 확인",
-        "icon": "fa-plug",
+        "description": "로컬/프로덕션 SEO 허브 API 점검",
+        "icon": "fa-stethoscope",
     },
     "run_programs_check.bat": {
         "id": "traffic_programs_check",
         "name": "프로그램 점검",
         "category": "ops",
-        "description": "Python·Ollama·Playwright·브리지 순차 점검",
+        "description": "허브 모듈·API 순차 점검",
         "icon": "fa-stethoscope",
     },
-    "run_shorts_factory.bat": {
-        "id": "traffic_shorts_factory",
-        "name": "숏츠 팩토리 (로컬)",
-        "category": "video",
-        "description": "쇼핑·숏츠 영상 제작 (로컬 연동)",
-        "icon": "fa-film",
-    },
-    "run_rank_check.bat": {
-        "id": "traffic_rank_check",
-        "name": "순위 1회 점검",
+    "rank_daily.bat": {
+        "id": "traffic_rank_daily",
+        "name": "일일 순위",
         "category": "seo",
-        "description": "CLI 순위 추적 1회 실행",
+        "description": "로컬에서 순위 1회 추적",
         "icon": "fa-ranking-star",
     },
-    "run_monitor_auto.bat": {
-        "id": "traffic_monitor_auto",
-        "name": "순위 자동 모니터 (PC)",
-        "category": "seo",
-        "description": "로컬 PC 24시간 순위 모니터링",
-        "icon": "fa-clock",
+    "traffic_once.bat": {
+        "id": "traffic_once",
+        "name": "트래픽 1회",
+        "category": "traffic",
+        "description": "스마트스토어 HTTP 방문 1회 테스트",
+        "icon": "fa-car",
     },
 }
 
@@ -213,7 +193,7 @@ def main() -> int:
     with open(OUT, "w", encoding="utf-8") as f:
         json.dump(catalog, f, ensure_ascii=False, indent=2)
 
-    print(f"Wrote {OUT} — traffic {len(traffic)}, javis {len(javis)}")
+    print(f"Wrote {OUT} - traffic {len(traffic)}, javis {len(javis)}")
     return 0
 
 

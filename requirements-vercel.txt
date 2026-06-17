@@ -1,2 +1,0 @@
-# Vercel·Cloudtype SEO 허브 — requirements.txt 와 동일 (레거시 경로 호환)
--r requirements.txt

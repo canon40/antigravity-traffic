@@ -1,3 +1,0 @@
-# Windows 로컬 GUI·발행 (run_install.bat — requirements.txt 다음에 설치)
-flet>=0.24.0
-pywin32>=306; sys_platform == "win32"

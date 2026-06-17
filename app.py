@@ -259,9 +259,12 @@ def api_status():
     try:
         history = get_history()
         last_rank = None
+        last_rank_keyword = None
         if history:
+            last_row = history[-1]
+            last_rank_keyword = (last_row.get("키워드") or "").strip() or None
             try:
-                last_rank = int(history[-1].get("순위", 100))
+                last_rank = int(last_row.get("순위", 100))
             except (TypeError, ValueError):
                 last_rank = 100
 
@@ -288,6 +291,15 @@ def api_status():
 
         report = last_completion_report or state.get("last_report")
         auto_mode = "cron" if on_cron else ("daemon" if is_cloudtype() else "local")
+        traffic_url = _traffic_target_url()
+        priority_preview = [
+            {
+                "keyword": (p.get("keyword") or "").strip(),
+                "product_id": (p.get("product_id") or "").strip(),
+            }
+            for p in priority
+            if (p.get("keyword") or "").strip()
+        ][:12]
 
         return jsonify({
             "running": running,
@@ -297,6 +309,7 @@ def api_status():
             "traffic_loop": traffic_loop_running,
             "auto_started": _boot_auto_started or running,
             "last_rank": last_rank,
+            "last_rank_keyword": last_rank_keyword,
             "total_tracks": len(history),
             "keyword_count": len(keywords),
             "priority_count": len(priority) or min(len(keywords), int(config.get("priority_track_limit") or 10)),
@@ -306,7 +319,13 @@ def api_status():
             "auto_mode": auto_mode,
             "last_cron_at": state.get("last_cron_at"),
             "last_traffic_at": state.get("last_traffic_at"),
-            "traffic_target_url": _traffic_target_url() if on_cloud else None,
+            "traffic_target_url": traffic_url,
+            "traffic_mode": (
+                "클라우드 HTTP 방문 (키워드 검색 아님 · 상품 URL 1개)"
+                if on_cron or on_cloud
+                else "로컬 Playwright (run_traffic_focus.bat — 키워드별 검색 후 상품 클릭)"
+            ),
+            "priority_keywords": priority_preview,
             "persistence": persistence_backend(),
             "interval_minutes": config.get("track_interval_minutes", 60),
             "cron_schedule": "매시 정각 · 트래픽 20분마다 (0 * * * * / */20 * * * *)" if on_cron else None,
