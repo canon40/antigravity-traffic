@@ -1,25 +1,35 @@
 {
   "version": 2,
-  "installCommand": "pip install -r requirements-vercel.txt",
+  "installCommand": "pip install -r requirements-vercel-proxy.txt",
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "api/proxy.py"
+    },
+    {
+      "src": "/static/(.*)",
+      "dest": "/static/$1"
+    },
+    {
+      "src": "/manifest.json",
+      "dest": "/static/manifest.json"
+    },
+    {
+      "src": "/sw.js",
+      "dest": "/static/sw.js"
+    },
+    {
+      "src": "/openapi.json",
+      "dest": "/openapi.json"
+    },
+    {
       "src": "/(.*)",
-      "dest": "app.py"
+      "dest": "/templates/index.html"
     }
   ],
   "functions": {
-    "app.py": {
-      "maxDuration": 300
+    "api/proxy.py": {
+      "maxDuration": 60
     }
-  },
-  "crons": [
-    {
-      "path": "/api/cron/track",
-      "schedule": "0 * * * *"
-    },
-    {
-      "path": "/api/cron/traffic",
-      "schedule": "*/20 * * * *"
-    }
-  ]
+  }
 }

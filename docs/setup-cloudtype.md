@@ -44,3 +44,15 @@ curl https://YOUR-SERVICE.cloudtype.app/api/health
 ```
 
 배포 URL: [antigravity-traffic ingress](https://app.cloudtype.io/@canon4040/antigravity-traffic:main/antigravity-traffic#ingress)
+
+## Vercel (permacoat.shop) 연동
+
+프론트(`templates/index.html`)는 Vercel, API·24h 작업은 Cloudtype에서 실행합니다.
+
+1. Cloudtype **접속하기** 버튼의 URL 복사 (예: `https://xxxxx.cloudtype.app`)
+2. Vercel 프로젝트 → **Settings → Environment Variables**
+   - `CLOUDTYPE_API_BASE` = 위 URL (끝 `/` 없이)
+3. Vercel **Redeploy**
+4. 확인:
+   - `https://permacoat.shop/api/_proxy/health` → `ok: true`
+   - `https://permacoat.shop/api/status` → JSON 응답
