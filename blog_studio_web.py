@@ -263,20 +263,12 @@ def api_logs():
 
 
 def register_blog_routes(flask_app: Flask, *, url_prefix: str = "") -> None:
-    """SEO 허브(app.py)에 블로그 스튜디오 UI·API 마운트."""
+    """SEO 허브(app.py)에 블로그 스튜디오 API 마운트."""
     prefix = (url_prefix or "").rstrip("/")
 
     def _route(rule: str, **kwargs):
         path = f"{prefix}{rule}" if prefix else rule
         return flask_app.route(path, **kwargs)
-
-    @_route("/blog-studio/")
-    def blog_studio_embed():
-        return render_template(
-            "blog_studio.html",
-            jarvis_root=str(JARVIS_ROOT),
-            port=int(os.environ.get("CANON_AUTOBLOG_PORT", "8790")),
-        )
 
     @_route("/api/blog/status")
     def blog_status_embed():

@@ -56,23 +56,47 @@ except ImportError:
 
 app = Flask(__name__)
 
-try:
-    from blog_studio_web import _drain_file_triggers, register_blog_routes
+_BLOG_STUDIO_MOUNTED = False
 
-    register_blog_routes(app)
 
-    def _blog_trigger_poll_loop() -> None:
-        while True:
-            try:
-                _drain_file_triggers()
-            except Exception:
-                pass
-            time.sleep(15)
+def _mount_blog_studio() -> None:
+    global _BLOG_STUDIO_MOUNTED
+    try:
+        from blog_studio_web import _drain_file_triggers, register_blog_routes
 
-    if os.environ.get("AUTO_START_SCHEDULER", "1") != "0":
-        threading.Thread(target=_blog_trigger_poll_loop, daemon=True).start()
-except ImportError:
-    pass
+        register_blog_routes(app)
+        _BLOG_STUDIO_MOUNTED = True
+
+        def _blog_trigger_poll_loop() -> None:
+            while True:
+                try:
+                    _drain_file_triggers()
+                except Exception:
+                    pass
+                time.sleep(15)
+
+        if os.environ.get("AUTO_START_SCHEDULER", "1") != "0":
+            threading.Thread(target=_blog_trigger_poll_loop, daemon=True).start()
+    except Exception as exc:
+        print(f"blog_studio mount failed: {exc}", flush=True)
+
+
+_mount_blog_studio()
+
+
+@app.route("/blog-studio")
+@app.route("/blog-studio/")
+def blog_studio_page():
+    """Cloudtype·로컬 — 블로그 스튜디오 (register 실패 시에도 페이지 제공)."""
+    try:
+        from hub_llm_env import apply_blog_llm_env
+
+        apply_blog_llm_env()
+    except Exception:
+        pass
+    jarvis_root = os.environ.get("JARVIS_ROOT", r"D:\@code\javis")
+    port = int(os.environ.get("CANON_AUTOBLOG_PORT", "8790"))
+    return render_template("blog_studio.html", jarvis_root=jarvis_root, port=port)
 
 logs_queue = []
 scheduler_running = False
@@ -244,39 +268,64 @@ def _run_traffic_once(target_url: str, *, log_label: str = "자동", detail: str
     return result
 
 
+def _reconcile_traffic_thread() -> None:
+    """죽은 스레드면 traffic_loop_running 플래그 정리."""
+    global traffic_loop_running
+    if traffic_thread is not None and not traffic_thread.is_alive():
+        traffic_loop_running = False
+
+
+def _stop_traffic_loop(*, join_sec: float = 12.0) -> None:
+    """트래픽 루프 중지 신호 + 짧은 join 후 플래그 정리."""
+    global traffic_loop_running
+    traffic_stop_event.set()
+    if traffic_thread is not None and traffic_thread.is_alive():
+        traffic_thread.join(timeout=join_sec)
+    traffic_loop_running = False
+
+
 def traffic_loop():
     """로컬 서버 — 브라우저 없이 주기적 스마트스토어 방문 (429 시 간격 자동 연장)."""
     global traffic_loop_running
     if run_traffic_session is None:
         traffic_loop_running = False
         return
-    state0 = load_hub_state()
-    base_iv = effective_interval_sec(state0) if effective_interval_sec else max(
-        300, int(os.environ.get("TRAFFIC_INTERVAL_SEC", "1200"))
-    )
-    add_log(f"🚗 트래픽 루프 시작 (기본 {base_iv // 60}분 간격, 429 시 자동 연장)")
-
-    while not traffic_stop_event.is_set():
-        target_url, detail = _resolve_traffic_visit(advance=True)
-        try:
-            _run_traffic_once(target_url, log_label="자동", detail=detail)
-        except Exception:
-            pass
-
-        state = load_hub_state()
-        interval_sec = effective_interval_sec(state) if effective_interval_sec else max(
+    try:
+        state0 = load_hub_state()
+        base_iv = effective_interval_sec(state0) if effective_interval_sec else max(
             300, int(os.environ.get("TRAFFIC_INTERVAL_SEC", "1200"))
         )
-        if int(state.get("traffic_backoff_streak") or 0) > 0:
-            add_log(f"⏳ 다음 트래픽까지 {interval_sec // 60}분 대기 (rate limit 백오프)")
+        add_log(f"🚗 트래픽 루프 시작 (기본 {base_iv // 60}분 간격, 429 시 자동 연장)")
 
-        waited = 0
-        while waited < interval_sec and not traffic_stop_event.is_set():
-            time.sleep(10)
-            waited += 10
+        while not traffic_stop_event.is_set():
+            if not load_hub_state().get("traffic_enabled", True):
+                break
+            target_url, detail = _resolve_traffic_visit(advance=True)
+            try:
+                _run_traffic_once(target_url, log_label="자동", detail=detail)
+            except Exception:
+                pass
 
-    traffic_loop_running = False
-    add_log("🛑 로컬 트래픽 루프가 중지되었습니다.")
+            if traffic_stop_event.is_set() or not load_hub_state().get("traffic_enabled", True):
+                break
+
+            state = load_hub_state()
+            interval_sec = effective_interval_sec(state) if effective_interval_sec else max(
+                300, int(os.environ.get("TRAFFIC_INTERVAL_SEC", "1200"))
+            )
+            if int(state.get("traffic_backoff_streak") or 0) > 0:
+                add_log(f"⏳ 다음 트래픽까지 {interval_sec // 60}분 대기 (rate limit 백오프)")
+
+            waited = 0
+            while waited < interval_sec and not traffic_stop_event.is_set():
+                if not load_hub_state().get("traffic_enabled", True):
+                    break
+                time.sleep(10)
+                waited += 10
+
+        add_log("🛑 로컬 트래픽 루프가 중지되었습니다.")
+    finally:
+        traffic_loop_running = False
 
 
 def ensure_background_services(*, log_boot: bool = False) -> None:
@@ -309,6 +358,7 @@ def ensure_background_services(*, log_boot: bool = False) -> None:
     elif not rank_on and log_boot:
         add_log("⏸️ 순위 추적 꺼짐 (트래픽은 traffic_enabled 기준)")
 
+    _reconcile_traffic_thread()
     if traffic_on and run_traffic_session is not None and not traffic_loop_running:
         traffic_stop_event.clear()
         traffic_loop_running = True
@@ -433,7 +483,8 @@ def api_status():
         if on_cron:
             running = rank_on
 
-        traffic_running = traffic_loop_running
+        _reconcile_traffic_thread()
+        traffic_running = bool(traffic_on and traffic_loop_running)
         if on_cron:
             traffic_running = traffic_on
 
@@ -646,7 +697,10 @@ def api_stop():
         rank_stop_event.set()
     if scope in ("traffic", "all"):
         state["traffic_enabled"] = False
-        traffic_stop_event.set()
+        if not is_serverless():
+            _stop_traffic_loop()
+        else:
+            traffic_stop_event.set()
     save_hub_state(state)
 
     if is_serverless():
@@ -659,9 +713,9 @@ def api_stop():
         add_log(f"⏸️ Cron 중지 (scope={scope})")
         return jsonify({"success": True, "message": msg, "mode": "cron", "scope": scope})
 
-    if scope == "traffic" and traffic_loop_running:
+    if scope == "traffic":
         add_log("⏸️ 트래픽 루프 중지 (순위 추적 유지)")
-        return jsonify({"success": True, "message": "트래픽만 중지했습니다. 순위 추적은 계속됩니다.", "scope": scope})
+        return jsonify({"success": True, "message": "트래픽이 중지되었습니다. 순위 추적은 계속됩니다.", "scope": scope})
     if scope == "rank" and scheduler_running:
         add_log("⏸️ 순위 추적 중지 (트래픽 유지)")
         return jsonify({"success": True, "message": "순위 추적만 중지했습니다. 트래픽은 계속됩니다.", "scope": scope})

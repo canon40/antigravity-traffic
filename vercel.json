@@ -15,12 +15,16 @@
       "destination": "/api/hub_content"
     },
     {
+      "source": "/static/blog_studio.html",
+      "destination": "/static/blog_studio.html"
+    },
+    {
       "source": "/blog-studio",
-      "destination": "/templates/blog_studio.html"
+      "destination": "/static/blog_studio.html"
     },
     {
       "source": "/blog-studio/",
-      "destination": "/templates/blog_studio.html"
+      "destination": "/static/blog_studio.html"
     },
     {
       "source": "/api/:path*",
@@ -53,12 +57,16 @@
       "dest": "/openapi.json"
     },
     {
+      "src": "/static/blog_studio.html",
+      "dest": "/static/blog_studio.html"
+    },
+    {
       "src": "/blog-studio",
-      "dest": "/templates/blog_studio.html"
+      "dest": "/static/blog_studio.html"
     },
     {
       "src": "/blog-studio/",
-      "dest": "/templates/blog_studio.html"
+      "dest": "/static/blog_studio.html"
     },
     {
       "src": "/(.*)",
