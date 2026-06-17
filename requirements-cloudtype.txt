@@ -1,0 +1,7 @@
+# Cloudtype 24h SEO 허브 — 가벼운 런타임 (playwright·ollama 제외)
+flask>=3.0.0
+gunicorn>=22.0.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+httpx>=0.28.0
+python-dotenv>=1.0.0

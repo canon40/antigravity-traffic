@@ -49,10 +49,12 @@ curl https://YOUR-SERVICE.cloudtype.app/api/health
 
 프론트(`templates/index.html`)는 Vercel, API·24h 작업은 Cloudtype에서 실행합니다.
 
-1. Cloudtype **접속하기** 버튼의 URL 복사 (예: `https://xxxxx.cloudtype.app`)
-2. Vercel 프로젝트 → **Settings → Environment Variables**
-   - `CLOUDTYPE_API_BASE` = 위 URL (끝 `/` 없이)
-3. Vercel **Redeploy**
-4. 확인:
+1. Cloudtype **접속하기** 버튼의 URL 복사  
+   예: `https://port-0-antigravity-traffic-mqg8473t248a0738.sel3.cloudtype.app`
+2. Vercel `vercel.json`의 `rewrites`에 위 URL이 들어가 있으면 별도 env 없이 동작합니다.
+3. (대안) Vercel **Settings → Environment Variables**  
+   - `CLOUDTYPE_API_BASE` = 위 URL (끝 `/` 없이) — `api/proxy.py` 사용 시
+4. Vercel **Redeploy**
+5. 확인:
    - `https://permacoat.shop/api/_proxy/health` → `ok: true`
    - `https://permacoat.shop/api/status` → JSON 응답
