@@ -136,13 +136,22 @@
             box.innerHTML = '<span style="color:#f87171">' + (report?.error || '실패') + '</span>';
             return;
         }
+        const nested = report.result?.content;
         const art = (report.steps?.article?.article) || {};
-        const title = art.title || report.keyword || '—';
-        let body = art.body_html || art.body_plain || '';
+        const title = art.title || nested?.title || report.keyword || '—';
+        let body = art.body_html || art.body_plain || nested?.body || '';
+        if (!body && nested?.sections) {
+            body = Object.entries(nested.sections).map(([k, v]) => `## ${k}\n${v}`).join('\n\n');
+        }
+        const note = report.mode === 'cloud_content'
+            ? '<p style="color:#94a3b8;font-size:0.78rem;margin-bottom:8px;">클라우드 초안 · PC에서 run_gui.bat으로 발행 가능</p>'
+            : '';
         if (body.includes('<')) {
-            box.innerHTML = '<h2>' + title + '</h2>' + body;
+            box.innerHTML = note + '<h2>' + title + '</h2>' + body;
+        } else if (body) {
+            box.innerHTML = note + '<h2>' + title + '</h2><pre style="white-space:pre-wrap">' + body.slice(0,8000) + '</pre>';
         } else {
-            box.innerHTML = '<h2>' + title + '</h2><pre style="white-space:pre-wrap">' + body.slice(0,8000) + '</pre>';
+            box.innerHTML = note + '<h2>' + title + '</h2><span style="color:var(--sub)">본문 없음 — 로그를 확인하세요.</span>';
         }
     }
 

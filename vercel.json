@@ -15,6 +15,14 @@
       "destination": "/api/hub_content"
     },
     {
+      "source": "/blog-studio",
+      "destination": "/templates/blog_studio.html"
+    },
+    {
+      "source": "/blog-studio/",
+      "destination": "/templates/blog_studio.html"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://port-0-antigravity-traffic-mqg8473t248a0738.sel3.cloudtype.app/api/:path*"
     }
@@ -43,6 +51,14 @@
     {
       "src": "/openapi.json",
       "dest": "/openapi.json"
+    },
+    {
+      "src": "/blog-studio",
+      "dest": "/templates/blog_studio.html"
+    },
+    {
+      "src": "/blog-studio/",
+      "dest": "/templates/blog_studio.html"
     },
     {
       "src": "/(.*)",

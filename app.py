@@ -7,7 +7,8 @@ import locale
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import Flask, abort, jsonify, render_template, request, send_from_directory
+from werkzeug.exceptions import NotFound
 
 from rank_tracker import (
     build_completion_report,
@@ -36,8 +37,22 @@ if _VT_ROOT.is_dir() and str(_VT_ROOT) not in sys.path:
     sys.path.insert(0, str(_VT_ROOT))
 try:
     from traffic_session import run_traffic_session
+    from traffic_backoff import apply_traffic_result, effective_interval_sec, format_backoff_note
+    from traffic_targets import (
+        collect_traffic_urls,
+        label_for_url,
+        pick_traffic_url,
+        traffic_pool_summary,
+    )
 except ImportError:
     run_traffic_session = None
+    apply_traffic_result = None
+    effective_interval_sec = None
+    format_backoff_note = lambda _s: ""
+    collect_traffic_urls = None
+    label_for_url = None
+    pick_traffic_url = None
+    traffic_pool_summary = None
 
 app = Flask(__name__)
 
@@ -79,6 +94,13 @@ def _json_error(endpoint: str, exc: Exception, status_code: int = 500):
         "error": detail,
         "endpoint": endpoint,
     }), status_code
+
+
+@app.errorhandler(NotFound)
+def _handle_not_found(exc):
+    detail = f"404 Not Found: {request.path}"
+    add_log(f"❌ {detail}")
+    return jsonify({"success": False, "error": detail, "endpoint": request.path}), 404
 
 
 @app.errorhandler(Exception)
@@ -194,26 +216,59 @@ def scheduler_loop():
     add_log("🛑 순위 추적 스케줄러가 중지되었습니다.")
 
 
+def _run_traffic_once(target_url: str, *, log_label: str = "자동", detail: str = "") -> dict | None:
+    """1회 트래픽 방문 + 429 백오프 상태 저장."""
+    if run_traffic_session is None:
+        return None
+    suffix = f" {detail}" if detail else ""
+    add_log(f"🚗 {log_label} 트래픽{suffix}: {target_url}")
+    try:
+        result = run_traffic_session(target_url, timeout_sec=8.0)
+    except Exception as exc:
+        add_log(f"❌ 트래픽 실패: {exc}")
+        raise
+
+    status = result.get("status_code")
+    if result.get("ok"):
+        add_log(f"✅ 트래픽 OK {status} · {result.get('elapsed_sec')}초")
+    else:
+        note = format_backoff_note(status) if format_backoff_note else ""
+        add_log(f"⚠️ 트래픽 응답 {status}{note}")
+
+    if apply_traffic_result is not None:
+        state = load_hub_state()
+        apply_traffic_result(state, result)
+        state["last_traffic_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        state["logs"] = logs_queue[-100:]
+        save_hub_state(state)
+    return result
+
+
 def traffic_loop():
-    """로컬 서버 — 브라우저 없이 주기적 스마트스토어 방문 (Vercel Cron과 동일 20분)."""
+    """로컬 서버 — 브라우저 없이 주기적 스마트스토어 방문 (429 시 간격 자동 연장)."""
     global traffic_loop_running
     if run_traffic_session is None:
         traffic_loop_running = False
         return
-    add_log("🚗 로컬 트래픽 루프 시작 (20분 간격)")
-    interval_sec = max(300, int(os.environ.get("TRAFFIC_INTERVAL_SEC", "1200")))
+    state0 = load_hub_state()
+    base_iv = effective_interval_sec(state0) if effective_interval_sec else max(
+        300, int(os.environ.get("TRAFFIC_INTERVAL_SEC", "1200"))
+    )
+    add_log(f"🚗 트래픽 루프 시작 (기본 {base_iv // 60}분 간격, 429 시 자동 연장)")
 
     while not traffic_stop_event.is_set():
-        target_url = _traffic_target_url()
-        add_log(f"🚗 자동 트래픽: {target_url}")
+        target_url, detail = _resolve_traffic_visit(advance=True)
         try:
-            result = run_traffic_session(target_url, timeout_sec=8.0)
-            if result.get("ok"):
-                add_log(f"✅ 트래픽 OK {result.get('status_code')} · {result.get('elapsed_sec')}초")
-            else:
-                add_log(f"⚠️ 트래픽 응답 {result.get('status_code')}")
-        except Exception as exc:
-            add_log(f"❌ 트래픽 실패: {exc}")
+            _run_traffic_once(target_url, log_label="자동", detail=detail)
+        except Exception:
+            pass
+
+        state = load_hub_state()
+        interval_sec = effective_interval_sec(state) if effective_interval_sec else max(
+            300, int(os.environ.get("TRAFFIC_INTERVAL_SEC", "1200"))
+        )
+        if int(state.get("traffic_backoff_streak") or 0) > 0:
+            add_log(f"⏳ 다음 트래픽까지 {interval_sec // 60}분 대기 (rate limit 백오프)")
 
         waited = 0
         while waited < interval_sec and not traffic_stop_event.is_set():
@@ -309,6 +364,44 @@ def index():
     return render_template("index.html")
 
 
+def _all_catalog_programs() -> list[dict]:
+    catalog = get_catalog(workspace="all")
+    return list(catalog.get("programs") or [])
+
+
+@app.route("/programs")
+def programs_hub():
+    return render_template("programs.html")
+
+
+@app.route("/program/<program_id>")
+def program_ui(program_id: str):
+    programs = _all_catalog_programs()
+    entry = next((p for p in programs if p.get("id") == program_id), None)
+    if not entry:
+        abort(404)
+    return render_template("program_ui.html", program_id=program_id, program_name=entry.get("name", program_id))
+
+
+@app.route("/api/programs")
+def api_programs_all():
+    programs = _all_catalog_programs()
+    return jsonify({
+        "success": True,
+        "count": len(programs),
+        "programs": programs,
+    })
+
+
+@app.route("/api/program/<program_id>")
+def api_program_detail(program_id: str):
+    programs = _all_catalog_programs()
+    entry = next((p for p in programs if p.get("id") == program_id), None)
+    if not entry:
+        return jsonify({"success": False, "error": "program not found", "program_id": program_id}), 404
+    return jsonify({"success": True, "program": entry})
+
+
 @app.route("/api/status")
 def api_status():
     try:
@@ -347,6 +440,11 @@ def api_status():
         report = last_completion_report or state.get("last_report")
         auto_mode = "cron" if on_cron else ("daemon" if is_cloudtype() else "local")
         traffic_url = _traffic_target_url()
+        traffic_pool = (
+            traffic_pool_summary(load_config(), state)
+            if traffic_pool_summary is not None
+            else {}
+        )
         priority_preview = [
             {
                 "keyword": (p.get("keyword") or "").strip(),
@@ -375,10 +473,15 @@ def api_status():
             "last_cron_at": state.get("last_cron_at"),
             "last_traffic_at": state.get("last_traffic_at"),
             "traffic_target_url": traffic_url,
+            "traffic_pool": traffic_pool,
             "traffic_mode": (
-                "클라우드 HTTP 방문 (키워드 검색 아님 · 상품 URL 1개)"
-                if on_cron or on_cloud
-                else "로컬 HTTP 방문 (run_traffic_focus.bat — 상품 URL 1회)"
+                f"클라우드 HTTP 방문 · 상품 URL {traffic_pool.get('traffic_pool_size', 1)}개 순환"
+                if (on_cron or on_cloud) and traffic_pool.get("traffic_pool_size", 1) > 1
+                else (
+                    "클라우드 HTTP 방문 (상품 페이지 직접 방문 · 키워드 검색 아님)"
+                    if on_cron or on_cloud
+                    else "로컬 HTTP 방문 (상품 URL 순환)"
+                )
             ),
             "priority_keywords": priority_preview,
             "persistence": persistence_backend(),
@@ -687,24 +790,42 @@ def _webhook_authorized() -> bool:
     return request.headers.get("X-Webhook-Secret") == secret
 
 
-def _traffic_target_url() -> str:
+def _traffic_target_url(*, peek: bool = True) -> str:
+    """다음 방문 URL (peek=True면 인덱스만 조회, 실제 방문 시 advance)."""
+    url, _ = _resolve_traffic_visit(advance=not peek)
+    return url
+
+
+def _resolve_traffic_visit(*, advance: bool) -> tuple[str, str]:
+    """방문 URL + 로그용 라벨 (예: '(3/9 퍼마코트)')."""
     explicit = os.environ.get("TRAFFIC_TARGET_URL", "").strip()
     if explicit:
-        return explicit
+        return explicit, ""
+
     config = load_config()
-    products = config.get("products") or []
-    for product in products:
-        url = (product or {}).get("url", "")
-        if url:
-            return url
-    urls = config.get("product_urls") or []
-    for item in urls:
-        if isinstance(item, str) and item:
-            return item
-        if isinstance(item, dict) and item.get("url"):
-            return item["url"]
-    store = (config.get("store_name") or "nanumlab").replace(" ", "")
-    return f"https://smartstore.naver.com/{store}"
+    if pick_traffic_url is None:
+        products = config.get("products") or []
+        for product in products:
+            url = (product or {}).get("url", "")
+            if url:
+                return url, ""
+        store = (config.get("store_name") or "nanumlab").replace(" ", "")
+        return f"https://smartstore.naver.com/{store}", ""
+
+    state = load_hub_state()
+    url, new_state = pick_traffic_url(config, dict(state), advance=advance)
+    if advance:
+        save_hub_state(new_state)
+
+    candidates = collect_traffic_urls(config) if collect_traffic_urls else [url]
+    n = len(candidates)
+    try:
+        idx = candidates.index(url) + 1
+    except ValueError:
+        idx = 1
+    label = label_for_url(config, url) if label_for_url else url
+    detail = f"({idx}/{n} {label})" if n > 1 else f"({label})"
+    return url, detail
 
 
 @app.route("/api/health", methods=["GET"])
@@ -720,6 +841,9 @@ def api_health():
         "scheduler_running": scheduler_running,
         "traffic_loop_running": traffic_loop_running,
         "traffic_enabled": load_hub_state().get("traffic_enabled", True),
+        "traffic_interval_sec": (
+            effective_interval_sec(load_hub_state()) if effective_interval_sec else None
+        ),
         "programs_engine": "cloud-fallback-v2",
     })
 
@@ -732,26 +856,27 @@ def api_traffic():
         return jsonify({"success": False, "error": "traffic_session 미설치"}), 500
 
     data = request.get_json(silent=True) or {}
-    target_url = (data.get("target_url") or _traffic_target_url()).strip()
+    explicit = (data.get("target_url") or "").strip()
+    if explicit:
+        target_url, detail = explicit, ""
+    else:
+        target_url, detail = _resolve_traffic_visit(advance=True)
     timeout_sec = min(float(data.get("timeout_sec") or 8), 9.0)
 
     add_log(f"🚗 클라우드 트래픽: {target_url}")
     try:
-        result = run_traffic_session(target_url, timeout_sec=timeout_sec)
+        result = _run_traffic_once(target_url, log_label="클라우드", detail=detail)
     except ValueError as exc:
         return jsonify({"success": False, "error": str(exc)}), 400
     except Exception as exc:
         add_log(f"❌ 트래픽 실패: {exc}")
         return jsonify({"success": False, "error": str(exc)}), 500
 
-    if result.get("ok"):
-        add_log(f"✅ 트래픽 OK {result.get('status_code')} · {result.get('elapsed_sec')}초")
-    else:
-        add_log(f"⚠️ 트래픽 응답 {result.get('status_code')}")
+    if result is None:
+        return jsonify({"success": False, "error": "traffic_session 미설치"}), 500
 
     if is_serverless():
         state = load_hub_state()
-        state["last_traffic_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         state["logs"] = logs_queue[-100:]
         save_hub_state(state)
 
@@ -772,15 +897,17 @@ def api_cron_traffic():
     if run_traffic_session is None:
         return jsonify({"success": False, "error": "traffic_session 미설치"}), 500
 
-    target_url = _traffic_target_url()
-    add_log(f"⏰ Cron 트래픽: {target_url}")
+    target_url, detail = _resolve_traffic_visit(advance=True)
     try:
-        result = run_traffic_session(target_url, timeout_sec=8.0)
+        result = _run_traffic_once(target_url, log_label="Cron", detail=detail)
     except Exception as exc:
         add_log(f"❌ Cron 트래픽 실패: {exc}")
         return jsonify({"success": False, "error": str(exc)}), 500
 
-    state["last_traffic_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    if result is None:
+        return jsonify({"success": False, "error": "traffic_session 미설치"}), 500
+
+    state = load_hub_state()
     state["logs"] = logs_queue[-100:]
     save_hub_state(state)
     add_log(f"✅ Cron 트래픽 완료 ({result.get('status_code')})")

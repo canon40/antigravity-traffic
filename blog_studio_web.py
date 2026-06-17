@@ -294,6 +294,10 @@ def register_blog_routes(flask_app: Flask, *, url_prefix: str = "") -> None:
     def blog_logs_embed():
         return api_logs()
 
+    @_route("/api/blog/keywords", methods=["GET", "POST"])
+    def blog_keywords_embed():
+        return blog_keywords()
+
     @_route("/api/javis/health")
     def javis_health_embed():
         return javis_health()
@@ -308,7 +312,8 @@ def main() -> None:
     url = f"http://127.0.0.1:{PORT}/"
     _log(f"canon4040 Autoblog GUI — {url}")
     threading.Timer(1.2, lambda: webbrowser.open(url)).start()
-    app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False)
+    # 로그 폴링, 상태 폴링, 실행 요청이 겹쳐도 응답 정체(하얀 화면)를 막기 위해 멀티스레드로 실행.
+    app.run(host="0.0.0.0", port=PORT, debug=False, use_reloader=False, threaded=True)
 
 
 if __name__ == "__main__":

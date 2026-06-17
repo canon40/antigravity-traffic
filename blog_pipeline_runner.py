@@ -211,12 +211,26 @@ def _cloud_content_fallback(
             except OSError as exc:
                 result["save_warning"] = str(exc)
         ok = bool(result.get("success"))
+        content = result.get("content") or {}
+        body = content.get("body") or ""
+        if not body and content.get("sections"):
+            body = "\n\n".join(
+                f"## {k}\n{v}" for k, v in content["sections"].items()
+            )
+        article = {
+            "title": content.get("title") or content.get("product_title_suggestion") or kw,
+            "body_plain": body,
+            "tags": content.get("seo_tags") or content.get("tags") or [],
+        }
         return {
             "ok": ok,
             "keyword": kw,
             "mode": "cloud_content",
+            "steps": {"article": {"article": article}},
             "result": result,
-            "message": "클라우드에서 블로그 초안을 생성했습니다. PC 발행은 run_gui.bat을 사용하세요.",
+            "saved_path": result.get("saved_path"),
+            "message": "클라우드에서 블로그 초안을 생성했습니다. 발행·이미지는 PC run_gui.bat을 사용하세요.",
+            "error": None if ok else result.get("error"),
         }
     except Exception as exc:
         return {"ok": False, "error": str(exc), "keyword": kw, "mode": "cloud_content"}

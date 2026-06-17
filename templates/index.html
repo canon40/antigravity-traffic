@@ -390,9 +390,13 @@
 
         <div id="tab-blog" class="tab-content">
             <div class="glass-panel" style="padding:0;overflow:hidden;min-height:calc(100vh - 200px);">
-                <iframe id="blogStudioFrame" src="/blog-studio/" title="JARVIS 블로그 스튜디오"
-                    style="width:100%;min-height:820px;border:none;display:block;background:#0f172a;"></iframe>
+                <iframe id="blogStudioFrame" src="/blog-studio/" title="canon4040 블로그 스튜디오"
+                    style="width:100%;min-height:880px;border:none;display:block;background:#0f172a;"></iframe>
             </div>
+            <p style="font-size:0.72rem;color:var(--text-sub);margin-top:8px;text-align:center;">
+                전체 화면: <a href="/blog-studio/" target="_blank" rel="noopener" style="color:#93c5fd;">/blog-studio/</a>
+                · PC 발행: <code style="color:#93c5fd;">run_gui.bat</code>
+            </p>
         </div>
 
         <div id="tab-local" class="tab-content">
@@ -554,12 +558,17 @@
             }
         }
 
-        function renderSidebarJavis(programs) {
+        function renderSidebarJavis(programs, cloudMode) {
             const box = document.getElementById('sidebarJavisPrograms');
             if (!box) return;
-            const items = (programs || []).filter(p => p.available).slice(0, 6);
+            const pool = cloudMode
+                ? (programs || []).filter(p => p.ui_visible !== false && p.runtime === 'cloud' && p.available)
+                : (programs || []).filter(p => p.available);
+            const items = pool.slice(0, 6);
             if (!items.length) {
-                box.innerHTML = '<div class="sidebar-mini">실행 가능한 JARVIS 프로그램이 없습니다. PC에 javis/ 설치 후 새로고침하세요.</div>';
+                box.innerHTML = cloudMode
+                    ? '<div class="sidebar-mini">클라우드 실행 가능 프로그램만 표시됩니다. PC bat은 로컬에서 run_gui.bat 으로 실행하세요.</div>'
+                    : '<div class="sidebar-mini">실행 가능한 JARVIS 프로그램이 없습니다. PC에 javis/ 설치 후 새로고침하세요.</div>';
                 return;
             }
             box.innerHTML = items.map(p => `
@@ -792,13 +801,22 @@
             }
         }
 
-        function renderProgramList(programs, listBox) {
+        function renderProgramList(programs, listBox, cloudMode) {
+            const visible = cloudMode
+                ? (programs || []).filter(p => p.ui_visible !== false && p.runtime === 'cloud')
+                : (programs || []);
             const byCat = {};
-            (programs || []).forEach(p => {
+            visible.forEach(p => {
                 if (!byCat[p.category]) byCat[p.category] = { label: p.category_label, items: [] };
                 byCat[p.category].items.push(p);
             });
             let html = '';
+            if (cloudMode && (programs || []).length > visible.length) {
+                const hidden = (programs || []).length - visible.length;
+                html += `<div class="hub-cat-title" style="color:var(--text-sub);font-weight:normal;">
+                    PC 전용 bat ${hidden}개는 클라우드에서 숨김 — 발행·Playwright는 run_gui.bat (로컬)
+                </div>`;
+            }
             Object.values(byCat).forEach(group => {
                 html += `<div class="hub-cat-title">${group.label}</div><div class="program-grid">`;
                 group.items.forEach(p => {
@@ -846,15 +864,18 @@
                 }
                 if (workspace === 'javis') {
                     javisProgramsCache = data.programs || [];
-                    renderSidebarJavis(javisProgramsCache);
+                    renderSidebarJavis(javisProgramsCache, !!data.cloud_mode);
                     const statusBox = document.getElementById('javisHubStatus');
                     const pills = [];
                     pills.push(`<span class="hub-pill ${data.jarvis_installed ? 'ok' : 'warn'}">JARVIS ${data.jarvis_installed ? '설치됨' : '경로 없음'}</span>`);
                     if (data.jarvis_bundled) pills.push('<span class="hub-pill ok">Git 번들 javis/</span>');
                     pills.push(`<span class="hub-pill ${data.bridge?.ok ? 'ok' : 'warn'}">${data.bridge?.detail || '브리지'}</span>`);
-                    pills.push(`<span class="hub-pill">${(data.programs || []).filter(p => p.available).length}개 실행 가능</span>`);
+                    pills.push(`<span class="hub-pill">${(data.programs || []).filter(p => p.available && (!data.cloud_mode || p.runtime === 'cloud')).length}개 실행 가능</span>`);
                     if (data.cloud_mode) {
                         pills.push(`<span class="hub-pill ok">☁️ 클라우드 ${data.cloud_programs || 0}개</span>`);
+                        if (data.hidden_pc_only) {
+                            pills.push(`<span class="hub-pill warn">PC 전용 ${data.hidden_pc_only}개 숨김</span>`);
+                        }
                     }
                     if (statusBox) statusBox.innerHTML = pills.join('');
 
@@ -884,7 +905,7 @@
                         </div>`;
                     }
                 }
-                renderProgramList(data.programs, listBox);
+                renderProgramList(data.programs, listBox, !!data.cloud_mode);
             } catch (e) {
                 listBox.innerHTML = '<div class="empty-state">서버 연결을 확인하세요.</div>';
             }
