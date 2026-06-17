@@ -22,6 +22,13 @@ from rank_tracker import check_product_rank
 from javis_programs import get_catalog, launch_program
 from rank_persistence import load_hub_state, persistence_backend, save_hub_state
 from hub_runtime import cloud_platform, is_cloud_hub, is_cloudtype, is_cron_mode
+from hub_accounts import (
+    keywords_from_accounts,
+    merge_keywords_into_config,
+    parse_keywords_text,
+    save_accounts_keywords,
+    sync_accounts_keywords_to_config,
+)
 
 _VT_ROOT = Path(__file__).resolve().parent / "vercel_traffic"
 if _VT_ROOT.is_dir() and str(_VT_ROOT) not in sys.path:
@@ -32,6 +39,24 @@ except ImportError:
     run_traffic_session = None
 
 app = Flask(__name__)
+
+try:
+    from blog_studio_web import _drain_file_triggers, register_blog_routes
+
+    register_blog_routes(app)
+
+    def _blog_trigger_poll_loop() -> None:
+        while True:
+            try:
+                _drain_file_triggers()
+            except Exception:
+                pass
+            time.sleep(15)
+
+    if os.environ.get("AUTO_START_SCHEDULER", "1") != "0":
+        threading.Thread(target=_blog_trigger_poll_loop, daemon=True).start()
+except ImportError:
+    pass
 
 logs_queue = []
 scheduler_running = False
@@ -89,7 +114,12 @@ _bootstrap_from_persistence()
 def add_log(msg):
     timestamp = datetime.now().strftime("%H:%M:%S")
     formatted_msg = f"[{timestamp}] {msg}"
-    print(formatted_msg)
+    try:
+        print(formatted_msg)
+    except UnicodeEncodeError:
+        enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+        safe = formatted_msg.encode(enc, errors="replace").decode(enc, errors="replace")
+        print(safe)
     logs_queue.append(formatted_msg)
     if len(logs_queue) > 150:
         logs_queue.pop(0)
@@ -116,6 +146,13 @@ def scheduler_loop():
         results = track_all_keywords(logger=add_log)
         report = build_completion_report(results)
         last_completion_report = report
+        try:
+            state = load_hub_state()
+            state["last_report"] = report
+            state["logs"] = logs_queue[-100:]
+            save_hub_state(state)
+        except Exception:
+            pass
 
         for item in report.get("items", []):
             if item.get("status") != "실패":
@@ -323,7 +360,7 @@ def api_status():
             "traffic_mode": (
                 "클라우드 HTTP 방문 (키워드 검색 아님 · 상품 URL 1개)"
                 if on_cron or on_cloud
-                else "로컬 Playwright (run_traffic_focus.bat — 키워드별 검색 후 상품 클릭)"
+                else "로컬 HTTP 방문 (run_traffic_focus.bat — 상품 URL 1회)"
             ),
             "priority_keywords": priority_preview,
             "persistence": persistence_backend(),
@@ -355,6 +392,40 @@ def api_config():
     return jsonify({"success": True, "config": config})
 
 
+@app.route("/api/keywords", methods=["GET", "POST"])
+def api_keywords():
+    """accounts.json + config.json 키워드 (블로그·순위 추적 공용)."""
+    if request.method == "GET":
+        kws = keywords_from_accounts()
+        config = load_config()
+        if not kws:
+            kws = [
+                str(x.get("keyword") or "").strip()
+                for x in (config.get("priority_keywords") or [])
+                if isinstance(x, dict) and (x.get("keyword") or "").strip()
+            ]
+        return jsonify({"keywords": kws, "keywords_text": "\n".join(kws), "count": len(kws)})
+
+    data = request.get_json(silent=True) or {}
+    raw = data.get("keywords_text")
+    if raw is None:
+        raw = data.get("keywords", "")
+    if isinstance(raw, list):
+        kws = parse_keywords_text(", ".join(str(x) for x in raw))
+    else:
+        kws = parse_keywords_text(str(raw or ""))
+
+    save_accounts_keywords(kws)
+    config = load_config()
+    if kws:
+        config = merge_keywords_into_config(config, kws)
+    else:
+        config["priority_keywords"] = []
+    save_config(config)
+    add_log(f"🔑 키워드 {len(kws)}개 저장 (accounts.json + config.json)")
+    return jsonify({"success": True, "keywords": kws, "count": len(kws)})
+
+
 @app.route("/api/track-now", methods=["POST"])
 def api_track_now():
     global last_completion_report
@@ -362,10 +433,12 @@ def api_track_now():
     results = track_all_keywords(logger=add_log, serverless=is_serverless())
     report = build_completion_report(results)
     last_completion_report = report
-    if is_serverless():
+    try:
         state = load_hub_state()
         state["last_report"] = report
         save_hub_state(state)
+    except Exception:
+        pass
     add_log(f"✅ {report['summary']}")
     return jsonify({"success": True, "report": report})
 
@@ -373,7 +446,17 @@ def api_track_now():
 @app.route("/api/seo-audit", methods=["POST"])
 def api_seo_audit():
     add_log("📱 SEO 체크리스트 점검 요청")
-    audit = run_full_audit(logger=add_log)
+    data = request.get_json(silent=True) or {}
+    limit = data.get("product_limit")
+    try:
+        product_limit = int(limit) if limit is not None else None
+    except (TypeError, ValueError):
+        product_limit = None
+    audit = run_full_audit(logger=add_log, product_limit=product_limit)
+    total = audit["summary"].get("product_total")
+    sampled = audit["summary"].get("product_limit")
+    if total and sampled and total > sampled:
+        add_log(f"📋 상품 SEO: 우선 {sampled}개 점검 (전체 {total}개 — 네이버 차단 방지)")
     add_log(f"📋 SEO 평균 점수: {audit['summary'].get('average_score', 0)}점")
     return jsonify({"success": True, "audit": audit})
 
@@ -612,6 +695,7 @@ def api_health():
         "scheduler_running": scheduler_running,
         "traffic_loop_running": traffic_loop_running,
         "traffic_enabled": load_hub_state().get("traffic_enabled", True),
+        "programs_engine": "cloud-fallback-v2",
     })
 
 
@@ -745,6 +829,10 @@ def api_javis_launch():
 
 
 if os.environ.get("AUTO_START_SCHEDULER", "1") != "0":
+    try:
+        sync_accounts_keywords_to_config()
+    except Exception:
+        pass
     ensure_background_services(log_boot=True)
 
 if __name__ == "__main__":

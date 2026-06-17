@@ -321,6 +321,19 @@
                 <h3 style="font-size:0.95rem;margin-bottom:10px;"><i class="fa-solid fa-key"></i> 추적 키워드 · 트래픽 대상</h3>
                 <div id="keywordTrafficBox" class="sidebar-mini">설정 로딩 중...</div>
             </div>
+            <div class="glass-panel" style="margin-bottom:16px;border-color:rgba(59,130,246,0.35);">
+                <h3 style="font-size:0.95rem;margin-bottom:10px;"><i class="fa-solid fa-pen"></i> 내 키워드 (블로그·순위 공용)</h3>
+                <p style="font-size:0.75rem;color:var(--text-sub);margin-bottom:8px;">한 줄에 하나 · 쉼표로 구분 · 저장 시 accounts.json에 보관</p>
+                <textarea id="userKeywordsInput" rows="5" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(15,23,42,0.8);color:var(--text-main);font-size:0.85rem;resize:vertical;" placeholder="Permacoat 퀵&#10;Permacoat 티탄&#10;자동차 유리막 코팅"></textarea>
+                <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button class="btn" style="flex:1;min-width:120px;padding:10px;background:linear-gradient(135deg,#2563eb,#3b82f6);" onclick="saveUserKeywords()">
+                        <i class="fa-solid fa-floppy-disk"></i> 키워드 저장
+                    </button>
+                    <button class="btn" style="flex:1;min-width:120px;padding:10px;background:linear-gradient(135deg,#7c3aed,#a855f7);" onclick="openJarvisBlogStudio()">
+                        <i class="fa-solid fa-pen-nib"></i> 블로그 글쓰기
+                    </button>
+                </div>
+            </div>
             <div class="glass-panel">
                 <div class="btn-grid btn-grid-3" style="margin-bottom:14px;">
                     <button class="btn btn-audit" onclick="runSeoAudit()">
@@ -376,47 +389,9 @@
         </div>
 
         <div id="tab-blog" class="tab-content">
-            <div class="glass-panel">
-                <h3 style="font-size:0.95rem;margin-bottom:14px;"><i class="fa-solid fa-pen-nib"></i> 블로그 콘텐츠 스튜디오</h3>
-                <div class="blog-form">
-                    <div class="blog-field">
-                        <label>워크플로우</label>
-                        <select id="blogWorkflow">
-                            <option value="blog_review">블로그 체험 후기</option>
-                            <option value="howto">사용법 튜토리얼</option>
-                            <option value="comparison">비교·선택 가이드</option>
-                            <option value="faq">FAQ 블록</option>
-                            <option value="seasonal">시즌 캠페인</option>
-                            <option value="benefit">핵심 혜택 요약</option>
-                        </select>
-                    </div>
-                    <div class="blog-field">
-                        <label>연결 상품</label>
-                        <select id="blogProduct"></select>
-                    </div>
-                    <div class="blog-field">
-                        <label>타겟 키워드</label>
-                        <input id="blogKeyword" type="text" value="퍼마코트 자동차 코팅제" placeholder="예: 셀프 유리막 코팅">
-                    </div>
-                    <button class="btn" style="background:linear-gradient(135deg,#7c3aed,#a855f7);" onclick="generateBlogContent()">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> 블로그 초안 생성
-                    </button>
-                </div>
-                <div id="blogPreview" class="blog-preview">
-                    <div class="empty-state">키워드를 입력하고 「블로그 초안 생성」을 누르세요.</div>
-                </div>
-                <div id="blogMeta" class="blog-chip-row"></div>
-            </div>
-            <div class="glass-panel" style="margin-top:16px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <h3 style="font-size:0.95rem;"><i class="fa-solid fa-link"></i> 등록 블로그 SEO</h3>
-                    <button class="btn btn-audit" style="padding:8px 12px;font-size:0.78rem;" onclick="auditBlogOnly()">
-                        <i class="fa-solid fa-rotate"></i> 점검
-                    </button>
-                </div>
-                <div id="blogSeoBox">
-                    <div class="empty-state">config.json의 blog_urls 기준으로 점검합니다.</div>
-                </div>
+            <div class="glass-panel" style="padding:0;overflow:hidden;min-height:calc(100vh - 200px);">
+                <iframe id="blogStudioFrame" src="/blog-studio/" title="JARVIS 블로그 스튜디오"
+                    style="width:100%;min-height:820px;border:none;display:block;background:#0f172a;"></iframe>
             </div>
         </div>
 
@@ -651,7 +626,7 @@
             html += '<div style="margin-bottom:6px;"><strong style="color:#e2e8f0;font-size:0.82rem;">트래픽 대상 (클라우드)</strong></div>';
             html += `<div style="font-size:0.75rem;color:#93c5fd;word-break:break-all;margin-bottom:6px;">${trafficUrl}</div>`;
             html += `<div style="font-size:0.72rem;color:#94a3b8;">${data.traffic_mode || '상품 URL 방문'}</div>`;
-            html += '<div style="font-size:0.72rem;color:#94a3b8;margin-top:8px;">키워드 검색 트래픽은 PC에서 <code style="color:#93c5fd;">run_traffic_focus.bat</code> (traffic_single.py)</div>';
+            html += '<div style="font-size:0.72rem;color:#94a3b8;margin-top:8px;">PC 1회 방문: <code style="color:#93c5fd;">run_traffic_focus.bat</code> 또는 <code style="color:#93c5fd;">traffic_once.bat</code></div>';
             box.innerHTML = html;
         }
 
@@ -685,6 +660,45 @@
             box.textContent = '「지금 추적」 후 키워드별 순위가 표시됩니다.';
         }
 
+        async function loadUserKeywords() {
+            const box = document.getElementById('userKeywordsInput');
+            if (!box) return;
+            try {
+                const res = await fetch('/api/keywords');
+                const data = await res.json();
+                if (data.keywords_text) {
+                    box.value = data.keywords_text;
+                } else if (Array.isArray(data.keywords)) {
+                    box.value = data.keywords.join('\n');
+                }
+            } catch (e) {
+                console.warn('keywords load', e);
+            }
+        }
+
+        async function saveUserKeywords() {
+            const box = document.getElementById('userKeywordsInput');
+            if (!box) return;
+            const text = (box.value || '').trim();
+            try {
+                const res = await fetch('/api/keywords', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keywords_text: text }),
+                });
+                const data = await res.json();
+                if (!res.ok || data.success === false) {
+                    throw new Error(data.error || '저장 실패');
+                }
+                showToast(`키워드 ${data.count || 0}개 저장됨`);
+                appConfig = null;
+                await loadConfig();
+                updateStatus();
+            } catch (e) {
+                showToast('키워드 저장 실패: ' + e.message);
+            }
+        }
+
         async function loadConfig() {
             if (appConfig) return appConfig;
             try {
@@ -699,17 +713,10 @@
         }
 
         async function initBlogTab() {
-            const config = await loadConfig();
-            const sel = document.getElementById('blogProduct');
-            if (!sel.options.length) {
-                (config.products || []).forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.id;
-                    opt.textContent = `${p.name} (${p.id})`;
-                    sel.appendChild(opt);
-                });
+            const frame = document.getElementById('blogStudioFrame');
+            if (frame && (!frame.src || frame.src === 'about:blank')) {
+                frame.src = '/blog-studio/';
             }
-            if (lastBlogAudit) renderBlogSeo(lastBlogAudit);
         }
 
         function contentToMarkdown(result) {
@@ -870,14 +877,32 @@
         }
 
         async function launchJavisProgram(id) {
-            showToast('JARVIS 실행 (Traffic은 백그라운드 유지)');
+            showToast('프로그램 실행 요청 중…');
             const res = await fetch('/api/javis/launch', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json; charset=utf-8' },
                 body: JSON.stringify({ id }),
             });
-            const data = await res.json();
-            showToast(data.message || data.error || '요청 완료');
+            let data = {};
+            try { data = await res.json(); } catch (e) {
+                showToast('서버 응답 오류 — run.bat 재시작 또는 Cloudtype 재배포가 필요합니다.');
+                return;
+            }
+            const msg = data.message || data.error || (data.success ? '요청 완료' : '실행 실패');
+            if (data.cloud) {
+                showToast('☁️ ' + msg + (data.result?.message ? ' · ' + data.result.message : ''));
+                updateLogs();
+                return;
+            }
+            if (!data.success && (msg.includes('실행 파일 없음') || msg.includes('실행 불가'))) {
+                showToast(msg + ' — PC: run.bat 재시작 · 웹: Cloudtype 재배포 후 다시 시도');
+            } else {
+                showToast(msg);
+            }
+            if (data.success && (data.studio_url || data.action === 'blog_studio' || id.includes('블로그') || id === 'traffic_autoblog_gui')) {
+                const blogTab = document.querySelector('.tab-btn[data-tab="tab-blog"]');
+                if (blogTab) switchTab('tab-blog', blogTab);
+            }
             updateLogs();
         }
 
@@ -983,6 +1008,33 @@
             }
         }
 
+        function historyToReport(history) {
+            if (!history || !history.length) return null;
+            const seen = new Set();
+            const items = [];
+            for (let i = history.length - 1; i >= 0; i--) {
+                const r = history[i];
+                const kw = r['키워드'] || r.keyword;
+                if (!kw || seen.has(kw)) continue;
+                seen.add(kw);
+                const rank = parseInt(r['순위'] || r.rank) || 100;
+                const prev = parseInt(r['이전순위'] || r.prev_rank);
+                const change = r['변동'] || r.change || '유지';
+                let status = '유지';
+                if (change === '상승' || (Number.isFinite(prev) && rank < prev)) status = '상승';
+                else if (change === '하락' || (Number.isFinite(prev) && rank > prev)) status = '하락';
+                items.push({
+                    keyword: kw,
+                    rank_text: rank >= 100 ? '100위 밖' : `${rank}위`,
+                    prev_text: Number.isFinite(prev) && prev < 100 ? `${prev}위` : (prev >= 100 ? '100위 밖' : '—'),
+                    status,
+                    tasks: [(r['작업유형'] || r.task_type || '순위 추적')],
+                });
+                if (items.length >= 12) break;
+            }
+            return items.length ? { items, summary: `최근 기록 ${items.length}건` } : null;
+        }
+
         function renderRecentResults(report) {
             const box = document.getElementById('recentResults');
             if (!report || !report.items || !report.items.length) {
@@ -1057,14 +1109,19 @@
                 <div style="font-size:1.6rem;font-weight:700;">${s.average_score}점</div></div>
                 <div class="grade-badge">${s.average_score >= 80 ? 'A' : s.average_score >= 60 ? 'B' : 'C'}</div>
             </div>`;
+            if (s.product_total && s.product_limit && s.product_total > s.product_limit) {
+                html += `<p style="font-size:0.75rem;color:#94a3b8;margin-bottom:12px;">상품 ${s.product_limit}개 샘플 점검 (전체 ${s.product_total}개 · 네이버 차단 방지)</p>`;
+            }
 
             [...audit.products, ...audit.blogs].forEach(page => {
                 if (!page.success) {
-                    html += `<div style="margin-bottom:14px;"><strong style="font-size:0.85rem;">${page.url}</strong><div class="detail" style="color:var(--accent-red);">접근 실패</div></div>`;
+                    const detail = page.error || '접근 실패';
+                    html += `<div style="margin-bottom:14px;"><strong style="font-size:0.85rem;">${page.url}</strong><div class="detail" style="color:var(--accent-red);margin-top:4px;font-size:0.78rem;">${detail}</div></div>`;
                     return;
                 }
+                const partial = page.partial ? ' <span style="color:#fbbf24;font-size:0.72rem;">(config 폴백)</span>' : '';
                 html += `<div style="margin-bottom:16px;">
-                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">${page.page_type === 'product' ? '🛒' : '📝'} ${page.url} <span style="color:var(--accent-blue);">${page.percent}점 (${page.grade})</span></div>`;
+                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">${page.page_type === 'product' ? '🛒' : '📝'} ${page.url} <span style="color:var(--accent-blue);">${page.percent}점 (${page.grade})</span>${partial}</div>`;
                 page.checks.forEach(c => {
                     html += `<div class="check-item">
                         <span class="${c.passed ? 'check-pass' : 'check-fail'}">${c.passed ? '✓' : '✗'}</span>
@@ -1164,8 +1221,25 @@
             if (data.last_report) {
                 lastReport = data.last_report;
                 renderRecentResults(data.last_report);
+                renderKeywordRankTable(data.last_report, null);
+            } else {
+                try {
+                    const hres = await fetch('/api/history');
+                    if (hres.ok) {
+                        const history = await hres.json();
+                        const fallback = historyToReport(history);
+                        if (fallback) {
+                            lastReport = fallback;
+                            renderRecentResults(fallback);
+                        }
+                        renderKeywordRankTable(null, history);
+                    } else {
+                        renderKeywordRankTable(null, null);
+                    }
+                } catch (_) {
+                    renderKeywordRankTable(null, null);
+                }
             }
-            renderKeywordRankTable(data.last_report, null);
             updateTrafficBgPill();
             } catch (e) {
                 const text = document.getElementById('engineStatusText');
@@ -1253,6 +1327,33 @@
             box.innerHTML = md.render(data.report);
         }
 
+        async function openJarvisBlogStudio() {
+            const frame = document.getElementById('blogStudioFrame');
+            const blogTab = document.querySelector('.tab-btn[data-tab="tab-blog"]');
+            if (blogTab) switchTab('tab-blog', blogTab);
+            if (frame) {
+                frame.src = '/blog-studio/?t=' + Date.now();
+                return;
+            }
+            const base = window.location.origin + '/blog-studio/';
+            try {
+                const r = await fetch('/api/javis/health');
+                if (r.ok) {
+                    window.open(base, '_blank');
+                    return;
+                }
+            } catch (_) {}
+            showToast('블로그 스튜디오 시작 중…');
+            try {
+                await fetch('/api/javis/launch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: 'traffic_autoblog_gui' }),
+                });
+            } catch (_) {}
+            setTimeout(() => window.open('http://127.0.0.1:8790/', '_blank'), 2500);
+        }
+
         function showToast(msg) {
             const t = document.createElement('div');
             t.textContent = msg;
@@ -1293,6 +1394,7 @@
             updateStatus();
             loadLatestAudit();
             loadConfig();
+            loadUserKeywords();
         })();
 
         let deferredPrompt;

@@ -26,6 +26,14 @@ CATEGORIES: dict[str, str] = {
 }
 
 
+# 로컬 번들·JARVIS 외부 경로에 bat이 없을 때 login2 루트의 대체 런처
+_LOCAL_BAT_FALLBACKS: dict[str, str] = {
+    "run_블로그_전체.bat": "run_블로그_전체.bat",
+    "run_블로그_자동.bat": "run_블로그_자동.bat",
+    "run_blog_post.bat": "run_blog_post.bat",
+}
+
+
 def _resolve_jarvis_root() -> Path:
     bundled = _ROOT / "javis"
     external = Path(os.environ.get("JARVIS_ROOT", r"D:\@code\javis"))
@@ -35,13 +43,22 @@ def _resolve_jarvis_root() -> Path:
         return external.resolve()
     if bundled_count > 0:
         return bundled.resolve()
-    for path in (external, bundled, Path(r"D:\@code\javis")):
-        if path.is_dir():
+    for path in (external, bundled):
+        if path.is_dir() and any(path.glob("run_*.bat")):
             return path.resolve()
-    return external
+    # 클라우드 빈 /app/javis 디렉터리는 루트로 취급하지 않음
+    if external.is_dir() and not str(external).startswith("/app"):
+        return external.resolve()
+    return _ROOT.resolve()
 
 
 JARVIS_ROOT = _resolve_jarvis_root()
+
+# UI·JARVIS 호출 호환 (카탈로그 ID 변경 대비)
+PROGRAM_ID_ALIASES: dict[str, str] = {
+    "traffic_autoblog_gui": "local_run_gui",
+    "traffic_blog_studio": "local_run_gui",
+}
 
 
 def _load_catalog_raw() -> dict[str, Any]:
@@ -66,11 +83,20 @@ def _launcher_path(entry: dict[str, Any]) -> Path | None:
     if not rel:
         return None
     source = entry.get("source", "local")
+    launcher_key = entry.get("launcher") or rel
     if source == "javis":
-        base = JARVIS_ROOT
-    else:
-        base = _ROOT
-    path = base / rel
+        fallback = _LOCAL_BAT_FALLBACKS.get(launcher_key)
+        if fallback:
+            local = _ROOT / fallback
+            if local.is_file():
+                return local
+        path = JARVIS_ROOT / rel
+        if path.is_file():
+            return path
+        if fallback:
+            return local if local.is_file() else None
+        return None
+    path = _ROOT / rel
     return path if path.is_file() else None
 
 
@@ -97,18 +123,18 @@ def get_catalog(*, workspace: str | None = None) -> dict[str, Any]:
     programs = _load_catalog_programs()
     programs = _filter_workspace(programs, workspace)
 
-    on_cloud = is_vercel_runtime()
+    on_cloud = is_vercel_runtime() or sys.platform != "win32" or str(JARVIS_ROOT).startswith("/app")
     items = []
     for entry in programs:
         path = _launcher_path(entry)
+        cloud_action = _default_cloud_action(entry)
         runtime = cloud_runtime(entry)
-        cloud_action = resolve_cloud_action(entry)
         local_ok = path is not None
-        cloud_ok = cloud_action is not None and cloud_action != "local_hint"
+        cloud_ok = cloud_action is not None and cloud_action not in ("local_hint",)
         if on_cloud:
-            available = cloud_ok or cloud_action == "local_hint"
+            available = bool(cloud_ok or cloud_action == "local_hint")
         else:
-            available = local_ok or cloud_ok
+            available = local_ok or bool(cloud_ok)
         items.append({
             **entry,
             "category_label": CATEGORIES.get(entry.get("category", ""), entry.get("category", "")),
@@ -138,23 +164,58 @@ def get_catalog(*, workspace: str | None = None) -> dict[str, Any]:
     }
 
 
+
+def _can_run_local_bat(path: Path | None) -> bool:
+    return (
+        sys.platform == "win32"
+        and path is not None
+        and path.is_file()
+        and path.suffix.lower() == ".bat"
+    )
+
+
+def _default_cloud_action(entry: dict[str, Any]) -> str:
+    action = resolve_cloud_action(entry)
+    if action:
+        return action
+    ws = (entry.get("workspace") or "").lower()
+    if ws == "javis":
+        return "javis_proxy"
+    if ws == "traffic":
+        return "hub_status"
+    return "programs_check"
+
+
+def _must_use_serverless(path: Path | None) -> bool:
+    """Windows PC에서 .bat이 있을 때만 로컬 실행, 그 외는 전부 클라우드 대체."""
+    if is_vercel_runtime():
+        return True
+    if sys.platform != "win32":
+        return True
+    if str(JARVIS_ROOT).startswith("/app") or str(_ROOT).startswith("/app"):
+        return True
+    return not _can_run_local_bat(path)
+
+
 def launch_program(program_id: str, *, logger: Callable[[str], None] | None = None) -> dict[str, Any]:
+    program_id = PROGRAM_ID_ALIASES.get(program_id, program_id)
     programs = _load_catalog_programs()
     entry = next((p for p in programs if p["id"] == program_id), None)
     if not entry:
         return {"success": False, "error": "알 수 없는 프로그램 ID"}
 
-    if is_vercel_runtime():
-        log = logger or (lambda _m: None)
+    path = _launcher_path(entry)
+    cloud_action = _default_cloud_action(entry)
+    log = logger or (lambda _m: None)
+
+    if not path and cloud_action and cloud_action != "local_hint":
         return run_serverless_program(program_id, entry, log)
 
-    path = _launcher_path(entry)
+    if _must_use_serverless(path):
+        return run_serverless_program(program_id, entry, log)
+
     if not path:
-        root = _ROOT if entry.get("source") == "local" else JARVIS_ROOT
-        return {
-            "success": False,
-            "error": f"실행 파일 없음: {entry.get('launcher')} ({root})",
-        }
+        return run_serverless_program(program_id, entry, log)
     cwd = path.parent
     try:
         if sys.platform == "win32":

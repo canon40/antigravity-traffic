@@ -31,6 +31,10 @@ CLOUD_ACTION_BY_ID: dict[str, str] = {
     "javis_run_keyword_video": "content_generate",
     "javis_run_detail_page_studio": "content_generate",
     "javis_run_dashboard": "hub_status",
+    "javis_run_블로그_전체": "blog_pipeline",
+    "javis_run_블로그_자동": "blog_pipeline",
+    "javis_run_blog_post": "blog_pipeline",
+    "traffic_autoblog_gui": "blog_studio",
 }
 
 
@@ -71,8 +75,8 @@ def resolve_cloud_action(entry: dict[str, Any]) -> str | None:
 
     if cat == "seo" or any(k in stem for k in ("rank", "seo", "naver", "keyword", "hybrid")):
         return "track_now"
-    if cat == "blog" or any(k in stem for k in ("blog", "briefing", "content", "detail")):
-        return "content_generate"
+    if cat == "blog" or any(k in stem for k in ("blog", "briefing", "content", "detail", "블로그")):
+        return "blog_pipeline" if "블로그" in stem or cat == "blog" else "content_generate"
     if cat == "video" or any(k in stem for k in ("video", "shorts", "youtube")):
         return "content_generate"
     if cat == "ops" or any(k in stem for k in ("check", "doctor", "connect", "sync", "verify")):
@@ -81,7 +85,7 @@ def resolve_cloud_action(entry: dict[str, Any]) -> str | None:
         return "javis_proxy"
     if entry.get("workspace") == "traffic":
         return "hub_status"
-    return None
+    return "javis_proxy"
 
 
 def cloud_runtime(entry: dict[str, Any]) -> str:
@@ -118,9 +122,13 @@ def _action_track_now(entry: dict[str, Any], logger: Callable[[str], None]) -> d
     from rank_tracker import build_completion_report, track_all_keywords
 
     logger(f"☁️ 클라우드 순위 추적: {entry.get('name')}")
-    results = track_all_keywords(logger=logger, serverless=True, keyword_batch_size=4)
-    report = build_completion_report(results)
-    return {"action": "track_now", "report": report, "tracked": len(results)}
+    try:
+        results = track_all_keywords(logger=logger, serverless=True, keyword_batch_size=4)
+        report = build_completion_report(results)
+        return {"action": "track_now", "report": report, "tracked": len(results)}
+    except Exception as exc:
+        logger(f"⚠️ 순위 추적 일부 실패: {exc}")
+        return {"action": "track_now", "warning": str(exc), "tracked": 0}
 
 
 def _action_seo_pipeline(entry: dict[str, Any], logger: Callable[[str], None]) -> dict[str, Any]:
@@ -128,14 +136,108 @@ def _action_seo_pipeline(entry: dict[str, Any], logger: Callable[[str], None]) -
     from seo_checker import run_full_audit
 
     logger("☁️ SEO 파이프라인 (순위 + 체크리스트)")
-    results = track_all_keywords(logger=logger, serverless=True, keyword_batch_size=6)
-    report = build_completion_report(results)
-    audit = run_full_audit(logger=logger)
+    report = {"summary": "순위 추적 생략"}
+    tracked = 0
+    try:
+        results = track_all_keywords(logger=logger, serverless=True, keyword_batch_size=6)
+        report = build_completion_report(results)
+        tracked = len(results)
+    except Exception as exc:
+        logger(f"⚠️ 순위 추적 생략: {exc}")
+    audit = run_full_audit(logger=logger, product_limit=3)
     return {
         "action": "seo_pipeline",
         "report": report,
         "audit_summary": audit.get("summary"),
-        "tracked": len(results),
+        "tracked": tracked,
+    }
+
+
+def _first_blog_keyword() -> str:
+    keywords, priority = _load_config_keywords()
+    if priority:
+        if isinstance(priority[0], dict):
+            return (priority[0].get("keyword") or "").strip() or "나눔랩 코팅"
+        return str(priority[0]).strip()
+    if keywords:
+        if isinstance(keywords[0], dict):
+            return (keywords[0].get("keyword") or "").strip() or "나눔랩 코팅"
+        return str(keywords[0]).strip()
+    try:
+        from hub_accounts import keywords_from_accounts
+
+        acc = keywords_from_accounts()
+        if acc:
+            return acc[0]
+    except Exception:
+        pass
+    return "나눔랩 코팅"
+
+
+def _action_blog_studio(entry: dict[str, Any], logger: Callable[[str], None]) -> dict[str, Any]:
+    logger(f"☁️ 블로그 스튜디오: {entry.get('name')}")
+    return {
+        "action": "blog_studio",
+        "url": "/blog-studio/",
+        "message": "블로그 탭(스튜디오)에서 키워드 입력 후 실행하세요. PC에서는 run_gui.bat도 사용할 수 있습니다.",
+    }
+
+
+def _action_blog_pipeline(entry: dict[str, Any], logger: Callable[[str], None]) -> dict[str, Any]:
+    """클라우드·로컬 공통 — 블로그 파이프라인 또는 PC 트리거."""
+    keyword = _first_blog_keyword()
+    publish = "전체" in (entry.get("name") or "") or "전체" in (entry.get("launcher") or "")
+    payload = {
+        "keyword": keyword,
+        "dry_run": not publish,
+        "skip_media": not publish,
+        "platforms": ["tistory", "naver"],
+        "publish": publish,
+        "source": entry.get("id"),
+    }
+    logger(f"☁️ 블로그 파이프라인: {keyword[:60]} (발행={publish})")
+
+    from hub_runtime import is_cloud_hub
+
+    if not is_cloud_hub():
+        try:
+            from blog_studio_web import _start_async
+
+            result = _start_async(payload)
+            result["action"] = "blog_pipeline"
+            result["keyword"] = keyword
+            return result
+        except Exception as exc:
+            logger(f"블로그 파이프라인: {exc}")
+
+    trigger_path = ""
+    try:
+        from javis_bridge import write_file_trigger
+
+        trigger_path = write_file_trigger(payload)
+        logger(f"PC 트리거 저장: {trigger_path}")
+    except Exception as exc:
+        logger(f"PC 트리거 실패: {exc}")
+
+    if is_cloud_hub():
+        payload_gen = _action_content_generate(entry, logger)
+        payload_gen["action"] = "blog_pipeline"
+        payload_gen["keyword"] = keyword
+        payload_gen["message"] = (
+            f"클라우드에서 블로그 초안을 생성했습니다 (키워드: {keyword}). "
+            "PC에서 run_gui.bat 또는 run_블로그_전체.bat으로 발행하세요."
+        )
+        return payload_gen
+
+    return {
+        "action": "blog_pipeline",
+        "triggered": bool(trigger_path),
+        "trigger_path": trigger_path,
+        "keyword": keyword,
+        "message": (
+            f"PC에 블로그 실행 요청을 넣었습니다 (키워드: {keyword}). "
+            "run_gui.bat 또는 블로그 탭이 켜져 있으면 자동 시작됩니다."
+        ),
     }
 
 
@@ -152,7 +254,7 @@ def _action_content_generate(entry: dict[str, Any], logger: Callable[[str], None
         workflow = "product_detail"
 
     keywords, priority = _load_config_keywords()
-    keyword = (priority or keywords or ["퍼마코트"])[0]
+    keyword = _first_blog_keyword()
     logger(f"☁️ 콘텐츠 생성 ({workflow}): {keyword}")
     result = generate_content(workflow, keyword, product_name=keyword)
     if result.get("success"):
@@ -277,6 +379,8 @@ _HANDLERS: dict[str, Callable[..., dict[str, Any]]] = {
     "track_now": _action_track_now,
     "seo_pipeline": _action_seo_pipeline,
     "content_generate": _action_content_generate,
+    "blog_pipeline": _action_blog_pipeline,
+    "blog_studio": _action_blog_studio,
     "keyword_analyze": _action_keyword_analyze,
     "cloud_connect": _action_cloud_connect,
     "programs_check": _action_programs_check,
@@ -304,6 +408,17 @@ def run_serverless_program(
             "message": payload.get("message"),
             "cloud": True,
             "program_id": program_id,
+            "result": payload,
+        }
+    if action == "blog_studio":
+        payload = _action_blog_studio(entry, logger)
+        return {
+            "success": True,
+            "message": payload.get("message"),
+            "cloud": True,
+            "program_id": program_id,
+            "action": action,
+            "studio_url": payload.get("url"),
             "result": payload,
         }
     if action == "javis_proxy":

@@ -2,8 +2,8 @@
   "version": 1,
   "jarvis_root_hint": "D:\\@code\\javis",
   "jarvis_remote": "https://github.com/FatihMakes/Mark-XXXIX.git",
-  "traffic_count": 4,
-  "javis_count": 94,
+  "traffic_count": 11,
+  "javis_count": 95,
   "programs": [
     {
       "id": "traffic_web_hub",
@@ -14,6 +14,46 @@
       "category": "traffic",
       "description": "순위 추적·SEO·블로그 PWA 대시보드",
       "icon": "fa-gauge-high"
+    },
+    {
+      "id": "local_run_blog_post",
+      "name": "blog post",
+      "workspace": "traffic",
+      "source": "local",
+      "launcher": "run_blog_post.bat",
+      "category": "blog",
+      "description": "run_blog_post.bat — traffic 로컬 실행",
+      "icon": "fa-blog"
+    },
+    {
+      "id": "local_run_fix_playwright",
+      "name": "fix playwright",
+      "workspace": "traffic",
+      "source": "local",
+      "launcher": "run_fix_playwright.bat",
+      "category": "agent",
+      "description": "run_fix_playwright.bat — traffic 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "local_run_gui",
+      "name": "gui",
+      "workspace": "traffic",
+      "source": "local",
+      "launcher": "run_gui.bat",
+      "category": "agent",
+      "description": "run_gui.bat — traffic 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "local_run_gui_full",
+      "name": "gui full",
+      "workspace": "traffic",
+      "source": "local",
+      "launcher": "run_gui_full.bat",
+      "category": "agent",
+      "description": "run_gui_full.bat — traffic 로컬 실행",
+      "icon": "fa-robot"
     },
     {
       "id": "local_run_install",
@@ -44,6 +84,36 @@
       "category": "ops",
       "description": "로컬/프로덕션 SEO 허브 API 점검",
       "icon": "fa-stethoscope"
+    },
+    {
+      "id": "local_run_traffic_focus",
+      "name": "traffic focus",
+      "workspace": "traffic",
+      "source": "local",
+      "launcher": "run_traffic_focus.bat",
+      "category": "agent",
+      "description": "run_traffic_focus.bat — traffic 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "local_run_블로그_자동",
+      "name": "블로그 자동",
+      "workspace": "traffic",
+      "source": "local",
+      "launcher": "run_블로그_자동.bat",
+      "category": "blog",
+      "description": "run_블로그_자동.bat — traffic 로컬 실행",
+      "icon": "fa-blog"
+    },
+    {
+      "id": "local_run_블로그_전체",
+      "name": "블로그 전체",
+      "workspace": "traffic",
+      "source": "local",
+      "launcher": "run_블로그_전체.bat",
+      "category": "blog",
+      "description": "run_블로그_전체.bat — traffic 로컬 실행",
+      "icon": "fa-blog"
     },
     {
       "id": "javis_run_1인홈페이지_수익",
@@ -114,6 +184,16 @@
       "category": "agent",
       "description": "run_apply_lovable_keys.bat — javis 로컬 실행",
       "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_blog_studio_login2",
+      "name": "blog studio login2",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_blog_studio_login2.bat",
+      "category": "blog",
+      "description": "run_blog_studio_login2.bat — javis 로컬 실행",
+      "icon": "fa-blog"
     },
     {
       "id": "javis_run_claude_fable",
