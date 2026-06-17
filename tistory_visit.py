@@ -140,6 +140,13 @@ async def run_tistory_neighbor_comment(
     log("티스토리 브라우저를 엽니다...")
     status("티스토리 실행 중 · 브라우저 여는 중…")
 
+    from playwright_bootstrap import ensure_playwright_ready
+
+    if not ensure_playwright_ready(log):
+        raise RuntimeError(
+            "Playwright 브라우저를 실행할 수 없습니다. run_fix_playwright.bat 실행 후 재시도하세요."
+        )
+
     async with async_playwright() as p:
         try:
             browser = await p.chromium.launch(

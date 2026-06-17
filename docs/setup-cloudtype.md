@@ -19,6 +19,8 @@
 | `SUPABASE_SERVICE_KEY` | 권장 | REST 쓰기 |
 | `TRAFFIC_TARGET_URL` | 선택 | 스마트스토어 URL |
 | `TRAFFIC_INTERVAL_SEC` | 선택 | 트래픽 간격(초), 기본 1200 |
+| `NAVER_CLIENT_ID` | 클라우드 권장 | [네이버 검색 API](https://developers.naver.com/docs/serviceapi/search/shopping/shopping.md) — 순위 403 우회 |
+| `NAVER_CLIENT_SECRET` | 클라우드 권장 | 검색 API 시크릿 |
 | `JARVIS_ROOT` | 선택 | JARVIS 로컬 경로 (PC 연동 시) |
 
 ## Vercel과 차이

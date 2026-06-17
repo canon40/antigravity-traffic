@@ -160,8 +160,14 @@ async def run_blog_automation_for_account(
         ]
     log = logger or print
 
-    # 주의: os.chdir()을 사용하지 않음. 프로세스 전체의 작업 디렉터리를 바꾸면
-    # 같은 프로세스에서 도는 자동포스팅(글쓰기)이 경로 오류로 다운되는 문제가 발생함.
+    from playwright_bootstrap import ensure_playwright_ready
+
+    if not ensure_playwright_ready(log):
+        raise RuntimeError(
+            "Playwright 브라우저를 실행할 수 없습니다. run_fix_playwright.bat 실행 후 재시도하세요."
+        )
+
+    # 주의: os.chdir()을 사용하지 않음.
     log("브라우저를 엽니다. 잠시만 기다려 주세요...")
     status("크롬 실행 중 · 브라우저 여는 중…")
 

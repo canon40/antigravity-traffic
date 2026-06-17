@@ -81,10 +81,51 @@ def _scan_bats(base: Path, *, source: str, workspace: str, extra: dict | None = 
 TRAFFIC_OVERRIDES = {
     "run.bat": {
         "id": "traffic_web_hub",
-        "name": "웹 SEO 허브",
+        "name": "웹 SEO 허브 (현재)",
         "category": "traffic",
-        "description": "순위·SEO·블로그 PWA (permacoat.shop)",
+        "description": "순위 추적·SEO·블로그 PWA 대시보드",
         "icon": "fa-gauge-high",
+        "cloud_action": "hub_status",
+    },
+    "run_gui.bat": {
+        "id": "traffic_autoblog_gui",
+        "name": "Autoblog GUI",
+        "category": "blog",
+        "description": "클라우드: 블로그 스튜디오 · PC: run_gui.bat 데스크톱 GUI",
+        "icon": "fa-desktop",
+        "cloud_action": "blog_studio",
+    },
+    "run_blog_post.bat": {
+        "id": "traffic_blog_post",
+        "name": "blog post",
+        "category": "blog",
+        "description": "키워드 1회 원고 생성·발행 (run_blog_post.bat)",
+        "icon": "fa-blog",
+        "cloud_action": "blog_pipeline",
+    },
+    "run_블로그_자동.bat": {
+        "id": "traffic_blog_auto",
+        "name": "블로그 자동",
+        "category": "blog",
+        "description": "Autoblog GUI 실행 (자동화 탭)",
+        "icon": "fa-blog",
+        "cloud_action": "blog_studio",
+    },
+    "run_블로그_전체.bat": {
+        "id": "traffic_blog_full",
+        "name": "블로그 전체",
+        "category": "blog",
+        "description": "네이버+티스토리 전체 발행 1회",
+        "icon": "fa-blog",
+        "cloud_action": "blog_pipeline",
+    },
+    "run_content_factory.bat": {
+        "id": "traffic_content_factory",
+        "name": "콘텐츠 팩토리",
+        "category": "blog",
+        "description": "상품·블로그 SEO 초안 생성 파이프라인",
+        "icon": "fa-wand-magic-sparkles",
+        "cloud_action": "content_generate",
     },
     "run_seo_hub_verify.bat": {
         "id": "local_run_seo_hub_verify",
@@ -132,16 +173,19 @@ def _apply_overrides(items: list[dict], overrides: dict) -> list[dict]:
     return out
 
 
-def _pick_jarvis_root() -> Path:
+def _pick_jarvis_root(*, bundled_only: bool = False) -> Path:
+    """Git 커밋용: javis/ 서브모듈만 스캔. 로컬 개발: JARVIS_ROOT 허용."""
     bundled = ROOT / "javis"
+    if bundled_only:
+        return bundled
     external = Path(os.environ.get("JARVIS_ROOT", r"D:\@code\javis"))
     bundled_count = len(list(bundled.glob("run_*.bat"))) if bundled.is_dir() else 0
     external_count = len(list(external.glob("run_*.bat"))) if external.is_dir() else 0
-    if external_count >= bundled_count and external_count > 0:
-        return external
     if bundled_count > 0:
         return bundled
-    return external if external.is_dir() else bundled
+    if external_count > 0:
+        return external
+    return bundled if bundled.is_dir() else external
 
 
 def _annotate_cloud(entry: dict[str, Any]) -> dict[str, Any]:
@@ -158,13 +202,23 @@ def _annotate_cloud(entry: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def main() -> int:
-    jarvis_root = _pick_jarvis_root()
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    p = argparse.ArgumentParser(description="프로그램 카탈로그 동기화")
+    p.add_argument(
+        "--bundled-only",
+        action="store_true",
+        help="javis/ 서브모듈만 스캔 (Git·배포용 — 외부 D:\\ 경로 제외)",
+    )
+    args = p.parse_args(argv)
+
+    jarvis_root = _pick_jarvis_root(bundled_only=args.bundled_only)
 
     traffic = _scan_bats(ROOT, source="local", workspace="traffic")
     traffic = _apply_overrides(traffic, TRAFFIC_OVERRIDES)
 
-    javis = _scan_bats(jarvis_root, source="javis", workspace="javis")
+    javis = _scan_bats(jarvis_root, source="javis", workspace="javis") if jarvis_root.is_dir() else []
 
     # 웹 허브는 traffic 전용 고정 항목
     hub = {

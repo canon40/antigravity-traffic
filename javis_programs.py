@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 from typing import Any, Callable
 
+from hub_runtime import is_cloud_hub
 from javis_serverless import cloud_runtime, is_vercel_runtime, resolve_cloud_action, run_serverless_program
 
 _ROOT = Path(__file__).resolve().parent
@@ -39,14 +40,13 @@ def _resolve_jarvis_root() -> Path:
     external = Path(os.environ.get("JARVIS_ROOT", r"D:\@code\javis"))
     bundled_count = len(list(bundled.glob("run_*.bat"))) if bundled.is_dir() else 0
     external_count = len(list(external.glob("run_*.bat"))) if external.is_dir() else 0
-    if external_count >= bundled_count and external_count > 0:
-        return external.resolve()
     if bundled_count > 0:
         return bundled.resolve()
+    if external_count > 0:
+        return external.resolve()
     for path in (external, bundled):
         if path.is_dir() and any(path.glob("run_*.bat")):
             return path.resolve()
-    # 클라우드 빈 /app/javis 디렉터리는 루트로 취급하지 않음
     if external.is_dir() and not str(external).startswith("/app"):
         return external.resolve()
     return _ROOT.resolve()
@@ -56,8 +56,9 @@ JARVIS_ROOT = _resolve_jarvis_root()
 
 # UI·JARVIS 호출 호환 (카탈로그 ID 변경 대비)
 PROGRAM_ID_ALIASES: dict[str, str] = {
-    "traffic_autoblog_gui": "local_run_gui",
-    "traffic_blog_studio": "local_run_gui",
+    "traffic_blog_studio": "traffic_autoblog_gui",
+    "local_run_gui": "traffic_autoblog_gui",
+    "local_run_blog_post": "traffic_blog_post",
 }
 
 
@@ -119,16 +120,33 @@ def _filter_workspace(programs: list[dict[str, Any]], workspace: str | None) -> 
     return [p for p in programs if (p.get("workspace") or "").lower() == ws]
 
 
+def _venv_ready() -> bool:
+    return (_ROOT / ".venv" / "Scripts" / "python.exe").is_file()
+
+
+def _effective_runtime(entry: dict[str, Any], path: Path | None, on_cloud: bool) -> str:
+    from javis_serverless import resolve_cloud_action
+
+    action = resolve_cloud_action(entry)
+    if action == "local_hint":
+        return "local_only"
+    if path and _can_run_local_bat(path) and not on_cloud:
+        return "local"
+    if action and action != "local_hint":
+        return "cloud"
+    return "local" if path else "local_only"
+
+
 def get_catalog(*, workspace: str | None = None) -> dict[str, Any]:
     programs = _load_catalog_programs()
     programs = _filter_workspace(programs, workspace)
 
-    on_cloud = is_vercel_runtime() or sys.platform != "win32" or str(JARVIS_ROOT).startswith("/app")
+    on_cloud = is_cloud_hub() or sys.platform != "win32" or str(JARVIS_ROOT).startswith("/app")
     items = []
     for entry in programs:
         path = _launcher_path(entry)
         cloud_action = _default_cloud_action(entry)
-        runtime = cloud_runtime(entry)
+        runtime = _effective_runtime(entry, path, on_cloud)
         local_ok = path is not None
         cloud_ok = cloud_action is not None and cloud_action not in ("local_hint",)
         if on_cloud:
@@ -149,7 +167,7 @@ def get_catalog(*, workspace: str | None = None) -> dict[str, Any]:
     return {
         "workspace": workspace or "all",
         "jarvis_root": str(JARVIS_ROOT),
-        "jarvis_installed": JARVIS_ROOT.is_dir(),
+        "jarvis_installed": JARVIS_ROOT.is_dir() and any(JARVIS_ROOT.glob("run_*.bat")),
         "jarvis_bundled": bundled,
         "jarvis_remote": meta.get("jarvis_remote", "https://github.com/FatihMakes/Mark-XXXIX.git"),
         "catalog_path": str(_CATALOG_PATH),
@@ -158,6 +176,19 @@ def get_catalog(*, workspace: str | None = None) -> dict[str, Any]:
         "programs": items,
         "bridge": _bridge_health(),
         "cloud_mode": on_cloud,
+        "local_hub": not on_cloud and sys.platform == "win32",
+        "venv_ready": _venv_ready(),
+        "setup_hint": (
+            "run_install.bat 실행 후 run.bat 으로 http://127.0.0.1:5000 을 여세요."
+            if not _venv_ready() and not on_cloud
+            else (
+                "Cloudtype·Vercel — bat은 PC에서만 실행됩니다. "
+                "「클라우드 실행」은 순위·SEO·블로그 초안 생성입니다. "
+                "실제 네이버 발행: PC에서 run_gui.bat"
+                if on_cloud
+                else "로컬 허브 — 실행 버튼이 PC의 run_*.bat 을 엽니다."
+            )
+        ),
         "cloud_programs": sum(1 for p in items if p.get("runtime") == "cloud"),
         "traffic_count": sum(1 for p in items if p.get("workspace") == "traffic"),
         "javis_count": sum(1 for p in items if p.get("workspace") == "javis"),
@@ -166,8 +197,10 @@ def get_catalog(*, workspace: str | None = None) -> dict[str, Any]:
 
 
 def _can_run_local_bat(path: Path | None) -> bool:
+    """Windows PC 로컬 허브에서만 .bat 직접 실행."""
     return (
-        sys.platform == "win32"
+        not is_cloud_hub()
+        and sys.platform == "win32"
         and path is not None
         and path.is_file()
         and path.suffix.lower() == ".bat"
@@ -187,14 +220,16 @@ def _default_cloud_action(entry: dict[str, Any]) -> str:
 
 
 def _must_use_serverless(path: Path | None) -> bool:
-    """Windows PC에서 .bat이 있을 때만 로컬 실행, 그 외는 전부 클라우드 대체."""
-    if is_vercel_runtime():
+    """Cloudtype·Vercel·Linux — .bat 대신 서버 액션. Windows 로컬 PC만 bat."""
+    if is_cloud_hub():
         return True
     if sys.platform != "win32":
         return True
-    if str(JARVIS_ROOT).startswith("/app") or str(_ROOT).startswith("/app"):
+    if path is None:
         return True
-    return not _can_run_local_bat(path)
+    if path.suffix.lower() == ".bat":
+        return not path.is_file()
+    return True
 
 
 def launch_program(program_id: str, *, logger: Callable[[str], None] | None = None) -> dict[str, Any]:
@@ -205,49 +240,25 @@ def launch_program(program_id: str, *, logger: Callable[[str], None] | None = No
         return {"success": False, "error": "알 수 없는 프로그램 ID"}
 
     path = _launcher_path(entry)
-    cloud_action = _default_cloud_action(entry)
     log = logger or (lambda _m: None)
 
-    if not path and cloud_action and cloud_action != "local_hint":
+    if _must_use_serverless(path) or not _can_run_local_bat(path):
         return run_serverless_program(program_id, entry, log)
 
-    if _must_use_serverless(path):
-        return run_serverless_program(program_id, entry, log)
-
-    if not path:
-        return run_serverless_program(program_id, entry, log)
     cwd = path.parent
     try:
-        if sys.platform == "win32":
-            subprocess.Popen(
-                ["cmd", "/c", "start", "", str(path)],
-                cwd=str(cwd),
-                creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
-                close_fds=True,
-            )
-        else:
-            ext = path.suffix.lower()
-            if ext == ".sh":
-                subprocess.Popen(["bash", str(path)], cwd=str(cwd), start_new_session=True)
-            elif ext in (".py", ".pyw"):
-                subprocess.Popen([sys.executable, str(path)], cwd=str(cwd), start_new_session=True)
-            else:
-                return {
-                    "success": False,
-                    "error": f"현재 런타임에서 실행 불가한 파일 형식: {path.name}",
-                    "launcher": str(path),
-                    "workspace": entry.get("workspace"),
-                }
+        subprocess.Popen(
+            ["cmd", "/c", "start", "", str(path)],
+            cwd=str(cwd),
+            creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP,
+            close_fds=True,
+        )
     except OSError as exc:
-        return {
-            "success": False,
-            "error": str(exc),
-            "launcher": str(path),
-            "workspace": entry.get("workspace"),
-        }
+        log(f"로컬 bat 실행 실패 → 클라우드 대체: {exc}")
+        return run_serverless_program(program_id, entry, log)
     return {
         "success": True,
-        "message": f"{entry['name']} 실행 요청됨",
+        "message": f"{entry['name']} 실행 요청됨 (PC)",
         "launcher": str(path),
         "workspace": entry.get("workspace"),
     }

@@ -90,7 +90,9 @@ def analyze_keyword(keyword, product_id=None):
 
     rank_info = None
     if product_id:
-        rank = check_product_rank(keyword, product_id)
+        rank, status = check_product_rank(keyword, product_id)
+        if status == "blocked":
+            return {"success": False, "error": "네이버 HTTP 403 — 접근 차단"}
         if rank is not None:
             page = (rank - 1) // 40 + 1
             pos_in_page = ((rank - 1) % 40) + 1

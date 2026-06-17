@@ -20,7 +20,6 @@ from blog_gui_tabs import (
     setup_settings_tab,
 )
 from doc_guidelines import DISTRIBUTION_GUIDELINES
-from javis_bridge import JavisBridgeServer, JavisFileWatcher, DEFAULT_PORT as JAVIS_PORT
 
 
 def _content_gen():
@@ -40,15 +39,6 @@ def _lazy_tabs_enabled() -> bool:
         from drawer.light import lazy_tabs
 
         return lazy_tabs()
-    except ImportError:
-        return False
-
-
-def _javis_bridge_enabled() -> bool:
-    try:
-        from drawer.light import javis_bridge_enabled
-
-        return javis_bridge_enabled()
     except ImportError:
         return False
 
@@ -104,8 +94,6 @@ class CanonAutoGUI:
         self._tabs_loaded = set()
         self.setup_layout()
         self.switch_tab("automation")
-        if _javis_bridge_enabled():
-            self.root.after(500, self._setup_javis_bridge)
 
     @staticmethod
     def _default_master_guidelines() -> str:
@@ -115,114 +103,6 @@ class CanonAutoGUI:
             return load_default_master_guidelines()
         except Exception:
             return _content_gen().DEFAULT_MASTER_GUIDELINES
-
-    def _apply_javis_payload(self, payload: dict | None):
-        """JARIS 음성/HTTP 트리거로 넘어온 옵션을 GUI에 반영."""
-        if not payload:
-            return
-        kw = (payload.get("keyword") or payload.get("topic") or "").strip()
-        if kw and hasattr(self, "entry_keywords"):
-            cur = self.entry_keywords.get().strip()
-            merged = kw if not cur else (kw if kw in cur else f"{kw}, {cur}")
-            self.entry_keywords.delete(0, tk.END)
-            self.entry_keywords.insert(0, merged)
-        for key, var_name in (
-            ("use_naver1", "use_naver1_var"),
-            ("use_naver2", "use_naver2_var"),
-            ("use_tistory", "use_tistory_var"),
-            ("use_google", "use_google_var"),
-        ):
-            if payload.get(key) is not None and hasattr(self, var_name):
-                getattr(self, var_name).set(bool(payload[key]))
-        if payload.get("count") is not None and hasattr(self, "spin_count"):
-            try:
-                self.spin_count.delete(0, tk.END)
-                self.spin_count.insert(0, str(int(payload["count"])))
-            except Exception:
-                pass
-        if payload.get("text_provider") and hasattr(self, "text_provider_var"):
-            tp_map = {
-                "gemini": "Gemini API (유료)",
-                "ollama": "로컬 Ollama (무료)",
-                "claude": "클로드 코드 (Claude Code)",
-                "auto": "로컬 Ollama (무료)",
-            }
-            raw_tp = str(payload["text_provider"])
-            label = tp_map.get(raw_tp.lower())
-            if not label:
-                legacy = {
-                    "Gemini API (유료·현재 기본)": "Gemini API (유료)",
-                    "자동 (Ollama → Gemini)": "로컬 Ollama (무료)",
-                }
-                label = legacy.get(raw_tp, raw_tp)
-            self.text_provider_var.set(label)
-        if payload.get("post_type") and hasattr(self, "post_type_var"):
-            try:
-                self.post_type_var.set(str(payload["post_type"]))
-            except Exception:
-                pass
-        if payload.get("product_choice") and hasattr(self, "product_choice_var"):
-            try:
-                self.product_choice_var.set(str(payload["product_choice"]))
-            except Exception:
-                pass
-        if payload.get("product_url") and getattr(self, "product_url_entry", None):
-            try:
-                self.product_url_entry.delete(0, tk.END)
-                self.product_url_entry.insert(0, str(payload["product_url"]).strip())
-            except Exception:
-                pass
-        kws = payload.get("keywords")
-        if isinstance(kws, list) and kws and hasattr(self, "entry_keywords"):
-            merged_kw = ", ".join(str(x).strip() for x in kws if str(x).strip())
-            if merged_kw:
-                self.entry_keywords.delete(0, tk.END)
-                self.entry_keywords.insert(0, merged_kw)
-
-    def _on_javis_trigger(self, payload: dict | None):
-        from drawer.router import route_intent, summarize_route
-
-        route = summarize_route(payload or {})
-        mod = route.get("module", "blog")
-        if mod == "store":
-            self.switch_tab("store")
-            self.log(f"🔗 [JAVIS] store 모듈 → 스마트스토어 탭 (module={mod})")
-            return
-        if mod == "wiki":
-            self.switch_tab("guidelines")
-            self.log(f"🔗 [JAVIS] wiki 모듈 → 지침 탭 (필요 슬라이스만 wiki/ 에서 로드)")
-            return
-        self.switch_tab("automation")
-        self._apply_javis_payload(payload)
-        self.log(f"🔗 [JAVIS] blog 트리거 — {route.get('text_provider', 'ollama')} / 자동화 시작")
-        self.start_processing()
-
-    def _setup_javis_bridge(self):
-        def _http_start(payload):
-            from drawer.router import summarize_route
-
-            route = summarize_route(payload or {})
-            self.root.after(0, lambda: self._on_javis_trigger(payload))
-            return {
-                "ok": True,
-                "message": "canon4040 Autoblog 요청 수신",
-                "module": route.get("module", "blog"),
-                "text_provider": route.get("text_provider", "ollama"),
-            }
-
-        try:
-            self.javis_bridge = JavisBridgeServer(
-                _http_start,
-                port=JAVIS_PORT,
-                status_fn=lambda: {"ok": True, "running": self.is_processing, "service": "canon_autoblog"},
-            )
-            self.javis_bridge.start()
-            if hasattr(self, "log_area"):
-                self.log(f"🔗 JAVIS 연동 대기 중 (http://127.0.0.1:{JAVIS_PORT}/api/javis/start)")
-        except Exception as e:
-            if hasattr(self, "log_area"):
-                self.log(f"⚠️ JAVIS 연동 서버 시작 실패: {e}")
-        JavisFileWatcher(self.root, lambda p: self._on_javis_trigger(p)).start()
 
     def setup_layout(self):
         # 1. 사이드바 (Sidebar)
@@ -1090,8 +970,12 @@ class CanonAutoGUI:
                     )
                 )
             except Exception as e:
-                self.log(f"❌ [서이추 댓글] 오류 발생: {e}")
-                self.log_neighbor(f"❌ [서이추 댓글] 오류 발생: {e}")
+                err = str(e)
+                self.log(f"❌ [서이추 댓글] 오류 발생: {err}")
+                self.log_neighbor(f"❌ [서이추 댓글] 오류 발생: {err}")
+                if "winerror 2" in err.lower() or "지정된 파일을 찾을 수 없습니다" in err:
+                    self.log("   💡 run_fix_playwright.bat 실행 후 다시 시도하세요.")
+                    self.log_neighbor("   💡 run_fix_playwright.bat 실행 후 다시 시도하세요.")
                 status_msg = "오류 발생 – 로그를 확인하세요"
                 status_color = "#f97373"
             finally:
@@ -1190,8 +1074,12 @@ class CanonAutoGUI:
                 ))
                 status_msg, status_color = "작업 완료", "#22c55e"
             except Exception as e:
-                self.log(f"❌ [티스토리] 오류: {e}")
-                self.log_tistory(f"❌ [티스토리] 오류: {e}")
+                err = str(e)
+                self.log(f"❌ [티스토리] 오류: {err}")
+                self.log_tistory(f"❌ [티스토리] 오류: {err}")
+                if "winerror 2" in err.lower() or "지정된 파일을 찾을 수 없습니다" in err:
+                    self.log("   💡 run_fix_playwright.bat 실행 후 다시 시도하세요.")
+                    self.log_tistory("   💡 run_fix_playwright.bat 실행 후 다시 시도하세요.")
                 status_msg, status_color = "오류 발생 – 로그 확인", "#f97373"
             finally:
                 def _ui():
@@ -1476,10 +1364,18 @@ class CanonAutoGUI:
             except Exception:
                 pass
         if getattr(self, "vercel_mode_var", None):
-            cfg["vercel_mode"] = self.vercel_mode_var.get() or "cloud"
+            cfg["vercel_mode"] = self.vercel_mode_var.get() or "local"
+        else:
+            cfg["vercel_mode"] = cfg.get("vercel_mode") or "local"
         if getattr(self, "product_url_entry", None):
             cfg["product_url"] = self.product_url_entry.get().strip()
         return cfg
+
+    def on_automation_complete(self, config: dict, *, success: bool = True) -> None:
+        """발행 성공 후에만(선택) Vercel 트래픽 실행."""
+        if not success:
+            return
+        self._run_vercel_traffic_after_publish(config)
 
     def _update_vercel_status_label(self, text: str) -> None:
         if getattr(self, "lbl_vercel_status", None):
@@ -1533,7 +1429,8 @@ class CanonAutoGUI:
         if self._vercel_scheduler and self._vercel_scheduler.running:
             self._vercel_scheduler.stop()
             self._vercel_scheduler = None
-            self.btn_vercel_scheduler.config(text="주기 실행 시작")
+            if getattr(self, "btn_vercel_scheduler", None):
+                self.btn_vercel_scheduler.config(text="주기 실행 시작")
             self._update_vercel_status_label("주기: 중지")
             self.log("   ☁️ Vercel 주기 실행 중지")
             return
@@ -1541,9 +1438,9 @@ class CanonAutoGUI:
         self._flush_accounts_json()
         cfg = self._get_vercel_config_from_ui()
         if not cfg.get("vercel_enabled"):
-            messagebox.showwarning("Vercel", "먼저 '클라우드 트래픽 사용'을 켜 주세요.")
+            messagebox.showwarning("Vercel", "먼저 '트래픽 사용'을 켜 주세요.")
             return
-        mode = (cfg.get("vercel_mode") or "cloud").lower()
+        mode = (cfg.get("vercel_mode") or "local").lower()
         if mode in ("cloud", "both") and not cfg.get("vercel_api_url"):
             messagebox.showwarning("Vercel", "API URL을 입력해 주세요.")
             return
@@ -1556,7 +1453,8 @@ class CanonAutoGUI:
             log=self.log,
         )
         self._vercel_scheduler.start()
-        self.btn_vercel_scheduler.config(text="주기 실행 중지")
+        if getattr(self, "btn_vercel_scheduler", None):
+            self.btn_vercel_scheduler.config(text="주기 실행 중지")
         mins = cfg.get("vercel_interval_minutes", 20)
         self._update_vercel_status_label(f"주기: {mins}분")
         self.log(f"   ☁️ Vercel 주기 실행 시작 ({mins}분 간격)")
@@ -1567,6 +1465,10 @@ class CanonAutoGUI:
             return
         target = (config.get("product_url") or cfg.get("product_url") or "").strip()
         if not target:
+            return
+        mode = str(cfg.get("vercel_mode") or "local").lower()
+        if mode in ("cloud", "both") and not str(cfg.get("vercel_api_url") or "").strip():
+            self.log("   ☁️ Vercel 클라우드 모드 — API URL 없음, 트래픽 생략")
             return
 
         def _worker():
@@ -1748,24 +1650,6 @@ class CanonAutoGUI:
         tp_label = getattr(self, "text_provider_var", None).get() if getattr(self, "text_provider_var", None) else "Gemini"
         self.log(f"   글 생성 엔진: {tp_label} (Ollama 선택 시 원고 생성에 수 분 걸릴 수 있습니다)")
 
-        def _upload_preset():
-            try:
-                from blog_supabase_sync import push_autoblog_preset
-
-                res = push_autoblog_preset(config)
-                if res.get("ok"):
-                    rows = res.get("rows") or []
-                    pid = (rows[0] or {}).get("id") if rows else res.get("id")
-                    self.root.after(0, lambda: self.log(f"   ☁️ Supabase 프리셋 업로드 완료 ({pid or 'ok'})"))
-                else:
-                    err = (res.get("error") or "")[:120]
-                    if err and "미설정" not in err:
-                        self.root.after(0, lambda: self.log(f"   ⚠️ Supabase 업로드: {err}"))
-            except Exception as e:
-                self.root.after(0, lambda: self.log(f"   ⚠️ Supabase 업로드 생략: {e}"))
-
-        threading.Thread(target=_upload_preset, daemon=True).start()
-
         import os as _os
 
         tp_engine = config.get("text_provider") or "gemini"
@@ -1777,9 +1661,6 @@ class CanonAutoGUI:
         elif tp_engine == "claude":
             _os.environ["BLOG_TEXT_PROVIDER"] = "claude"
         self._flush_accounts_json()
-
-        if getattr(self, "vercel_on_publish_var", None) and self.vercel_on_publish_var.get():
-            self._run_vercel_traffic_after_publish(config)
 
         self.is_processing = True
         self.btn_run.config(state='disabled', text="작업 중...")

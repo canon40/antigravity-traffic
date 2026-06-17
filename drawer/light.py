@@ -22,10 +22,8 @@ def lazy_tabs() -> bool:
 
 
 def javis_bridge_enabled() -> bool:
-    """JARVIS HTTP는 기본 OFF (경량 GUI). 켜려면 BLOG_JAVIS_BRIDGE=1."""
-    if not light_gui():
-        return _env_on("BLOG_JAVIS_BRIDGE", "1")
-    return _env_on("BLOG_JAVIS_BRIDGE", "0")
+    """JARVIS HTTP 연동 — 독립 실행 모드에서는 항상 OFF."""
+    return False
 
 
 def defer_browser() -> bool:

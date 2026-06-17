@@ -398,7 +398,7 @@
         <div id="tab-local" class="tab-content">
             <div class="glass-panel">
                 <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-terminal"></i> Traffic · 로컬 프로그램</h3>
-                <p style="font-size:0.78rem;color:var(--text-sub);margin-bottom:12px;">anty traffic 저장소의 bat 런처 (순위·SEO·블로그·연동)</p>
+                <p id="localHubHint" style="font-size:0.78rem;color:var(--text-sub);margin-bottom:12px;">anty traffic 저장소의 bat 런처 (순위·SEO·블로그·연동)</p>
                 <div id="trafficProgramList">
                     <div class="empty-state">프로그램 목록 로딩 중...</div>
                 </div>
@@ -804,8 +804,10 @@
                 group.items.forEach(p => {
                     const isCloud = p.runtime === 'cloud' || (p.cloud_action && p.cloud_action !== 'local_hint');
                     const isLocalOnly = p.runtime === 'local_only' || p.cloud_action === 'local_hint';
+                    const isLocalBat = p.runtime === 'local';
                     let btnLabel = '실행';
                     if (!p.available) btnLabel = '불가';
+                    else if (isLocalBat) btnLabel = 'PC 실행';
                     else if (isCloud && isLocalOnly) btnLabel = '클라우드/PC';
                     else if (isCloud) btnLabel = '클라우드 실행';
                     else if (isLocalOnly) btnLabel = 'PC 전용';
@@ -830,6 +832,18 @@
             try {
                 const res = await fetch('/api/javis/programs?workspace=' + encodeURIComponent(workspace));
                 const data = await res.json();
+                if (workspace === 'traffic') {
+                    const hint = document.getElementById('localHubHint');
+                    if (hint && data.setup_hint) {
+                        const mode = data.local_hub
+                            ? '<span class="hub-pill ok" style="margin-right:6px;">PC 로컬 허브</span>'
+                            : '<span class="hub-pill warn" style="margin-right:6px;">클라우드 모드</span>';
+                        const venv = data.venv_ready
+                            ? ''
+                            : ' · <strong style="color:#fbbf24;">run_install.bat 필요</strong>';
+                        hint.innerHTML = mode + data.setup_hint + venv;
+                    }
+                }
                 if (workspace === 'javis') {
                     javisProgramsCache = data.programs || [];
                     renderSidebarJavis(javisProgramsCache);

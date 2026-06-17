@@ -8,7 +8,7 @@ from urllib.parse import quote
 import requests
 
 from app_resources import get_storage_dir
-from hub_runtime import is_cron_mode, uses_ephemeral_disk
+from hub_runtime import is_cloud_hub, is_cron_mode, uses_ephemeral_disk
 
 HISTORY_HEADERS = ["날짜", "키워드", "스토어명", "순위", "이전순위", "변동", "작업유형", "상세"]
 
@@ -20,6 +20,158 @@ MOBILE_UA = (
     "Mozilla/5.0 (Linux; Android 14; SM-S918N) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36"
 )
+
+_NAVER_OPENAPI_URL = "https://openapi.naver.com/v1/search/shop.json"
+_SHOPPING_SESSION: requests.Session | None = None
+
+
+def _naver_api_credentials() -> tuple[str | None, str | None]:
+    cid = (
+        os.environ.get("NAVER_CLIENT_ID", "").strip()
+        or os.environ.get("NAVER_SEARCH_CLIENT_ID", "").strip()
+    )
+    secret = (
+        os.environ.get("NAVER_CLIENT_SECRET", "").strip()
+        or os.environ.get("NAVER_SEARCH_CLIENT_SECRET", "").strip()
+    )
+    if cid and secret:
+        return cid, secret
+    return None, None
+
+
+def _shopping_session() -> requests.Session:
+    global _SHOPPING_SESSION
+    if _SHOPPING_SESSION is None:
+        _SHOPPING_SESSION = requests.Session()
+    return _SHOPPING_SESSION
+
+
+def _shopping_headers(keyword: str) -> dict[str, str]:
+    return {
+        "User-Agent": MOBILE_UA,
+        "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+        "Referer": "https://m.naver.com/",
+        "Cache-Control": "no-cache",
+    }
+
+
+def _warmup_shopping_session(session: requests.Session) -> None:
+    try:
+        session.get("https://m.naver.com/", headers=_shopping_headers(""), timeout=12)
+    except Exception:
+        pass
+
+
+def _openapi_product_ids(keyword: str, start: int = 1, display: int = 40) -> tuple[list[str] | None, str | None]:
+    cid, secret = _naver_api_credentials()
+    if not cid or not secret:
+        return None, "no_api"
+    params = {
+        "query": keyword.strip(),
+        "display": min(max(display, 1), 100),
+        "start": max(start, 1),
+        "sort": "sim",
+    }
+    headers = {
+        "X-Naver-Client-Id": cid,
+        "X-Naver-Client-Secret": secret,
+        "User-Agent": MOBILE_UA,
+    }
+    try:
+        res = requests.get(_NAVER_OPENAPI_URL, params=params, headers=headers, timeout=20)
+        if res.status_code != 200:
+            return None, f"api_http_{res.status_code}"
+        ids: list[str] = []
+        for item in res.json().get("items") or []:
+            link = item.get("link") or ""
+            match = re.search(r"/products/(\d+)", link)
+            if match:
+                ids.append(match.group(1))
+                continue
+            pid = str(item.get("productId") or item.get("product_id") or "").strip()
+            if pid.isdigit():
+                ids.append(pid)
+        return ids, None
+    except Exception as exc:
+        return None, str(exc)
+
+
+def _fetch_shopping_html(keyword: str, start: int = 1, logger=None) -> tuple[str | None, str | None]:
+    """모바일 쇼핑 HTML. 오류: blocked|timeout|connection|error|empty"""
+    import time
+
+    def log(msg: str) -> None:
+        if logger:
+            logger(msg)
+
+    on_cloud = is_cloud_hub()
+    session = _shopping_session()
+    url = _shopping_search_url(keyword, start=start)
+    headers = _shopping_headers(keyword)
+    delays = (0.4, 1.2, 2.5) if on_cloud else (0.2, 0.7)
+    last_status = 0
+
+    for attempt, delay in enumerate(delays, 1):
+        if attempt == 1:
+            _warmup_shopping_session(session)
+        try:
+            res = session.get(url, headers=headers, timeout=25)
+            last_status = res.status_code
+            if res.status_code == 200:
+                if res.text.strip():
+                    return res.text, None
+                return None, "empty"
+            if res.status_code in (403, 418, 429):
+                if attempt < len(delays):
+                    log(f"   ⚠️ HTTP {res.status_code} — {delay:.1f}초 후 재시도 ({attempt}/{len(delays)})")
+                    time.sleep(delay)
+                    continue
+                return None, "blocked"
+        except requests.exceptions.Timeout:
+            if attempt >= len(delays):
+                return None, "timeout"
+            time.sleep(delay)
+        except requests.exceptions.ConnectionError:
+            if attempt >= len(delays):
+                return None, "connection"
+            time.sleep(delay)
+
+    if last_status in (403, 418, 429):
+        return None, "blocked"
+    return None, "error"
+
+
+def _fetch_shopping_page_ids(
+    keyword: str,
+    start: int = 1,
+    logger=None,
+) -> tuple[list[str], str | None, str]:
+    """(상품 ID 목록, 오류코드, 소스) — 오류: blocked|empty|timeout|connection|error"""
+    def log(msg: str) -> None:
+        if logger:
+            logger(msg)
+
+    on_cloud = is_cloud_hub()
+    if on_cloud and _naver_api_credentials()[0]:
+        ids, api_err = _openapi_product_ids(keyword, start=start)
+        if ids is not None:
+            return ids, None if ids else "empty", "openapi"
+        if api_err and api_err != "no_api":
+            log(f"   ⚠️ 네이버 검색 API 실패: {api_err}")
+
+    html, err = _fetch_shopping_html(keyword, start=start, logger=logger)
+    if err == "blocked":
+        ids, _api_err = _openapi_product_ids(keyword, start=start)
+        if ids is not None:
+            if ids:
+                log("   ☁️ 공식 검색 API로 대체 조회")
+            return ids, None if ids else "empty", "openapi"
+        return [], "blocked", "html"
+    if err:
+        return [], err, "html"
+    ids = _extract_ordered_product_ids(html or "")
+    return ids, None if ids else "empty", "html"
 
 
 def _config_path():
@@ -69,14 +221,17 @@ def _extract_ordered_product_ids(html):
 def test_naver_connection():
     """네이버 모바일 검색 연결 테스트."""
     try:
-        res = requests.get(
-            _shopping_search_url("퍼마코트"),
-            headers={"User-Agent": MOBILE_UA, "Accept-Language": "ko-KR,ko;q=0.9"},
-            timeout=20,
-        )
-        if res.status_code != 200:
-            return False, f"HTTP {res.status_code}"
-        ids = _extract_ordered_product_ids(res.text)
+        ids, err, _source = _fetch_shopping_page_ids("퍼마코트")
+        if err == "blocked":
+            cid, _ = _naver_api_credentials()
+            if cid:
+                return False, "HTTP 403 — NAVER_CLIENT_ID가 설정되어 있으나 API 조회도 실패했습니다."
+            return (
+                False,
+                "HTTP 403 — 클라우드 IP 차단. Cloudtype에 NAVER_CLIENT_ID·NAVER_CLIENT_SECRET 설정 또는 PC 로컬 허브 사용",
+            )
+        if err and err not in ("empty",):
+            return False, f"조회 실패 ({err})"
         if not ids:
             return False, "검색 페이지는 열렸으나 상품 목록을 파싱하지 못했습니다."
         return True, f"연결 정상 (샘플 상품 {len(ids)}건 인식)"
@@ -252,15 +407,10 @@ def get_all_product_rankings(keyword, product_map, logger=None, max_pages=13):
     if not product_map:
         return [], "등록 상품 DB가 비어 있습니다. 앱을 재설치하거나 products.json을 확인하세요."
 
-    headers = {
-        "User-Agent": MOBILE_UA,
-        "Accept-Language": "ko-KR,ko;q=0.9,en;q=0.8",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    }
-
     remaining = set(product_map.keys())  # 아직 못 찾은 상품
     results = []
     cumulative_rank = 0
+    blocked = False
 
     try:
         for page in range(1, max_pages + 1):
@@ -268,22 +418,16 @@ def get_all_product_rankings(keyword, product_map, logger=None, max_pages=13):
                 break  # 모든 상품 발견
 
             start = (page - 1) * 40 + 1
-            url = _shopping_search_url(keyword, start=start)
             log(f"   📄 {page}페이지 조회 중... (start={start}, 미발견 상품 {len(remaining)}건)")
 
-            try:
-                res = requests.get(url, headers=headers, timeout=20)
-                if res.status_code != 200:
-                    log(f"   ⚠️ HTTP {res.status_code} — 중단")
-                    break
-            except requests.exceptions.Timeout:
-                log(f"   ⚠️ {page}페이지 타임아웃 — 중단")
+            page_ids, err, _source = _fetch_shopping_page_ids(keyword, start=start, logger=logger)
+            if err == "blocked":
+                log("   ⚠️ HTTP 403 — 네이버 접근 차단 (클라우드 IP 또는 NAVER_CLIENT_ID 필요)")
+                blocked = True
                 break
-            except requests.exceptions.ConnectionError:
-                log(f"   ⚠️ {page}페이지 연결 실패 — 중단")
+            if err in ("timeout", "connection", "error"):
+                log(f"   ⚠️ {page}페이지 {err} — 중단")
                 break
-
-            page_ids = _extract_ordered_product_ids(res.text)
             if not page_ids:
                 log(f"   ⚠️ {page}페이지에서 상품 미발견 — 탐색 종료")
                 break
@@ -315,7 +459,10 @@ def get_all_product_rankings(keyword, product_map, logger=None, max_pages=13):
                     log(f"   ✅ {product_map[pid]}: {cumulative_rank}위")
 
             if page < max_pages and remaining:
-                time.sleep(0.5)  # 네이버 요청 간격 준수
+                time.sleep(1.0 if is_cloud_hub() else 0.5)  # 네이버 요청 간격 준수
+
+        if blocked:
+            return results, "blocked"
 
         # 탐색 범위 내 미발견 상품 처리
         for pid in remaining:
@@ -330,9 +477,7 @@ def get_all_product_rankings(keyword, product_map, logger=None, max_pages=13):
 def check_product_rank(keyword, product_id, logger=None, max_pages=13):
     """
     특정 스마트스토어 상품 ID의 쇼핑 검색 노출 순위.
-    max_pages: 탐색할 최대 페이지 수 (1페이지=40개, 기본 13페이지 ≒ 520위까지)
-    반환값: 실제 순위(int) 또는 None(조회 실패)
-    찾지 못하면 max_pages*40 초과를 의미하는 큰 값 대신 None 반환.
+    반환: (순위 또는 None, 상태) — 상태는 None|blocked|not_found|error
     """
     def log(msg):
         if logger:
@@ -340,25 +485,21 @@ def check_product_rank(keyword, product_id, logger=None, max_pages=13):
 
     product_id = str(product_id).strip()
     log(f"🔍 '{keyword}' 검색 결과에서 상품 {product_id} 순위 조회 (최대 {max_pages}페이지)...")
-    headers = {
-        "User-Agent": MOBILE_UA,
-        "Accept-Language": "ko-KR,ko;q=0.9",
-    }
 
-    cumulative_rank = 0  # 지금까지 세어온 상품 수
+    cumulative_rank = 0
 
     try:
         for page in range(1, max_pages + 1):
             start = (page - 1) * 40 + 1
-            url = _shopping_search_url(keyword, start=start)
             log(f"   📄 {page}페이지 조회 중... (start={start})")
 
-            res = requests.get(url, headers=headers, timeout=20)
-            if res.status_code != 200:
-                log(f"   ⚠️ HTTP {res.status_code} — 중단")
-                break
-
-            page_ids = _extract_ordered_product_ids(res.text)
+            page_ids, err, _source = _fetch_shopping_page_ids(keyword, start=start, logger=logger)
+            if err == "blocked":
+                log("   ⚠️ HTTP 403 — 중단")
+                return None, "blocked"
+            if err in ("timeout", "connection", "error"):
+                log(f"   ⚠️ 조회 실패 ({err}) — 중단")
+                return None, err
             if not page_ids:
                 log(f"   ⚠️ {page}페이지에서 상품 미발견 — 탐색 종료")
                 break
@@ -367,16 +508,16 @@ def check_product_rank(keyword, product_id, logger=None, max_pages=13):
                 cumulative_rank += 1
                 if pid == product_id:
                     log(f"✅ 상품 {product_id}: {cumulative_rank}위 ({page}페이지)")
-                    return cumulative_rank
+                    return cumulative_rank, None
 
             import time
-            time.sleep(0.5)  # 네이버 요청 간격 준수
+            time.sleep(1.0 if is_cloud_hub() else 0.5)
 
         log(f"⚠️ 상품 {product_id} {cumulative_rank}위 이후에도 미발견")
-        return None  # 탐색 범위 초과 — 순위 없음
+        return None, "not_found"
     except Exception as e:
         log(f"❌ 상품 순위 조회 실패: {e}")
-        return None
+        return None, "error"
 
 
 def check_naver_shopping_rank(keyword, store_name, logger=None):
@@ -385,15 +526,15 @@ def check_naver_shopping_rank(keyword, store_name, logger=None):
             logger(msg)
 
     log(f"🔍 '{keyword}' 키워드로 '{store_name}' 순위 조회 중...")
-    headers = {
-        "User-Agent": MOBILE_UA,
-        "Accept-Language": "ko-KR,ko;q=0.9",
-    }
 
     try:
-        res = requests.get(_shopping_search_url(keyword), headers=headers, timeout=20)
-        res.raise_for_status()
-        text = res.text
+        text, err = _fetch_shopping_html(keyword, logger=logger)
+        if err == "blocked":
+            log("❌ 순위 조회 실패: 네이버 HTTP 403 (클라우드 IP 차단)")
+            return None
+        if err or not text:
+            log("⚠️ 1페이지(약 100위) 내 미노출")
+            return 100
 
         try:
             from bs4 import BeautifulSoup
@@ -475,10 +616,45 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
 
         prev = get_last_rank(keyword, store_name)
         product_id = item.get("product_id")
+        rank_status = None
         if product_id:
-            rank = check_product_rank(keyword, product_id, logger=logger, max_pages=max_pages)
+            rank, rank_status = check_product_rank(keyword, product_id, logger=logger, max_pages=max_pages)
         else:
             rank = check_naver_shopping_rank(keyword, store_name, logger=logger)
+            if rank is None:
+                rank_status = "blocked"
+
+        if rank_status == "blocked":
+            detail = "네이버 HTTP 403 — 클라우드 IP 차단 (NAVER_CLIENT_ID 설정 또는 PC 로컬 허브)"
+            results.append({
+                "keyword": keyword,
+                "store_name": store_name,
+                "rank": None,
+                "prev_rank": prev,
+                "change": None,
+                "detail": detail,
+                "success": False,
+                "blocked": True,
+            })
+            if logger:
+                logger(f"📊 [{keyword}] {detail}")
+            continue
+
+        if rank_status in ("timeout", "connection", "error"):
+            detail = f"순위 조회 실패 ({rank_status})"
+            results.append({
+                "keyword": keyword,
+                "store_name": store_name,
+                "rank": None,
+                "prev_rank": prev,
+                "change": None,
+                "detail": detail,
+                "success": False,
+            })
+            if logger:
+                logger(f"📊 [{keyword}] {detail}")
+            continue
+
         if rank is None:
             # 탐색 범위 초과 — 미발견으로 기록
             detail = f"미발견 (520위 초과)" if prev is None else (
@@ -539,6 +715,13 @@ def build_completion_report(results):
     improved = declined = unchanged = 0
 
     for r in results:
+        if r.get("blocked"):
+            items.append({
+                "keyword": r["keyword"],
+                "status": "차단",
+                "message": r.get("detail") or "네이버 접근 차단 (HTTP 403)",
+            })
+            continue
         if not r.get("success"):
             items.append({
                 "keyword": r["keyword"],

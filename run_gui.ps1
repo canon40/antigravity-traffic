@@ -20,9 +20,18 @@ $env:BLOG_IMAGE_PROVIDER = "genai"
 $env:BLOG_LIGHT_GUI = "1"
 $env:BLOG_LAZY_TABS = "1"
 $env:BLOG_JAVIS_BRIDGE = "0"
+$env:BLOG_JARVIS_MODEL_ROUTING = "0"
+$env:BLOG_STANDALONE = "1"
 $env:BLOG_DEFER_BROWSER = "1"
 $env:BLOG_BROWSER_PER_ROUND = "1"
 $env:BLOG_UNLOAD_AFTER_JOB = "1"
+
+Write-Host "Playwright 점검 중..."
+& $py -c "from playwright_bootstrap import ensure_playwright_ready; import sys; sys.exit(0 if ensure_playwright_ready() else 1)"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Playwright 복구 실패. run_fix_playwright.bat 을 실행하세요." -ForegroundColor Red
+    exit 1
+}
 
 Start-Process -FilePath $pyw -ArgumentList (Join-Path $PSScriptRoot "blog_main.py") -WorkingDirectory $PSScriptRoot
 Write-Host "Autoblog GUI를 시작했습니다."

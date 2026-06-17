@@ -32,6 +32,8 @@ def push_autoblog_preset(
     device_label: str = "pc-blog_main",
 ) -> dict[str, Any]:
     """자동화 시작 시 현재 설정을 Supabase 프리셋으로 저장."""
+    if os.environ.get("BLOG_STANDALONE", "1").strip().lower() in ("1", "true", "yes", "on"):
+        return {"ok": False, "error": "독립 실행 모드 — Supabase 동기화 생략"}
     try:
         sanitize_config, supabase_enabled, upsert_preset = _import_jarvis_supabase()
     except Exception as e:

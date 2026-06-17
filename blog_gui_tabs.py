@@ -4,6 +4,7 @@
 import tkinter as tk
 from tkinter import ttk, scrolledtext
 
+import os
 import config as cfg
 import sys
 from blog_constants import POST_TYPES_GUI, PRODUCT_KEYWORDS, PRODUCT_POST_TYPE
@@ -19,6 +20,13 @@ def _default_master_for_gui():
         from drawer.registry import get_content_gen
 
         return get_content_gen().DEFAULT_MASTER_GUIDELINES
+
+
+def _show_vercel_ui() -> bool:
+    """독립 실행 모드에서는 Vercel 패널 숨김 (BLOG_VERCEL_UI=1 로 표시)."""
+    if os.environ.get("BLOG_VERCEL_UI", "0").strip().lower() in ("1", "true", "yes", "on"):
+        return True
+    return os.environ.get("BLOG_STANDALONE", "1").strip().lower() not in ("1", "true", "yes", "on")
 
 
 def setup_automation_tab(app):
@@ -202,122 +210,129 @@ def setup_automation_tab(app):
         app.product_url_entry.insert(0, default_promo_url)
     promo_frame.columnconfigure(3, weight=1)
 
-    vercel_card = tk.Frame(
-        app.auto_frame,
-        bg=app.color_card,
-        bd=0,
-        highlightthickness=1,
-        highlightbackground=app.color_border,
-        padx=25,
-        pady=18,
-    )
-    vercel_card.pack(fill="x", pady=(0, 12))
-
-    tk.Label(
-        vercel_card,
-        text="☁️ Vercel 클라우드 트래픽 (PC 꺼도 Base44 연동)",
-        font=app.font_bold,
-        bg=app.color_card,
-        fg=app.color_text_dark,
-    ).grid(row=0, column=0, columnspan=4, sticky="w")
-
-    tk.Label(vercel_card, text="API URL", font=app.font_main, bg=app.color_card, fg=app.color_text_light).grid(
-        row=1, column=0, sticky="w", pady=(10, 0)
-    )
-    app.entry_vercel_api = app.create_modern_entry(
-        vercel_card, "https://내프로젝트.vercel.app/api/traffic", 55
-    )
-    app.entry_vercel_api.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(4, 0))
-
-    tk.Label(vercel_card, text="WEBHOOK_SECRET (선택)", font=app.font_main, bg=app.color_card, fg=app.color_text_light).grid(
-        row=3, column=0, sticky="w", pady=(8, 0)
-    )
-    app.entry_vercel_secret = app.create_modern_entry(vercel_card, "", 40, show="*")
-    app.entry_vercel_secret.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(4, 0))
-
-    tk.Label(vercel_card, text="주기(분)", font=app.font_main, bg=app.color_card, fg=app.color_text_light).grid(
-        row=3, column=2, sticky="w", padx=(12, 0), pady=(8, 0)
-    )
-    app.spin_vercel_interval = tk.Spinbox(
-        vercel_card, from_=5, to=1440, width=8, bg=app.color_bg, fg=app.color_text_dark, font=app.font_main, bd=1, relief="flat"
-    )
-    app.spin_vercel_interval.grid(row=4, column=2, sticky="w", padx=(12, 0), pady=(4, 0))
-    app.spin_vercel_interval.delete(0, "end")
-    app.spin_vercel_interval.insert(0, "20")
-
     app.vercel_enabled_var = tk.BooleanVar(value=False)
-    app.vercel_on_publish_var = tk.BooleanVar(value=True)
-    vf = tk.Frame(vercel_card, bg=app.color_card)
-    vf.grid(row=5, column=0, columnspan=4, sticky="w", pady=(10, 0))
-    tk.Checkbutton(
-        vf,
-        text="클라우드 트래픽 사용",
-        variable=app.vercel_enabled_var,
-        bg=app.color_card,
-        activebackground=app.color_card,
-        fg=app.color_text_dark,
-        selectcolor=app.color_bg,
-    ).pack(side="left")
-    tk.Checkbutton(
-        vf,
-        text="자동화 시작 시 1회 호출",
-        variable=app.vercel_on_publish_var,
-        bg=app.color_card,
-        activebackground=app.color_card,
-        fg=app.color_text_dark,
-        selectcolor=app.color_bg,
-    ).pack(side="left", padx=(14, 0))
-
+    app.vercel_on_publish_var = tk.BooleanVar(value=False)
     app.vercel_mode_var = tk.StringVar(value="local")
-    mode_frame = tk.Frame(vercel_card, bg=app.color_card)
-    mode_frame.grid(row=6, column=0, columnspan=4, sticky="w", pady=(6, 0))
-    for label, value in (("Vercel 클라우드", "cloud"), ("로컬 HTTP", "local"), ("둘 다", "both")):
-        tk.Radiobutton(
-            mode_frame,
-            text=label,
-            variable=app.vercel_mode_var,
-            value=value,
+    app.entry_vercel_api = None
+    app.entry_vercel_secret = None
+    app.spin_vercel_interval = None
+    app.btn_vercel_scheduler = None
+    app.lbl_vercel_status = None
+
+    if _show_vercel_ui():
+        vercel_card = tk.Frame(
+            app.auto_frame,
+            bg=app.color_card,
+            bd=0,
+            highlightthickness=1,
+            highlightbackground=app.color_border,
+            padx=25,
+            pady=18,
+        )
+        vercel_card.pack(fill="x", pady=(0, 12))
+
+        tk.Label(
+            vercel_card,
+            text="☁️ Vercel 트래픽 (선택 — 없어도 글 발행 가능)",
+            font=app.font_bold,
+            bg=app.color_card,
+            fg=app.color_text_dark,
+        ).grid(row=0, column=0, columnspan=4, sticky="w")
+
+        tk.Label(vercel_card, text="API URL", font=app.font_main, bg=app.color_card, fg=app.color_text_light).grid(
+            row=1, column=0, sticky="w", pady=(10, 0)
+        )
+        app.entry_vercel_api = app.create_modern_entry(
+            vercel_card, "https://내프로젝트.vercel.app/api/traffic", 55
+        )
+        app.entry_vercel_api.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(4, 0))
+
+        tk.Label(vercel_card, text="WEBHOOK_SECRET (선택)", font=app.font_main, bg=app.color_card, fg=app.color_text_light).grid(
+            row=3, column=0, sticky="w", pady=(8, 0)
+        )
+        app.entry_vercel_secret = app.create_modern_entry(vercel_card, "", 40, show="*")
+        app.entry_vercel_secret.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(4, 0))
+
+        tk.Label(vercel_card, text="주기(분)", font=app.font_main, bg=app.color_card, fg=app.color_text_light).grid(
+            row=3, column=2, sticky="w", padx=(12, 0), pady=(8, 0)
+        )
+        app.spin_vercel_interval = tk.Spinbox(
+            vercel_card, from_=5, to=1440, width=8, bg=app.color_bg, fg=app.color_text_dark, font=app.font_main, bd=1, relief="flat"
+        )
+        app.spin_vercel_interval.grid(row=4, column=2, sticky="w", padx=(12, 0), pady=(4, 0))
+        app.spin_vercel_interval.delete(0, "end")
+        app.spin_vercel_interval.insert(0, "20")
+
+        vf = tk.Frame(vercel_card, bg=app.color_card)
+        vf.grid(row=5, column=0, columnspan=4, sticky="w", pady=(10, 0))
+        tk.Checkbutton(
+            vf,
+            text="트래픽 사용",
+            variable=app.vercel_enabled_var,
             bg=app.color_card,
             activebackground=app.color_card,
             fg=app.color_text_dark,
             selectcolor=app.color_bg,
-        ).pack(side="left", padx=(0, 10))
+        ).pack(side="left")
+        tk.Checkbutton(
+            vf,
+            text="발행 성공 후 1회",
+            variable=app.vercel_on_publish_var,
+            bg=app.color_card,
+            activebackground=app.color_card,
+            fg=app.color_text_dark,
+            selectcolor=app.color_bg,
+        ).pack(side="left", padx=(14, 0))
 
-    btn_vf = tk.Frame(vercel_card, bg=app.color_card)
-    btn_vf.grid(row=7, column=0, columnspan=4, sticky="ew", pady=(12, 0))
-    tk.Button(
-        btn_vf,
-        text="헬스체크",
-        bg="#1f2937",
-        fg="white",
-        relief="flat",
-        padx=12,
-        command=app.vercel_health_check,
-    ).pack(side="left")
-    tk.Button(
-        btn_vf,
-        text="트래픽 1회",
-        bg="#2563eb",
-        fg="white",
-        relief="flat",
-        padx=12,
-        command=app.vercel_trigger_once,
-    ).pack(side="left", padx=(8, 0))
-    app.btn_vercel_scheduler = tk.Button(
-        btn_vf,
-        text="주기 실행 시작",
-        bg="#7c3aed",
-        fg="white",
-        relief="flat",
-        padx=12,
-        command=app.toggle_vercel_scheduler,
-    )
-    app.btn_vercel_scheduler.pack(side="left", padx=(8, 0))
-    app.lbl_vercel_status = tk.Label(
-        btn_vf, text="", font=app.font_subtitle, bg=app.color_card, fg=app.color_text_light
-    )
-    app.lbl_vercel_status.pack(side="left", padx=(12, 0))
-    vercel_card.columnconfigure(3, weight=1)
+        mode_frame = tk.Frame(vercel_card, bg=app.color_card)
+        mode_frame.grid(row=6, column=0, columnspan=4, sticky="w", pady=(6, 0))
+        for label, value in (("Vercel 클라우드", "cloud"), ("로컬 HTTP", "local"), ("둘 다", "both")):
+            tk.Radiobutton(
+                mode_frame,
+                text=label,
+                variable=app.vercel_mode_var,
+                value=value,
+                bg=app.color_card,
+                activebackground=app.color_card,
+                fg=app.color_text_dark,
+                selectcolor=app.color_bg,
+            ).pack(side="left", padx=(0, 10))
+
+        btn_vf = tk.Frame(vercel_card, bg=app.color_card)
+        btn_vf.grid(row=7, column=0, columnspan=4, sticky="ew", pady=(12, 0))
+        tk.Button(
+            btn_vf,
+            text="헬스체크",
+            bg="#1f2937",
+            fg="white",
+            relief="flat",
+            padx=12,
+            command=app.vercel_health_check,
+        ).pack(side="left")
+        tk.Button(
+            btn_vf,
+            text="트래픽 1회",
+            bg="#2563eb",
+            fg="white",
+            relief="flat",
+            padx=12,
+            command=app.vercel_trigger_once,
+        ).pack(side="left", padx=(8, 0))
+        app.btn_vercel_scheduler = tk.Button(
+            btn_vf,
+            text="주기 실행 시작",
+            bg="#7c3aed",
+            fg="white",
+            relief="flat",
+            padx=12,
+            command=app.toggle_vercel_scheduler,
+        )
+        app.btn_vercel_scheduler.pack(side="left", padx=(8, 0))
+        app.lbl_vercel_status = tk.Label(
+            btn_vf, text="", font=app.font_subtitle, bg=app.color_card, fg=app.color_text_light
+        )
+        app.lbl_vercel_status.pack(side="left", padx=(12, 0))
+        vercel_card.columnconfigure(3, weight=1)
 
     app.btn_draft = tk.Button(
         input_card,

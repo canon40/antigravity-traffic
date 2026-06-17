@@ -283,16 +283,22 @@ class TistoryWriter:
     async def _save_draft_and_exit(self):
         self.log("         💾 임시저장(Draft) 프로세스 시작...")
         try:
-            # 임시저장 버튼 탐색 (사용자 제공: a.action '임시저장')
-            draft_btn = self.page.locator("a.action:has-text('임시저장'), button:has-text('임시저장')").first
-            if await draft_btn.count() > 0:
-                await draft_btn.click()
-                await self.wait(3)
-                self.log("         ✅ 임시저장 완료. 작업을 종료합니다.")
-                # 임시저장 후에는 에디터를 벗어나거나 탭을 닫아도 안전함
-                return False # 포스팅 성공은 아니므로 False 반환
-            else:
-                self.log("         ❌ 임시저장 버튼을 찾지 못했습니다.")
+            draft_selectors = [
+                "a.action:has-text('임시저장')",
+                "button:has-text('임시저장')",
+                "a:has-text('임시저장')",
+                "button.btn_save",
+                "[data-action='draft']",
+                "button:has-text('저장')",
+            ]
+            for sel in draft_selectors:
+                draft_btn = self.page.locator(sel).first
+                if await draft_btn.count() > 0:
+                    await draft_btn.click()
+                    await self.wait(3)
+                    self.log("         ✅ 임시저장 완료. 작업을 종료합니다.")
+                    return False
+            self.log("         ❌ 임시저장 버튼을 찾지 못했습니다.")
         except Exception as e:
             self.log(f"         ❌ 임시저장 중 오류: {e}")
         return False

@@ -255,7 +255,7 @@ def _default_model_profiles() -> dict[str, dict]:
 
 
 def jarvis_routing_enabled() -> bool:
-    return os.environ.get("BLOG_JARVIS_MODEL_ROUTING", "1").strip().lower() not in (
+    return os.environ.get("BLOG_JARVIS_MODEL_ROUTING", "0").strip().lower() not in (
         "0",
         "false",
         "no",

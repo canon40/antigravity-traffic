@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import os
+import sys
+from pathlib import Path
 
 
 def cloud_platform() -> str:
@@ -15,6 +17,17 @@ def cloud_platform() -> str:
         return "vercel"
     if os.environ.get("CLOUDTYPE") or os.environ.get("CLOUDTYPE_SERVICE"):
         return "cloudtype"
+    # Cloudtype env 미설정 배포: Linux 컨테이너(/app) 또는 PORT만 있는 PaaS
+    if sys.platform != "win32":
+        if Path("/app").is_dir():
+            return "cloudtype"
+        if os.environ.get("PORT"):
+            return "cloudtype"
+        if os.environ.get("GUNICORN_CMD_ARGS") or os.environ.get("KUBERNETES_SERVICE_HOST"):
+            return "cloudtype"
+        server_sw = (os.environ.get("SERVER_SOFTWARE") or "").lower()
+        if "gunicorn" in server_sw or "uvicorn" in server_sw:
+            return "cloudtype"
     return "local"
 
 

@@ -23,8 +23,19 @@ set BLOG_OLLAMA_MODEL=qwen3:4b
 set BLOG_OLLAMA_TIMEOUT=120
 if not defined BLOG_LIGHT_GUI set BLOG_LIGHT_GUI=1
 if not defined BLOG_LAZY_TABS set BLOG_LAZY_TABS=1
-if not defined BLOG_JAVIS_BRIDGE set BLOG_JAVIS_BRIDGE=0
+set BLOG_JAVIS_BRIDGE=0
+set BLOG_JARVIS_MODEL_ROUTING=0
+set BLOG_STANDALONE=1
 if not defined BLOG_DEFER_BROWSER set BLOG_DEFER_BROWSER=1
 if not defined BLOG_BROWSER_PER_ROUND set BLOG_BROWSER_PER_ROUND=1
 if not defined BLOG_UNLOAD_AFTER_JOB set BLOG_UNLOAD_AFTER_JOB=1
+
+echo   Playwright 점검 중...
+"%PY%" -c "from playwright_bootstrap import ensure_playwright_ready; raise SystemExit(0 if ensure_playwright_ready() else 1)"
+if errorlevel 1 (
+  echo   Playwright 복구 실패. run_fix_playwright.bat 을 실행하세요.
+  pause
+  exit /b 1
+)
+
 start "Canon4040 Autoblog" /D "%~dp0" "%PYW%" "%~dp0blog_main.py"

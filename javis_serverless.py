@@ -21,7 +21,8 @@ CLOUD_ACTION_BY_ID: dict[str, str] = {
     "traffic_javis_connect": "cloud_connect",
     "traffic_programs_check": "programs_check",
     "traffic_monitor_auto": "track_now",
-    "traffic_autoblog_gui": "local_hint",
+    "traffic_autoblog_gui": "blog_studio",
+    "local_run_gui": "blog_studio",
     "local_run_seo_hub_verify": "programs_check",
     "local_run_seo_hub": "hub_status",
     "javis_run_doctor": "programs_check",
@@ -33,8 +34,10 @@ CLOUD_ACTION_BY_ID: dict[str, str] = {
     "javis_run_dashboard": "hub_status",
     "javis_run_블로그_전체": "blog_pipeline",
     "javis_run_블로그_자동": "blog_pipeline",
-    "javis_run_blog_post": "blog_pipeline",
-    "traffic_autoblog_gui": "blog_studio",
+    "traffic_blog_post": "blog_pipeline",
+    "local_run_blog_post": "blog_pipeline",
+    "traffic_blog_full": "blog_pipeline",
+    "traffic_blog_auto": "blog_studio",
 }
 
 
@@ -176,10 +179,19 @@ def _first_blog_keyword() -> str:
 
 def _action_blog_studio(entry: dict[str, Any], logger: Callable[[str], None]) -> dict[str, Any]:
     logger(f"☁️ 블로그 스튜디오: {entry.get('name')}")
+    msg = (
+        "블로그 탭(스튜디오)에서 키워드 입력 후 초안을 생성하세요. "
+        "네이버·티스토리 실제 발행은 PC에서 run_gui.bat 을 실행해야 합니다."
+    )
+    if is_cloud_hub():
+        msg = (
+            "Cloudtype·Vercel에서는 bat을 실행할 수 없습니다. "
+            "블로그 탭에서 초안 생성 후, 발행은 PC의 run_gui.bat 을 사용하세요."
+        )
     return {
         "action": "blog_studio",
         "url": "/blog-studio/",
-        "message": "블로그 탭(스튜디오)에서 키워드 입력 후 실행하세요. PC에서는 run_gui.bat도 사용할 수 있습니다.",
+        "message": msg,
     }
 
 
@@ -343,11 +355,13 @@ def _action_programs_check(entry: dict[str, Any], logger: Callable[[str], None])
 
 def _action_local_hint(entry: dict[str, Any], logger: Callable[[str], None]) -> dict[str, Any]:
     logger(f"ℹ️ PC 전용: {entry.get('name')}")
+    plat = cloud_platform()
     return {
         "action": "local_hint",
         "message": (
-            f"「{entry.get('name')}」은 Windows·GUI·Playwright가 필요합니다. "
-            "PC에서 run_gui.bat 또는 해당 run_*.bat을 실행하세요."
+            f"「{entry.get('name')}」은 Windows PC 전용입니다 (Playwright·GUI 필요). "
+            f"현재 환경: {plat}. "
+            "PC에서 프로젝트 폴더의 run_gui.bat 또는 해당 run_*.bat을 실행하세요."
         ),
     }
 

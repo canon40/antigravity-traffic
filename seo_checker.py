@@ -9,7 +9,8 @@ import requests
 
 CONFIG_PATH = "config.json"
 AUDIT_PATH = "seo_audit_history.json"
-PRODUCT_FETCH_DELAY_SEC = float(os.environ.get("SEO_PRODUCT_DELAY_SEC", "4"))
+PRODUCT_FETCH_DELAY_SEC = float(os.environ.get("SEO_PRODUCT_DELAY_SEC", "8"))
+PRODUCT_AUDIT_LIMIT = int(os.environ.get("SEO_PRODUCT_LIMIT", "3"))
 MOBILE_UA = (
     "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
     "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
@@ -48,10 +49,19 @@ def _is_shell_html(html: str) -> bool:
 
 
 def _fetch_html_once(url: str, *, user_agent: str) -> tuple[str, str, int]:
+    parsed = urlparse(url)
+    host = (parsed.netloc or "").lower()
+    referer = "https://m.naver.com/"
+    if "smartstore" in host:
+        referer = "https://m.smartstore.naver.com/"
+    elif "blog.naver" in host:
+        referer = "https://m.blog.naver.com/"
     headers = {
         "User-Agent": user_agent,
         "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Referer": referer,
+        "Cache-Control": "no-cache",
     }
     res = _SESSION.get(url, headers=headers, timeout=20, allow_redirects=True)
     res.encoding = res.apparent_encoding or "utf-8"
@@ -66,7 +76,7 @@ def _fetch_html(url: str) -> tuple[str, str]:
             html, final_url, status = _fetch_html_once(audit_url, user_agent=ua)
             if status == 429:
                 last_error = "HTTP 429 (요청 과다) — 잠시 후 재시도"
-                time.sleep(3 + retry * 4)
+                time.sleep(6 + retry * 6)
                 continue
             if status >= 400:
                 last_error = f"HTTP {status}"
@@ -128,6 +138,18 @@ def _images_without_alt(html):
     return missing, len(imgs)
 
 
+def _product_meta_from_config(url: str) -> dict[str, str] | None:
+    """네이버 차단(429) 시 config 상품명으로 최소 점검."""
+    config = load_config()
+    for product in config.get("products") or []:
+        purl = (product.get("url") or "").strip()
+        if purl and purl.rstrip("/") == url.rstrip("/"):
+            name = (product.get("name") or "").strip()
+            if name:
+                return {"title": name, "description": name}
+    return None
+
+
 def audit_page(url, page_type="page", target_keywords=None):
     target_keywords = target_keywords or []
     checks = []
@@ -148,6 +170,38 @@ def audit_page(url, page_type="page", target_keywords=None):
         hint = ""
         if "429" in err:
             hint = " — 상품 URL을 한꺼번에 점검하면 네이버가 차단합니다. 5분 후 재시도하거나 상품을 2~3개씩 나눠 점검하세요."
+            if page_type == "product":
+                meta = _product_meta_from_config(url)
+                if meta:
+                    title = meta["title"]
+                    description = meta.get("description", "")
+                    add_check(
+                        "페이지 제목(title)",
+                        10 <= len(title) <= 70,
+                        f"config 상품명: {title[:60]} (네이버 직접 접근 차단)",
+                        2,
+                    )
+                    add_check(
+                        "메타 설명(description)",
+                        False,
+                        "네이버 차단으로 description 미조회 — 스마트스토어 관리자에서 확인",
+                        2,
+                    )
+                    add_check("모바일 viewport", False, "직접 접근 차단 — config 폴백", 2)
+                    pct = int(score / max_score * 100) if max_score else 0
+                    return {
+                        "url": url,
+                        "audit_url": _normalize_audit_url(url),
+                        "page_type": page_type,
+                        "success": True,
+                        "partial": True,
+                        "error": err + hint,
+                        "checks": checks,
+                        "score": score,
+                        "max_score": max_score,
+                        "percent": pct,
+                        "grade": "C" if pct >= 40 else "D",
+                    }
         elif page_type == "blog" and "blog.naver.com" in url:
             hint = " — 블로그 홈 대신 최근 글 URL(m.blog.naver.com/아이디/글번호)로 점검하면 더 정확합니다."
         return {
@@ -249,13 +303,15 @@ def audit_page(url, page_type="page", target_keywords=None):
     }
 
 
-def run_full_audit(logger=None):
+def run_full_audit(logger=None, *, product_limit: int | None = None):
     config = load_config()
     keywords = [k.get("keyword", "") for k in config.get("keywords", []) if k.get("keyword")]
+    limit = product_limit if product_limit is not None else PRODUCT_AUDIT_LIMIT
+    product_urls = list(config.get("product_urls", []))[: max(1, limit)]
 
     results = {"products": [], "blogs": [], "summary": {}}
 
-    for i, url in enumerate(config.get("product_urls", [])):
+    for i, url in enumerate(product_urls):
         if i > 0 and PRODUCT_FETCH_DELAY_SEC > 0:
             time.sleep(PRODUCT_FETCH_DELAY_SEC)
         if logger:
@@ -279,6 +335,8 @@ def run_full_audit(logger=None):
         "average_score": avg,
         "completed_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "recommendations": _build_recommendations(all_pages),
+        "product_limit": limit,
+        "product_total": len(config.get("product_urls", [])),
     }
 
     _save_audit_history(results)

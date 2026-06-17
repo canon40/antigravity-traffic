@@ -92,8 +92,8 @@ def _handle_unexpected_error(exc):
 
 
 def is_serverless():
-    """Vercel Cron 모드 (하위 호환). Cloudtype은 False — 백그라운드 스레드 사용."""
-    return is_cron_mode()
+    """Vercel Cron · Cloudtype — 우선 키워드·요청량 제한 모드."""
+    return is_cloud_hub()
 
 
 def _bootstrap_from_persistence():
@@ -143,7 +143,7 @@ def scheduler_loop():
         interval = max(5, int(config.get("track_interval_minutes", 60)))
 
         add_log(f"🔄 [사이클 {cycle}] 순위 추적 + SEO 점검 시작")
-        results = track_all_keywords(logger=add_log)
+        results = track_all_keywords(logger=add_log, serverless=is_cloud_hub())
         report = build_completion_report(results)
         last_completion_report = report
         try:
@@ -594,7 +594,14 @@ def api_product_rank():
     data = request.get_json(silent=True) or {}
     keyword = data.get("keyword", "")
     product_id = data.get("product_id", "")
-    rank = check_product_rank(keyword, product_id)
+    rank, status = check_product_rank(keyword, product_id)
+    if status == "blocked":
+        return jsonify({
+            "success": False,
+            "rank": None,
+            "display": "네이버 차단 (403)",
+            "blocked": True,
+        })
     display = f"{rank}위" if rank and rank < 100 else "100위 밖"
     return jsonify({"success": rank is not None, "rank": rank, "display": display})
 

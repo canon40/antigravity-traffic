@@ -106,7 +106,7 @@ def main(argv=None) -> int:
         return 0 if all_ok else 1
 
     print("=" * 56)
-    print("  Permacoat SEO 허브 — 프로그램 점검")
+    print("  Permacoat SEO Hub - programs check")
     print("=" * 56)
     for i, s in enumerate(steps, 1):
         mark = "OK" if s["ok"] else "FAIL"

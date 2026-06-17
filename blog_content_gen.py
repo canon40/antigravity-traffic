@@ -172,6 +172,39 @@ _BANNED_BLOG_PHRASES = (
     "도움이 되었으면 합니다",
     "짜증 나시죠",
     "지금 바로 구매",
+    "카페에서 나와 집으로 향하는",
+    "오래도록 새것처럼",
+    "숨겨진 공간의 코팅",
+    "온몸으로 느낄 수 있습니다",
+    "이 지킴이 결국",
+    "연장선상에는 우리 일상",
+)
+
+# 감성 에세이·주제 이탈 서사 (탐지 시 재생성 또는 삭제)
+_NARRATIVE_ESSAY_PATTERNS = (
+    r"오랫동안\s+타다\s+보면",
+    r"미세한\s+진동",
+    r"노면의\s+작은\s+충격",
+    r"거친\s+주행\s+환경",
+    r"진정한\s*['\"]?\s*보호\s*['\"]?\s*라고",
+    r"카페에서\s+나와",
+    r"집으로\s+향하는\s+길",
+    r"괜스레\s+집안",
+    r"지키는\s+취미",
+    r"우리\s+집을\s+오래도록",
+    r"숨겨진\s+공간",
+    r"리빙\s*코팅의\s+중요성",
+    r"일상\s+공간을",
+    r"한\s+가지\s+장면.*?길게\s+끌고",
+)
+
+_ANTI_ESSAY_WRITING_BLOCK = (
+    "【에세이·서사 금지】\n"
+    "- '바이크를 오랫동안 타다 보면…온몸으로 느낄 수 있습니다' 같은 장문 감성·철학 독백 도입 금지.\n"
+    "- '카페에서 나와 집으로 향하는 길', '지키는 취미'처럼 무관한 일상 장면으로 주제를 넘기는 전개 금지.\n"
+    "- 바이크/자동차/코팅제 글에서 리빙·주방·욕실·가구·'우리 집을 오래도록 새것처럼' 소제목·본문 절대 금지.\n"
+    "- 제품 라인 교차 홍보 금지(바이크 글→리빙코트, 자동차 글→주방 코팅 등).\n"
+    "- 도입은 키워드 관련 질문·체크리스트·팁 1~2문장으로 바로 시작. 스토리텔링 에세이 형식 금지.\n"
 )
 
 # 네이버 검색 공식 가이드(2026.05) + Autoblog 강점(7:2:1·Truth Table·현장 페르소나) 통합
@@ -271,7 +304,7 @@ def _build_experience_brief(
     if account_id == "hymini1":
         lines.append("【말투】 10년 경력 제조 이사, 신뢰감 있는 ~입니다. 현장·수치 중심.")
     elif account_id == "hymini11":
-        lines.append("【말투】 라이더 시선, 친근한 ~해요. 주행·보관 경험을 섞을 것.")
+        lines.append("【말투】 라이더 시선, 친근한 ~해요. 관리·시공·보관 팁 중심. 감성 에세이·철학 독백·카페·집 풍경 묘사 금지.")
     return "\n".join(lines)
 
 
@@ -291,6 +324,7 @@ def _perfect_blog_writing_block(
         parts.append(f"【고지 문구】 본문 맨 앞에 다음 문장을 그대로 넣을 것:\n{notice}")
     if not for_outline:
         parts.append(_build_experience_brief(config, post_type, keyword, account_id))
+        parts.append(_ANTI_ESSAY_WRITING_BLOCK)
     if for_outline:
         parts.append(
             "【개요 설계】 제목=검색 의도+경험 신호(판매 문구 금지). "
@@ -301,7 +335,82 @@ def _perfect_blog_writing_block(
             f"【본문 구조】 공감(상황·질문) → 해결(원리·팁·표) → 입증(현장 경험·Before/After). "
             f"최소 {min_body_len}자. 마무리는 독자 질문 1문장."
         )
+        parts.append(
+            "【가독성】 ## 소제목 아래 빈 줄 1개. 문단은 2~3문장(120자 내외)으로 짧게. "
+            "핵심 팁은 - 불릿 또는 1. 2. 3. 번호 목록. 한 문단에 정보를 과하게 몰아넣지 말 것. "
+            "본문 중간(전반부 끝)과 마지막 소제목 직전에 [IMAGE] 마커를 각각 한 줄로 넣을 것."
+        )
     return "\n\n".join(parts)
+
+
+def _improve_body_readability(body: str) -> str:
+    """짧은 문단·소제목 간격으로 읽기 쉽게 정리."""
+    text = (body or "").strip()
+    if not text:
+        return text
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"^(##\s+.+)$", r"\1\n", text, flags=re.M)
+    out_lines: list[str] = []
+    for block in re.split(r"\n\s*\n", text):
+        block = block.strip()
+        if not block:
+            continue
+        if block.startswith("##") or block.startswith("[IMAGE") or block.startswith("|"):
+            out_lines.append(block)
+            continue
+        if block.startswith("- ") or re.match(r"^\d+\.\s", block):
+            out_lines.append(block)
+            continue
+        sentences = re.split(r"(?<=[.!?…])\s+", block)
+        chunk: list[str] = []
+        chunk_len = 0
+        for sent in sentences:
+            sent = sent.strip()
+            if not sent:
+                continue
+            if chunk_len + len(sent) > 130 and chunk:
+                out_lines.append(" ".join(chunk))
+                chunk = [sent]
+                chunk_len = len(sent)
+            else:
+                chunk.append(sent)
+                chunk_len += len(sent)
+        if chunk:
+            out_lines.append(" ".join(chunk))
+    return "\n\n".join(out_lines)
+
+
+def _inject_image_markers_middle_end(body: str) -> str:
+    """이미지 2장: 본문 중간·끝에 [IMAGE] 마커 삽입."""
+    text = (body or "").strip()
+    if not text:
+        return text
+    if text.count("[IMAGE]") >= 2:
+        return text
+    text = re.sub(r"\[IMAGE\d*\]|\[이미지\d*\]", "", text, flags=re.I)
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+
+    sections = re.split(r"(?=^##\s+)", text, flags=re.M)
+    sections = [s for s in sections if s.strip()]
+    if len(sections) >= 3:
+        mid_idx = max(1, len(sections) // 2)
+        sections[mid_idx] = sections[mid_idx].rstrip() + "\n\n[IMAGE]\n"
+        sections[-1] = sections[-1].rstrip() + "\n\n[IMAGE]\n"
+        return "".join(sections)
+
+    paras = [p.strip() for p in re.split(r"\n\s*\n", text) if p.strip()]
+    if len(paras) >= 4:
+        mid = len(paras) // 2
+        paras.insert(mid, "[IMAGE]")
+        if paras[-1] != "[IMAGE]":
+            paras.append("[IMAGE]")
+        return "\n\n".join(paras)
+
+    half = max(1, len(text) // 2)
+    split_at = text.find("\n\n", half)
+    if split_at < 0:
+        split_at = half
+    return text[:split_at].rstrip() + "\n\n[IMAGE]\n\n" + text[split_at:].lstrip() + "\n\n[IMAGE]\n"
 
 
 def _finalize_blog_article(
@@ -319,15 +428,9 @@ def _finalize_blog_article(
     notice = _build_authenticity_notice(config, post_type)
     if notice and notice not in text:
         text = f"{notice}\n\n{text}"
-    kw = (keyword or title or "주제").strip()
-    if "[IMAGE]" in text and "대표 이미지" not in text:
-        text = text.replace(
-            "[IMAGE]",
-            "[IMAGE]\n\n"
-            f"(이미지 설명) {kw} 관련 현장·Before/After 장면. "
-            "핵심 수치·요약은 이미지뿐 아니라 본문 텍스트·표에도 반드시 적을 것.\n",
-            1,
-        )
+    text = _improve_body_readability(text)
+    text = _scrub_cross_topic_content(text, post_type)
+    text = _inject_image_markers_middle_end(text)
     tail = text[-280:] if len(text) > 280 else text
     if "?" not in tail and "？" not in tail:
         if account_id == "hymini11":
@@ -403,7 +506,7 @@ def _resolve_min_body_len(
     )
     if wiki_min:
         parsed = max(parsed or 0, wiki_min)
-    floor = 900 if ollama_mode else 1500
+    floor = 900 if ollama_mode else 1200
     candidates = [n for n in (explicit, parsed, floor) if isinstance(n, int) and n > 0]
     return max(candidates) if candidates else floor
 
@@ -751,7 +854,7 @@ async def _resolve_ollama_models(log_func) -> list:
                     ordered.append(name)
             if routed:
                 log_func(
-                    f"      [JARVIS 라우팅] 글쓰기 모델 순서: {', '.join(ordered[:4])}"
+                    f"      [모델 라우팅] 글쓰기 모델 순서: {', '.join(ordered[:4])}"
                 )
     except Exception:
         pass
@@ -1244,7 +1347,7 @@ DEFAULT_MASTER_GUIDELINES = """
 
 [말투와 표현 지침]
 - 전문 용어보다 쉬운 말: "폴리실라잔 함유량"보다 "유리막이 얼마나 단단하게 형성되는지"처럼 풀어서 설명한다.
-- '나'의 이야기: "저도 어제 바이크 타다가 느낀 건데..."처럼 실제 경험담으로 시작하면 광고 거부감이 줄어든다.
+- '나'의 이야기: 주제와 직접 관련된 현장 경험 1~2문장만. "바이크를 오랫동안 타다 보면…" 같은 장문 감성 독백·카페·집 풍경 묘사는 금지.
 - 솔직함: 장점만 늘어놓지 말고, "이런 분들에게는 굳이 필요 없습니다"라고 말할 때 독자 신뢰가 커진다.
 
 [콘텐츠 테마 구조]
@@ -1340,7 +1443,7 @@ DEFAULT_MASTER_GUIDELINES = """
 # 채널별 톤 (매 요청 시 랜덤 2개 조합)
 CHANNEL_STYLES = [
     "Style A (hymini1): 10년 경력 제조 이사의 신뢰감 있는 톤 (~입니다).",
-    "Style B (hymini11): 할리/두카티 타는 라이더의 거칠고 친근한 톤 (~해요).",
+    "Style B (hymini11): 라이더 시선의 실용 팁 톤 (~해요). 감성 에세이·철학 독백 금지.",
     "Style C (티스토리): 수치(14%, 28%, 60%) 기반 기술 분석 톤 (~다).",
     "Style D (Blogger): 핵심 요약 중심의 미니멀 톤.",
 ]
@@ -1348,12 +1451,12 @@ CHANNEL_STYLES = [
 
 # 매번 다른 구체적 글쓰기 앵글 (형식 단조로움 방지)
 _VIVID_ANGLES = [
-    "10년 넘게 광택기를 잡아온 손끝 감각을 살려서, 새로 나온 외제차에 코팅제를 올렸을 때의 슬릭감을 구체적으로 묘사해줘.",
-    "10년 경력자만 알 수 있는 디테일(약재 반응, 버핑 타이밍, 광택기 운용 시 감각)을 자연스럽게 녹여서 써줘.",
-    "10년 동안 아토피 문제 한 건 없었다는 점, 10년 넘게 직접 차를 닦고 코팅해왔다는 사실을 근거로 독자에게 신뢰감을 줘.",
-    "장마철 바이크 야외 보관 시 10년 차가 알려주는 체크리스트를 구체적으로 써줘.",
-    "천연 비누·향수 베이스 10년 장인 관점에서 안전성과 품질에 대한 결벽적인 고집을 글에 녹여줘.",
-    "현대·기아 제외 글로벌 신차, 할리/인디언/두카티 바이크, 전국 맛집·낚시 같은 라이프스타일을 구체적 에피소드로 한두 줄 넣어줘.",
+    "10년 넘게 광택기를 잡아온 손끝 감각을 살려, 시공 시 버핑 타이밍·표면 준비 포인트를 구체적으로 써줘.",
+    "10년 경력자만 아는 디테일(약재 반응, 버핑 타이밍, 광택기 운용 시 감각)을 자연스럽게 녹여서 써줘.",
+    "현장에서 자주 받는 질문 1개로 도입하고, 체크리스트·표로 답을 정리해줘.",
+    "장마철 바이크 야외 보관 시 체크리스트를 구체적으로 써줘.",
+    "천연 비누·향수 베이스 10년 관점에서 안전성과 품질 기준을 글에 녹여줘.",
+    "Before/After 수치·관찰 포인트를 표로 정리해줘.",
     "듀라코트·퍼마코트, 퀵·티탄·레진·바이크 레진·리빙코팅제가 영국에 수출된 실적을 맥락에 맞게 한두 문장으로 자연스럽게 강조해줘.",
 ]
 
@@ -1378,17 +1481,76 @@ def _contains_banned_phrases(text: str) -> bool:
     return any(p in text for p in _BANNED_BLOG_PHRASES)
 
 
+def _contains_narrative_cliches(text: str) -> bool:
+    if not text:
+        return False
+    return any(re.search(p, text) for p in _NARRATIVE_ESSAY_PATTERNS)
+
+
+def _scrub_cross_topic_content(body: str, post_type: str) -> str:
+    """바이크/자동차 글에 끼어든 리빙·에세이 문단·소제목 제거."""
+    pt = (post_type or "").strip()
+    if pt not in ("자동차 정보", "바이크 정보", "코팅제 정보"):
+        return body
+    text = (body or "").strip()
+    if not text:
+        return text
+    section_markers = (
+        "리빙", "우리 집", "주방", "욕실", "가구", "싱크", "타일", "원목", "샤워부스",
+        "숨겨진 공간", "오래도록 새것처럼", "일상 공간", "리빙 코팅",
+    )
+    para_markers = section_markers + (
+        "카페에서 나와", "집으로 향하는", "지키는 취미", "온몸으로 느낄", "이 지킴이 결국",
+        "연장선상에는", "미세한 진동", "노면의 작은 충격",
+    )
+    sections = re.split(r"(?=^##\s+)", text, flags=re.M)
+    kept: list[str] = []
+    for sec in sections:
+        sec = sec.strip()
+        if not sec:
+            continue
+        if sec.startswith("##"):
+            header = sec.split("\n", 1)[0]
+            if any(m in header for m in section_markers):
+                continue
+            if "\n" in sec:
+                head, rest = sec.split("\n", 1)
+                paras = [p.strip() for p in re.split(r"\n\s*\n", rest) if p.strip()]
+                paras = [
+                    p for p in paras
+                    if p == "[IMAGE]" or not any(m in p for m in para_markers)
+                ]
+                if paras:
+                    kept.append(head + "\n\n" + "\n\n".join(paras))
+            else:
+                kept.append(sec)
+        else:
+            paras = [p.strip() for p in re.split(r"\n\s*\n", sec) if p.strip()]
+            paras = [
+                p for p in paras
+                if p == "[IMAGE]" or not any(m in p for m in para_markers)
+            ]
+            if paras:
+                kept.append("\n\n".join(paras))
+    return "\n\n".join(kept).strip() or text
+
+
 def _violates_post_type_scope(body: str, post_type: str) -> str | None:
     """글 유형과 본문 주제 불일치 시 재생성 사유."""
     if not body:
         return "빈 본문"
     pt = (post_type or "").strip()
-    living = ("리빙코트", "싱크대", "수전", "욕실 타일", "주방 상판", "가구 코팅", "샤워부스")
+    living = (
+        "리빙코트", "리빙 코팅", "싱크대", "수전", "욕실 타일", "주방 상판", "가구 코팅", "샤워부스",
+        "원목 가구", "주방 싱크", "우리 집", "오래도록 새것처럼", "숨겨진 공간", "일상 공간",
+    )
     auto_specs = ("퀵 14", "14% 함유", "티탄 28", "28% 원액", "레진 60", "전용 건식 관리제")
     if pt in ("자동차 정보", "바이크 정보", "코팅제 정보"):
         for term in living:
             if term in body:
                 return f"자동차/바이크 글에 생활용 '{term}' 포함"
+        if _contains_narrative_cliches(body):
+            return "감성 에세이·주제 이탈 서사 포함"
     elif pt == "제품 홍보":
         for term in auto_specs:
             if term in body:
@@ -1479,7 +1641,10 @@ def _get_keyword_and_scope_instructions(config, required_keyword, extra_keyword)
         prompt_lead = "맛집 또는 취미 에세이용 블로그 포스팅의 제목과 개요를 정해줘."
     elif post_type in ("자동차 정보", "바이크 정보", "코팅제 정보"):
         keyword_instruction = f"퀵·티탄·레진·전용 건식 관리제만. 리빙코트·욕실·가구 금지. 주제: '{required_keyword}'"
-        scope_instruction = "자동차/바이크/코팅제 정보만. 생활용(욕실·싱크대 등) 한 줄도 금지.\n"
+        scope_instruction = (
+            "자동차/바이크/코팅제 정보만. 생활용(욕실·싱크대·가구·우리 집·리빙 코팅) 한 줄도 금지. "
+            "감성 에세이·철학 독백·카페·집 풍경 묘사 금지.\n"
+        )
         type_instruction = f"글 유형 [{post_type}]에 맞는 제목·개요만."
         prompt_lead = f"{keyword_instruction}을 반영해 블로그 포스팅의 제목과 개요를 정해줘."
     elif post_type == "제품 홍보":
@@ -1775,17 +1940,17 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
         if account_id == "hymini1":
             channel_instruction = "말투·톤: [Style A (hymini1): 10년 경력 제조 이사의 신뢰감 있는 톤 (~입니다).]"
         elif account_id == "hymini11":
-            channel_instruction = "말투·톤: [Style B (hymini11): 할리/두카티 라이더의 거칠고 친근한 톤 (~해요).]"
+            channel_instruction = "말투·톤: [Style B (hymini11): 라이더 시선의 실용 팁 톤 (~해요). 감성 에세이·철학 독백 금지.]"
         else:
             channel_tones = random.sample(CHANNEL_STYLES, min(2, len(CHANNEL_STYLES)))
             channel_instruction = f"말투·톤: [{channel_tones[0]}] + [{channel_tones[1]}]"
 
         output_styles = [
             "Q&A·질문형 도입 + 단계별 해결",
-            "에피소드 한 편 도입 + 원리 설명",
+            "체크리스트 도입 + 원리·팁 설명",
             "Before/After 대비 + 숫자·표 정리",
             "꿀팁 리스트형 + 한 줄 결론",
-            "체크리스트형(번호 리스트) + 실제 현장 사례 한 편",
+            "체크리스트형(번호 리스트) + 현장 사례 2~3문장",
         ]
         chosen_styles = random.sample(output_styles, min(2, len(output_styles)))
         style_instruction = (
@@ -1797,11 +1962,12 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
 
         vivid_angle = random.choice(_VIVID_ANGLES)
         _FORMAT_AVOID_THIS_TIME = [
-            "이번에는 '서론→본론→결론' 3단 구조를 쓰지 말고, 한 가지 장면이나 사례를 길게 끌고 가는 스토리형으로만 써줘.",
+            "이번에는 감성 에세이·철학 독백 도입을 쓰지 말고, 키워드 관련 질문 한 줄로 바로 시작해줘.",
             "이번에는 '첫째, 둘째, 셋째' 숫자 나열형 본문을 쓰지 말고, Q&A 대화형이나 체크리스트형으로만 풀어줘.",
             "이번에는 '정리하면~', '요약하면~' 같은 마무리 멘트를 쓰지 말고, 독자에게 질문 한 줄로 끝내줘.",
             "이번에는 H2 소제목을 일정한 패턴으로 반복하지 말고, 소제목 길이와 리듬을 일부러 다르게 섞어 써줘.",
             "이번에는 이전 글에서 자주 쓰인 표현(예: 셀프 시공, 꿀팁, 비결)을 피해, 전혀 다른 표현으로 같은 의미를 풀어줘.",
+            "이번에는 바이크/자동차 글에서 리빙·주방·욕실·가구·집 풍경 이야기를 한 줄도 넣지 마.",
         ]
         chosen_avoid = random.choice(_FORMAT_AVOID_THIS_TIME)
         format_variety_instruction = (
@@ -1830,7 +1996,9 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
             f"이번 글의 흐름을 만들 때는 반드시 다음 구체적인 앵글을 녹여줘: {vivid_angle}\n"
             f"{format_variety_instruction}"
             "글쓰기 마스터 지침을 준수해 [BODY]와 [TAGS]만 출력해. [TITLE]은 출력하지 마라(이미 정해짐).\n"
-            "【금지】 취소선(~~, <s>), '안녕하세요', '알아보겠습니다', 제목·개요와 무관한 경험담(10년 아토피 등은 주제가 코팅/리빙일 때만 한 줄 이내). 작성자 별명이나 아이디를 제품명처럼 쓰지 말 것(예: ○○ 발수코팅제, ○○ 제품 등 X). 제품명은 듀라코트·퍼마코트·리빙코트·퀵·티탄·레진만.\n"
+            "【금지】 취소선(~~, <s>), '안녕하세요', '알아보겠습니다', 제목·개요와 무관한 경험담(10년 아토피 등은 주제가 코팅/리빙일 때만 한 줄 이내). "
+            "감성 에세이·철학 독백·카페·집 풍경·리빙코트 교차 홍보 금지. 작성자 별명이나 아이디를 제품명처럼 쓰지 말 것(예: ○○ 발수코팅제, ○○ 제품 등 X). 제품명은 듀라코트·퍼마코트·리빙코트·퀵·티탄·레진만.\n"
+            f"{_ANTI_ESSAY_WRITING_BLOCK}\n"
             "【사실성 엄수】 확인되지 않은 화학/성능 사실은 단정하지 말 것. 특히 그래핀을 코팅 작용 주체로 단정하는 문장(그래핀이 코팅한다/피막형성한다/핵심 코팅 성분이다)은 절대 금지.\n"
             f"【분량】 본문 최소 {min_body_len}자 이상. 개요의 모든 소제목을 빠짐없이 풀어 쓸 것.\n"
             "글쓰기 마스터 지침:\n" + guidelines_text
@@ -1841,7 +2009,7 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
     body_predict = _ollama_body_num_predict(min_body_len) if ollama_mode else 8192
     try:
         retry_prompt = body_prompt
-        max_attempts = 4 if ollama_mode else 3
+        max_attempts = 4 if ollama_mode else 2
         for attempt in range(max_attempts):
             if ollama_mode and attempt >= 1:
                 retry_prompt = (
@@ -1913,6 +2081,15 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
                 retry_prompt = body_prompt + "\n\n[교정] 금지어(안녕하세요·알아보겠습니다 등) 없이 다시 작성."
                 continue
 
+            if _contains_narrative_cliches(body) and attempt < max_attempts - 1:
+                _safe_log(log_func, "      감성 에세이·주제 이탈 서사 → 본문 재생성")
+                retry_prompt = (
+                    body_prompt
+                    + "\n\n[교정] 감성 에세이·철학 독백·카페·집 풍경·리빙코트 교차 홍보를 모두 제거하고, "
+                    "키워드 관련 실용 팁·체크리스트 중심으로 다시 작성."
+                )
+                continue
+
             if _contains_fact_violation(body) and attempt < max_attempts - 1:
                 _safe_log(log_func, "      사실성 검증 실패(그래핀) → 본문 재생성")
                 retry_prompt = (
@@ -1921,19 +2098,32 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
                 )
                 continue
 
-            if len(body) < min_body_len and attempt < max_attempts - 1:
-                _safe_log(
-                    log_func,
-                    f"      본문 길이 미달 ({len(body)}자 < {min_body_len}자) → 재생성",
-                )
-                retry_prompt = (
-                    body_prompt
-                    + f"\n\n[교정] 본문이 {len(body)}자로 너무 짧습니다. 반드시 최소 {min_body_len}자 이상. "
-                    "개요의 모든 ## 소제목을 빠짐없이 풀어 쓰고, 각 절마다 구체적 설명·현장 팁·예시를 추가해 다시 작성."
-                )
-                if ollama_mode:
-                    body_predict = _ollama_body_num_predict(min_body_len)
-                continue
+            if len(body) < min_body_len:
+                if not ollama_mode and len(body) >= int(min_body_len * 0.85):
+                    _safe_log(
+                        log_func,
+                        f"      본문 길이 {len(body)}자 → 보강 후 확정 (재생성 생략)",
+                    )
+                    body = _pad_body_to_min_length(body, min_body_len)
+                elif attempt < max_attempts - 1:
+                    _safe_log(
+                        log_func,
+                        f"      본문 길이 미달 ({len(body)}자 < {min_body_len}자) → 재생성",
+                    )
+                    retry_prompt = (
+                        body_prompt
+                        + f"\n\n[교정] 본문이 {len(body)}자로 너무 짧습니다. 반드시 최소 {min_body_len}자 이상. "
+                        "개요의 모든 ## 소제목을 빠짐없이 풀어 쓰고, 각 절마다 구체적 설명·현장 팁·예시를 추가해 다시 작성."
+                    )
+                    if ollama_mode:
+                        body_predict = _ollama_body_num_predict(min_body_len)
+                    continue
+                else:
+                    _safe_log(
+                        log_func,
+                        f"      본문 길이 미달 ({len(body)}자) → 보강 후 확정",
+                    )
+                    body = _pad_body_to_min_length(body, min_body_len)
 
             if len(body) < min_body_len:
                 _safe_log(
@@ -2054,7 +2244,7 @@ async def generate_content(config, required_keyword, extra_keyword, log_func, ma
     # 채널별 출력 스타일 4가지 중 매번 2개 랜덤 선택 → 형식 단조로움 방지
     output_styles = [
         "Q&A·질문형 도입 + 단계별 해결",
-        "에피소드 한 편 도입 + 원리 설명",
+        "체크리스트 도입 + 원리·팁 설명",
         "Before/After 대비 + 숫자·표 정리",
         "꿀팁 리스트형 + 한 줄 결론",
     ]
@@ -2064,7 +2254,7 @@ async def generate_content(config, required_keyword, extra_keyword, log_func, ma
     if account_id == "hymini1":
         channel_instruction = "말투·톤은 반드시 아래만 사용해. [Style A (hymini1): 10년 경력 제조 이사의 신뢰감 있는 톤 (~입니다).]"
     elif account_id == "hymini11":
-        channel_instruction = "말투·톤은 반드시 아래만 사용해. [Style B (hymini11): 할리/두카티 타는 라이더의 거칠고 친근한 톤 (~해요).]"
+        channel_instruction = "말투·톤은 반드시 아래만 사용해. [Style B (hymini11): 라이더 시선의 실용 팁 톤 (~해요). 감성 에세이·철학 독백 금지.]"
     else:
         channel_tones = random.sample(CHANNEL_STYLES, min(2, len(CHANNEL_STYLES)))
         channel_instruction = f"말투·톤은 아래 2가지를 섞어서 써줘. [{channel_tones[0]}] + [{channel_tones[1]}]"
@@ -2093,7 +2283,8 @@ async def generate_content(config, required_keyword, extra_keyword, log_func, ma
         elif post_type == "바이크 정보":
             scope_instruction = (
                 "【범위】 바이크 정보만. 퀵·티탄·레진·바이크 전용 건식 관리제만 사용. "
-                "리빙코트 언급 금지. 세면대·싱크대·수전·욕실·가구 등 생활용 맥락은 한 줄도 쓰지 말 것. 자동차·승용차·차량은 한 줄도 쓰지 말 것.\n"
+                "리빙코트 언급 금지. 세면대·싱크대·수전·욕실·가구·우리 집·리빙 코팅 등 생활용 맥락은 한 줄도 쓰지 말 것. "
+                "감성 에세이·카페·집 풍경·철학 독백 금지. 자동차·승용차·차량은 한 줄도 쓰지 말 것.\n"
             )
         elif post_type == "맛집/일상":
             scope_instruction = (
@@ -2143,7 +2334,7 @@ async def generate_content(config, required_keyword, extra_keyword, log_func, ma
     vivid_angle = random.choice(_VIVID_ANGLES)
     # 절대로 같은 형식 사용 금지: 매 요청마다 하나의 '금지 형식'을 랜덤 지정해 다른 구성을 강제
     _FORMAT_AVOID_THIS_TIME = [
-        "이번에는 '서론→원리 설명→결론' 3단 구조를 쓰지 말고, 한 편의 짧은 에피소드나 현장 사례로 시작하는 스토리형으로만 써줘.",
+        "이번에는 감성 에세이·철학 독백 도입을 쓰지 말고, 키워드 관련 질문 한 줄로 바로 시작해줘.",
         "이번에는 '1, 2, 3' 숫자 나열형 본문을 쓰지 말고, Q&A 대화형이나 한 가지 포인트를 깊게 파는 단일 테마형으로 써줘.",
         "이번에는 '~방법', '~비결', '~꿀팁' 같은 제목을 쓰지 말고, 호기심을 자극하는 질문형 제목이나 한 줄 경험담형 제목으로 지어줘.",
         "이번에는 H2 소제목을 3개 나열하는 방식을 쓰지 말고, H2를 2개만 쓰거나, 하나의 긴 흐름으로 풀어쓰는 형식으로 써줘.",
@@ -2255,8 +2446,15 @@ async def generate_content(config, required_keyword, extra_keyword, log_func, ma
     return fallback
 
 
-def _build_image_prompt(required_keyword, extra_keyword, post_type=None, title=None, image_desc=None):
-    """이미지 생성용 프롬프트. image_desc가 있으면 우선 사용(제목·개요에 맞는 장면)."""
+def _build_image_prompt(
+    required_keyword,
+    extra_keyword,
+    post_type=None,
+    title=None,
+    image_desc=None,
+    variant: str | None = None,
+):
+    """이미지 생성용 프롬프트. variant=mid(중간)·end(끝)로 장면을 구분."""
     shot_styles = [
         "close-up macro shot",
         "wide-angle composition",
@@ -2282,12 +2480,26 @@ def _build_image_prompt(required_keyword, extra_keyword, post_type=None, title=N
     light_hint = random.choice(lighting_styles)
     mood_hint = random.choice(color_moods)
 
+    if variant == "mid":
+        variant_hint = (
+            "Mid-article scene: in-progress application, close-up detail, or before/during work "
+            f"clearly related to '{required_keyword}'. Different angle from a finished result shot."
+        )
+    elif variant == "end":
+        variant_hint = (
+            "End-article scene: finished result with strong water beading and deep gloss "
+            f"clearly related to '{required_keyword}'. Satisfying after-shot, not a duplicate mid scene."
+        )
+    else:
+        variant_hint = ""
+
     if image_desc and image_desc.strip():
         desc = image_desc.strip()
         if len(desc) > 500:
             desc = desc[:500]
         return (
             f"{desc}. "
+            f"{variant_hint} "
             f"{style_hint}, {light_hint}, {mood_hint}. "
             "Make this scene clearly different from previous generated images. "
             "No text or letters, no people. Photorealistic."
@@ -2322,6 +2534,7 @@ def _build_image_prompt(required_keyword, extra_keyword, post_type=None, title=N
     return (
         f"A high-quality product photo for a coating brand about {keyword_for_img}. "
         f"{scene_hint}. "
+        f"{variant_hint} "
         f"{style_hint}, {light_hint}, {mood_hint}. "
         "The composition must be visually different from previous images for the same keyword. "
         "Show strong water beading and deep gloss on the surface. "
@@ -2554,33 +2767,93 @@ async def _generate_images_pillow(title, required_keyword, image_desc, log_func,
         return []
 
 
-async def generate_images(config, required_keyword, extra_keyword, log_func, image_dir, title=None, image_desc=None):
-    """AI로 이미지 1장 생성. image_desc가 있으면 제목·개요 기반 설명으로 맥락에 맞는 이미지 생성."""
-    post_type = (config.get("post_type") or "").strip()
-    prompt = _build_image_prompt(required_keyword, extra_keyword, post_type, title=title, image_desc=image_desc)
+async def _generate_images_for_prompt(config, prompt, log_func, image_dir, *, title=None, required_keyword=None, image_desc=None):
+    """단일 프롬프트로 이미지 1장 생성."""
     provider = _normalize_image_provider(config)
 
-    paths = []
     if provider in ("free", "pollinations"):
         paths = await _generate_images_pollinations(prompt, log_func, image_dir)
         if not paths and (config.get("gemini_key") or config.get("vertex_api_key")):
             log_func("         ↪ Pollinations 실패 → Gen AI(Gemini) 재시도...")
             paths = await _generate_images_genai(config, prompt, log_func, image_dir)
-    elif provider == "pillow":
-        paths = await _generate_images_pillow(title, required_keyword, image_desc, log_func, image_dir)
-    elif provider == "vertex":
+        return paths
+    if provider == "pillow":
+        return await _generate_images_pillow(title, required_keyword, image_desc, log_func, image_dir)
+    if provider == "vertex":
+        return await _generate_images_vertex(config, prompt, log_func, image_dir)
+    if provider == "genai":
+        return await _generate_images_genai(config, prompt, log_func, image_dir)
+
+    paths = await _generate_images_genai(config, prompt, log_func, image_dir)
+    if not paths:
         paths = await _generate_images_vertex(config, prompt, log_func, image_dir)
-    elif provider == "genai":
-        paths = await _generate_images_genai(config, prompt, log_func, image_dir)
-    else:
-        # auto: Gemini 이미지 → Vertex → Pollinations (녹색 Pillow 폴백 없음)
-        paths = await _generate_images_genai(config, prompt, log_func, image_dir)
+    if not paths:
+        paths = await _generate_images_pollinations(prompt, log_func, image_dir)
+    return paths
+
+
+async def generate_images(config, required_keyword, extra_keyword, log_func, image_dir, title=None, image_desc=None):
+    """AI로 이미지 2장 생성(본문 중간·끝). 키워드·개요에 맞는 서로 다른 장면."""
+    post_type = (config.get("post_type") or "").strip()
+    provider = _normalize_image_provider(config)
+    image_count = max(1, min(int(config.get("article_image_count") or 2), 2))
+    variants = (["mid", "end"] if image_count >= 2 else ["mid"])[:image_count]
+
+    if provider == "pillow":
+        log_func(f"         🎨 로컬 이미지 생성 ({image_count}장 목표)...")
+        paths: list[str] = []
+        for variant in variants:
+            prompt = _build_image_prompt(
+                required_keyword,
+                extra_keyword,
+                post_type,
+                title=title,
+                image_desc=image_desc,
+                variant=variant,
+            )
+            got = await _generate_images_for_prompt(
+                config,
+                prompt,
+                log_func,
+                image_dir,
+                title=title,
+                required_keyword=required_keyword,
+                image_desc=image_desc,
+            )
+            if got:
+                paths.append(got[0])
         if not paths:
-            paths = await _generate_images_vertex(config, prompt, log_func, image_dir)
-        if not paths:
-            paths = await _generate_images_pollinations(prompt, log_func, image_dir)
+            log_func("         ⚠️ 로컬 이미지 생성에 실패했습니다.")
+        elif len(paths) < image_count:
+            log_func(f"         ✅ 로컬 이미지 {len(paths)}개 생성 (목표 {image_count}장)")
+        else:
+            log_func(f"         ✅ 로컬 이미지 {len(paths)}개 생성 완료")
+        return paths
+
+    log_func(f"         🎨 AI 이미지 {image_count}장 생성 (중간·끝, 키워드 맞춤)...")
+
+    async def one(variant: str) -> list[str]:
+        scene_note = "시공·작업 중 장면" if variant == "mid" else "완성 후 물방울·광택 결과"
+        desc = f"{image_desc} | {scene_note}" if image_desc else scene_note
+        prompt = _build_image_prompt(
+            required_keyword,
+            extra_keyword,
+            post_type,
+            title=title,
+            image_desc=desc,
+            variant=variant,
+        )
+        got = await _generate_images_for_prompt(config, prompt, log_func, image_dir)
+        return got[:1] if got else []
+
+    results = await asyncio.gather(*[one(v) for v in variants])
+    paths = [p for batch in results for p in batch]
 
     if not paths:
         log_func("         ⚠️ AI 이미지 생성에 실패해, 이번 포스팅은 이미지 없이 진행합니다.")
         log_func("         💡 GUI에서 'Gen AI (Gemini 이미지)' 선택 + Gemini API 키 확인을 권장합니다.")
+    elif len(paths) < image_count:
+        log_func(f"         ✅ AI 이미지 {len(paths)}개 생성 (목표 {image_count}장)")
+    else:
+        log_func(f"         ✅ AI 이미지 {len(paths)}개 생성 완료 (중간·끝)")
     return paths

@@ -2,16 +2,130 @@
   "store_name": "나눔랩",
   "brand": "나눔랩",
   "track_interval_minutes": 60,
+  "serverless_max_pages": 5,
+  "cron_batch_size": 4,
   "priority_track_limit": 10,
   "priority_keywords": [
-    { "keyword": "퍼마코트 자동차 코팅제", "store_name": "나눔랩", "product_id": "12639296730" },
-    { "keyword": "셀프 유리막 코팅", "store_name": "나눔랩", "product_id": "12639296730" },
-    { "keyword": "퍼마코트 사용 후기", "store_name": "나눔랩", "product_id": "12639296730" },
-    { "keyword": "듀라코트 리빙코트", "store_name": "나눔랩", "product_id": "10713170202" },
-    { "keyword": "가구코팅 추천", "store_name": "나눔랩", "product_id": "10713170202" },
-    { "keyword": "나눔랩 코팅제", "store_name": "나눔랩", "product_id": "12808820913" },
-    { "keyword": "유리막코팅제", "store_name": "나눔랩", "product_id": "12808820913" },
-    { "keyword": "나눔랩 세정제", "store_name": "나눔랩", "product_id": "12808787263" }
+    {
+      "keyword": "바이크 디테일링",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "Permacoat 바이크",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "바이크 발수",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "배기 열 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "머플러 크롬 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "바이크 레진",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "오토바이 유리막 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "바이크 코팅제",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "셀프 차량 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "차량 광택 유지",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "전용 건식 관리제",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "발수 복원",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "자동차 유리막 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "Permacoat 레진",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "Permacoat 티탄",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "Permacoat 퀵",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "퍼마코트 자동차 코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "셀프 유리막 코팅",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "퍼마코트 사용 후기",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "듀라코트 리빙코트",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "가구코팅 추천",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "나눔랩 코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12808820913"
+    },
+    {
+      "keyword": "유리막코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12808820913"
+    },
+    {
+      "keyword": "나눔랩 세정제",
+      "store_name": "나눔랩",
+      "product_id": "12808787263"
+    }
   ],
   "products": [
     {
@@ -365,6 +479,86 @@
       "keyword": "유리막코팅제 장마철",
       "store_name": "나눔랩",
       "product_id": "12634187514"
+    },
+    {
+      "keyword": "Permacoat 퀵",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "Permacoat 티탄",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "Permacoat 레진",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "자동차 유리막 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "발수 복원",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "전용 건식 관리제",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "차량 광택 유지",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "셀프 차량 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "바이크 코팅제",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "오토바이 유리막 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "바이크 레진",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "머플러 크롬 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "배기 열 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "바이크 발수",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "Permacoat 바이크",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "바이크 디테일링",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
     }
   ],
   "product_urls": [

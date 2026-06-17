@@ -229,7 +229,9 @@ async def _launch_context_with_fallback(playwright_obj, user_data_dir: str, logg
 def _is_playwright_browser_missing_error(err_msg: str) -> bool:
     msg = (err_msg or "").lower()
     return (
-        "playwright team" in msg
+        "winerror 2" in msg
+        or "지정된 파일을 찾을 수 없습니다" in msg
+        or "playwright team" in msg
         or "please run the following command" in msg
         or "playwright install" in msg
         or "executable doesn't exist" in msg
@@ -319,34 +321,16 @@ async def _generate_one_round(app, config, posting_targets, r, total_rounds, pos
 
     contents_by_key = {}
     naver_targets = [t for t in posting_targets if t["type"] == "naver"]
-    ollama_text = _normalize_text_provider(config) == "ollama"
-    if ollama_text and len(naver_targets) > 1:
-        app.log("   📝 Ollama 절약: 네이버 계정 공통 본문 1회 생성")
-        body, tags = await app.generate_body_from_outline(
-            config, outline_title, outline_str, required_keyword, extra_keyword
-        )
-        body = _append_product_url(body, config)
-        for t in naver_targets:
-            contents_by_key[f"naver:{t['id']}"] = (outline_title, body, tags)
-    else:
-        for t in naver_targets:
-            body, tags = await app.generate_body_from_outline(
-                config,
-                outline_title,
-                outline_str,
-                required_keyword,
-                extra_keyword,
-                account_id=t["id"],
-            )
-            body = _append_product_url(body, config)
-            contents_by_key[f"naver:{t['id']}"] = (outline_title, body, tags)
+    app.log("   📝 본문 1회 생성 (모든 계정 공통 · 속도 우선)")
+    body, tags = await app.generate_body_from_outline(
+        config, outline_title, outline_str, required_keyword, extra_keyword
+    )
+    body = _append_product_url(body, config)
+    for t in naver_targets:
+        contents_by_key[f"naver:{t['id']}"] = (outline_title, body, tags)
     if any(t["type"] != "naver" for t in posting_targets):
-        body, tags = await app.generate_body_from_outline(
-            config, outline_title, outline_str, required_keyword, extra_keyword
-        )
-        body = _append_product_url(body, config)
         contents_by_key["default"] = (outline_title, body, tags)
-    if not contents_by_key.get("default") and contents_by_key:
+    elif not contents_by_key.get("default") and contents_by_key:
         contents_by_key["default"] = next(iter(contents_by_key.values()))
 
     await app.check_pause()
@@ -354,7 +338,7 @@ async def _generate_one_round(app, config, posting_targets, r, total_rounds, pos
         app.log("   📸 사용자 선택 이미지를 사용합니다.")
         img_paths = app.custom_img_paths.copy()
     else:
-        app.log("   🎨 AI 이미지를 생성합니다. (제목·개요에 맞는 장면)")
+        app.log("   🎨 AI 이미지 2장 생성 (본문 중간·끝, 키워드 맞춤)")
         varied_desc = f"{image_desc} | variation:{r+1}-{random.randint(1000, 9999)}"
         img_paths = await app.generate_images(
             config,
@@ -644,6 +628,11 @@ async def run_main_loop(app, config):
             app.log("   ⏳ Claude Code 모드: CLI 로그인 필요")
 
         needs_browser = bool(posting_targets)
+        if needs_browser:
+            from playwright_bootstrap import ensure_playwright_ready
+
+            if not ensure_playwright_ready(app.log):
+                return
         async_playwright_fn, *_rest = _browser_stack()
 
         async def _wait_gap_after_round(r_idx: int) -> None:
@@ -723,6 +712,12 @@ async def run_main_loop(app, config):
                     await _close_browser_contexts(sessions[0])
 
         app.log("✨ 모든 작업이 성공적으로 완료되었습니다.")
+        on_done = getattr(app, "on_automation_complete", None)
+        if callable(on_done):
+            try:
+                on_done(config, success=True)
+            except Exception as exc:
+                app.log(f"   ⚠️ 발행 후 처리 생략: {exc}")
     except Exception as e:
         err_text = str(e)
         app.log(f"❌ 오류 발생: {err_text}")
@@ -731,7 +726,7 @@ async def run_main_loop(app, config):
         app.log(traceback.format_exc())
         if _is_playwright_browser_missing_error(err_text):
             app.log("⛔ Playwright 브라우저 런타임 문제로 자동화가 중단되었습니다.")
-            app.log("   해결: `playwright install chromium` 실행 후 재시도")
+            app.log("   해결: 프로젝트 폴더에서 run_fix_playwright.bat 실행 후 재시도")
             return
         if _is_profile_lock_error(err_text):
             app.log("⛔ Chrome 프로필 충돌로 자동화가 중단되었습니다.")

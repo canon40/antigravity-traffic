@@ -230,6 +230,12 @@ async def run_account_cross_tasks(
     tistory_subscribe_urls: list[str] | None = None,
 ) -> None:
     """한 네이버 계정으로 서로이웃 + 지정 블로그 답글."""
+    from playwright_bootstrap import ensure_playwright_ready
+
+    if not ensure_playwright_ready(log):
+        raise RuntimeError(
+            "Playwright 브라우저를 실행할 수 없습니다. run_fix_playwright.bat 실행 후 재시도하세요."
+        )
     async with async_playwright() as p:
         browser = None
         try:
