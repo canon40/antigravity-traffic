@@ -6,7 +6,7 @@
 
 1. Cloudtype → **New Project** → GitHub `canon40/antigravity-traffic` (branch: `main`)
 2. `.cloudtype/app.yaml` 이 자동 적용됩니다.
-3. **Ingress** 포트: `5000` (기본)
+3. **Ingress** 포트: `8000` (gunicorn 바인딩과 동일)
 
 ## 환경 변수 (Cloudtype 대시보드)
 
@@ -36,6 +36,16 @@
 - **순위 중지** — 순위 스케줄만 중지, 트래픽 유지
 - **트래픽만 중지** — 트래픽만 끔
 - **24h 시작** — 순위·트래픽 모두 켬
+
+## Cloudtype Start command (설정 탭에 직접 입력 시)
+
+`python app.py` 대신 아래 Flask 명령을 사용하세요:
+
+```bash
+gunicorn app:app -b 0.0.0.0:8000 --timeout 120 --workers 1 --access-logfile -
+```
+
+> FastAPI가 아닌 **Flask** 프로젝트입니다. `uvicorn`이 아니라 `gunicorn`을 씁니다.
 
 ## 확인
 
