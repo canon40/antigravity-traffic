@@ -7,7 +7,7 @@ import locale
 from datetime import datetime
 from pathlib import Path
 
-from flask import Flask, abort, jsonify, render_template, request, send_from_directory
+from flask import Flask, abort, jsonify, make_response, render_template, request, send_from_directory
 from werkzeug.exceptions import NotFound
 
 from rank_tracker import (
@@ -44,6 +44,7 @@ except ImportError:
     effective_interval_sec = None
     format_backoff_note = lambda _s: ""
 
+_ROOT = Path(__file__).resolve().parent
 app = Flask(__name__)
 
 try:
@@ -350,7 +351,17 @@ def generate_daily_report():
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    resp = make_response(render_template("index.html", hub_build="blog-studio-v3"))
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return resp
+
+
+@app.route("/blog-studio")
+@app.route("/blog-studio/")
+def blog_studio_page():
+    resp = make_response(send_from_directory(_ROOT / "static", "blog_studio.html"))
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return resp
 
 
 def _all_catalog_programs() -> list[dict]:

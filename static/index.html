@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>퍼마코트 SEO 모니터</title>
+    <meta name="theme-color" content="#0f172a">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2885/2885417.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@13.0.1/dist/markdown-it.min.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --accent-yellow: #f59e0b;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', 'Noto Sans KR', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-gradient); color: var(--text-main); min-height: 100vh; padding: 16px 14px 32px; }
+        .app-shell { display: flex; gap: 16px; max-width: 1180px; margin: 0 auto; align-items: flex-start; }
+        .sidebar {
+            width: 272px; flex-shrink: 0; position: sticky; top: 16px;
+            display: flex; flex-direction: column; gap: 12px;
+        }
+        .main-area { flex: 1; min-width: 0; }
+        .sidebar-section {
+            background: var(--panel-bg); border: 1px solid var(--panel-border); backdrop-filter: blur(12px);
+            border-radius: 16px; padding: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        .sidebar-section h2 {
+            font-size: 0.82rem; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+            letter-spacing: 0.02em;
+        }
+        .sidebar-section.traffic-side h2 { color: #34d399; }
+        .sidebar-section.javis-side h2 { color: #c4b5fd; }
+        .sidebar-mini { font-size: 0.7rem; color: var(--text-sub); line-height: 1.45; margin-top: 8px; }
+        .sidebar-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .sidebar-actions .btn { padding: 10px 12px; font-size: 0.82rem; }
+        .sidebar-program {
+            display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06); margin-bottom: 6px;
+        }
+        .sidebar-program span { font-size: 0.78rem; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sidebar-program button {
+            border: none; border-radius: 8px; padding: 6px 10px; font-size: 0.72rem; font-weight: 700;
+            cursor: pointer; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; flex-shrink: 0;
+        }
+        .sidebar-program button:disabled { opacity: 0.35; cursor: not-allowed; }
+        .bg-pill {
+            display: inline-flex; align-items: center; gap: 5px; font-size: 0.68rem; padding: 4px 8px;
+            border-radius: 999px; background: rgba(16,185,129,0.12); color: var(--accent-green);
+            border: 1px solid rgba(16,185,129,0.25); margin-top: 6px;
+        }
+        .bg-pill.off { background: rgba(148,163,184,0.1); color: var(--text-sub); border-color: rgba(148,163,184,0.2); }
+        @media (max-width: 860px) {
+            .app-shell { flex-direction: column; }
+            .sidebar { width: 100%; position: static; display: grid; grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 520px) {
+            .sidebar { grid-template-columns: 1fr; }
+        }
+        .container { max-width: none; margin: 0; }
+        header { text-align: center; margin-bottom: 20px; }
+        header h1 { font-size: 1.6rem; font-weight: 700; background: linear-gradient(to right, #60a5fa, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        header p { color: var(--text-sub); font-size: 0.85rem; margin-top: 4px; }
+        .glass-panel { background: var(--panel-bg); border: 1px solid var(--panel-border); backdrop-filter: blur(12px); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+        .status-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 50px; font-size: 0.8rem; font-weight: 600; }
+        .status-badge.running { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.3); }
+        .status-badge.stopped { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
+        .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.8s infinite; }
+        @keyframes pulse { 0%,100%{opacity:.6;transform:scale(.9)} 50%{opacity:1;transform:scale(1.2)} }
+        .rank-big { font-size: 1.8rem; font-weight: 700; color: #60a5fa; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .btn-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .btn { border: none; padding: 13px 12px; border-radius: 12px; font-size: 0.9rem; font-weight: 600; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn:active { transform: scale(0.97); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+        .btn-start { background: linear-gradient(135deg, #059669, #10b981); }
+        .btn-stop { background: linear-gradient(135deg, #dc2626, #ef4444); }
+        .btn-track { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+        .btn-audit { background: linear-gradient(135deg, #d97706, #f59e0b); }
+        .tabs { display: flex; overflow-x: auto; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 14px; gap: 4px; -webkit-overflow-scrolling: touch; }
+        .tab-btn { background: none; border: none; color: var(--text-sub); padding: 10px 14px; font-size: 0.85rem; font-weight: 600; cursor: pointer; white-space: nowrap; position: relative; flex-shrink: 0; }
+        .tab-btn.active { color: var(--text-main); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent-blue); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .log-terminal { background: #090d16; border-radius: 12px; height: 200px; padding: 12px; font-family: 'Courier New', monospace; font-size: 0.78rem; overflow-y: auto; color: #38bdf8; line-height: 1.5; }
+        .log-line { margin-bottom: 5px; word-break: break-all; }
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 12px; }
+        .stat-card { background: rgba(255,255,255,0.03); border-radius: 12px; padding: 14px; text-align: center; }
+        .stat-card .value { font-size: 1.5rem; font-weight: 700; }
+        .stat-card .label { font-size: 0.72rem; color: var(--text-sub); margin-top: 4px; }
+        .result-card { background: rgba(255,255,255,0.04); border-radius: 12px; padding: 14px; margin-bottom: 10px; border-left: 3px solid var(--accent-blue); }
+        .result-card.up { border-left-color: var(--accent-green); }
+        .result-card.down { border-left-color: var(--accent-red); }
+        .result-card .kw { font-weight: 700; font-size: 0.95rem; }
+        .result-card .detail { font-size: 0.82rem; color: var(--text-sub); margin-top: 4px; }
+        .kw-chip { display: inline-block; font-size: 0.72rem; padding: 4px 8px; margin: 3px 4px 3px 0; border-radius: 999px; background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
+        .kw-chip small { color: #64748b; margin-left: 4px; }
+        .rank-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.8rem; }
+        .rank-row:last-child { border-bottom: none; }
+        .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; }
+        .badge-up { background: rgba(16,185,129,0.2); color: var(--accent-green); }
+        .badge-down { background: rgba(239,68,68,0.2); color: var(--accent-red); }
+        .badge-same { background: rgba(148,163,184,0.2); color: var(--text-sub); }
+        .check-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem; }
+        .check-item:last-child { border-bottom: none; }
+        .check-pass { color: var(--accent-green); }
+        .check-fail { color: var(--accent-red); }
+        .grade-badge { font-size: 1.4rem; font-weight: 700; padding: 8px 16px; border-radius: 10px; background: rgba(59,130,246,0.15); color: #60a5fa; }
+        .install-banner { display: none; background: linear-gradient(90deg, #1e3a8a, #3b82f6); border-radius: 12px; padding: 14px; margin-bottom: 16px; align-items: center; justify-content: space-between; }
+        .install-banner-text h4 { font-size: 0.9rem; }
+        .install-banner-text p { font-size: 0.72rem; color: rgba(255,255,255,0.8); }
+        .btn-install { background: #fff; color: #1e3a8a; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; font-size: 0.82rem; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: flex-end; justify-content: center; padding: 16px; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: #1e293b; border-radius: 20px 20px 16px 16px; padding: 24px 20px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; }
+        .modal h2 { font-size: 1.1rem; margin-bottom: 12px; }
+        .modal-close { width: 100%; margin-top: 16px; padding: 12px; border: none; border-radius: 10px; background: var(--accent-blue); color: #fff; font-weight: 600; cursor: pointer; }
+        .report-content { font-size: 0.88rem; line-height: 1.7; color: #e2e8f0; }
+        .report-content h3 { font-size: 1rem; color: #38bdf8; margin: 12px 0 6px; }
+        .empty-state { text-align: center; padding: 30px 10px; color: var(--text-sub); font-size: 0.85rem; }
+        .blog-form { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+        .blog-field label { display: block; font-size: 0.75rem; color: var(--text-sub); margin-bottom: 6px; }
+        .blog-field input, .blog-field select, .blog-field textarea {
+            width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(15,23,42,0.8); color: var(--text-main); font-size: 0.88rem;
+        }
+        .blog-field textarea { min-height: 88px; resize: vertical; }
+        .blog-preview {
+            background: rgba(15,23,42,0.85); border: 1px solid rgba(96,165,250,0.25); border-radius: 12px;
+            padding: 16px; min-height: 180px; max-height: 420px; overflow-y: auto; font-size: 0.88rem; line-height: 1.7;
+        }
+        .blog-preview h1, .blog-preview h2, .blog-preview h3 { color: #93c5fd; margin: 12px 0 8px; }
+        .blog-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+        .blog-chip {
+            padding: 6px 10px; border-radius: 999px; font-size: 0.72rem; background: rgba(59,130,246,0.15);
+            color: #93c5fd; border: 1px solid rgba(59,130,246,0.25);
+        }
+        .blog-url-card {
+            background: rgba(255,255,255,0.03); border-radius: 12px; padding: 12px; margin-bottom: 10px;
+            border-left: 3px solid #a855f7;
+        }
+        .hub-status { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+        .hub-pill {
+            font-size: 0.72rem; padding: 6px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.04); color: var(--text-sub);
+        }
+        .hub-pill.ok { color: var(--accent-green); border-color: rgba(16,185,129,0.35); background: rgba(16,185,129,0.1); }
+        .hub-pill.warn { color: var(--accent-yellow); border-color: rgba(245,158,11,0.35); background: rgba(245,158,11,0.1); }
+        .hub-cat-title { font-size: 0.8rem; color: #c4b5fd; margin: 14px 0 8px; font-weight: 700; letter-spacing: 0.02em; }
+        .program-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        @media (min-width: 520px) { .program-grid { grid-template-columns: 1fr 1fr; } }
+        .program-card {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
+            padding: 14px; display: flex; flex-direction: column; gap: 8px; min-height: 120px;
+        }
+        .program-card.unavailable { opacity: 0.45; }
+        .program-card h4 { font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        .program-card p { font-size: 0.78rem; color: var(--text-sub); line-height: 1.45; flex: 1; }
+        .program-card .btn-launch {
+            border: none; border-radius: 10px; padding: 10px; font-size: 0.8rem; font-weight: 600; cursor: pointer;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff;
+        }
+        .program-card .btn-launch:disabled { opacity: 0.35; cursor: not-allowed; }
+        .tab-btn[data-ws] { display: inline-block; }
+        body.ws-javis .tab-btn[data-ws="traffic-only"] { display: none; }
+        body.ws-traffic .tab-btn[data-ws="javis-only"] { display: none; }
+        .ws-nav {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            background: var(--panel-bg); border: 1px solid var(--panel-border);
+            border-radius: 14px; padding: 6px; backdrop-filter: blur(12px);
+        }
+        .ws-nav-btn {
+            border: none; border-radius: 10px; padding: 12px 10px; font-size: 0.82rem; font-weight: 700;
+            cursor: pointer; color: var(--text-sub); background: transparent;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .ws-nav-btn.active { background: rgba(59,130,246,0.2); color: var(--text-main); }
+        .ws-nav-btn[data-ws="traffic"].active { background: rgba(16,185,129,0.18); color: #34d399; }
+        .ws-nav-btn[data-ws="javis"].active { background: rgba(139,92,246,0.2); color: #c4b5fd; }
+        .sidebar-ws-panel { display: none; }
+        .sidebar-ws-panel.active { display: block; }
+        .traffic-compact {
+            border-color: rgba(16,185,129,0.25);
+            background: rgba(16,185,129,0.06);
+        }
+        .traffic-compact .rank-big { font-size: 1.1rem !important; }
+    </style>
+</head>
+<body class="ws-traffic">
+    <div class="app-shell">
+        <aside class="sidebar">
+            <nav class="ws-nav" aria-label="워크스페이스">
+                <button type="button" class="ws-nav-btn active" id="wsTrafficBtn" data-ws="traffic">
+                    <i class="fa-solid fa-chart-line"></i> Traffic
+                </button>
+                <button type="button" class="ws-nav-btn" id="wsJavisBtn" data-ws="javis">
+                    <i class="fa-solid fa-robot"></i> JARVIS
+                </button>
+            </nav>
+
+            <div id="sidebarTrafficPanel" class="sidebar-ws-panel active">
+            <section class="sidebar-section traffic-side">
+                <h2><i class="fa-solid fa-chart-line"></i> Traffic</h2>
+                <div class="status-row">
+                    <div>
+                        <div style="font-size:0.72rem;color:var(--text-sub);">자동 추적</div>
+                        <div id="engineStatus" class="status-badge stopped">
+                            <div class="pulse-dot"></div>
+                            <span id="engineStatusText">중지됨</span>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.72rem;color:var(--text-sub);">최근 순위</div>
+                        <div id="currentRankVal" class="rank-big" style="font-size:1.4rem;">--</div>
+                        <div id="currentRankKw" class="sidebar-mini" style="margin-top:2px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                    </div>
+                </div>
+                <div id="cronHint" class="sidebar-mini" style="display:none;"></div>
+                <div id="trafficTargetHint" class="sidebar-mini" style="display:none;margin-top:6px;padding:8px;background:rgba(59,130,246,0.08);border-radius:8px;"></div>
+                <div id="trafficBgPill" class="bg-pill off"><i class="fa-solid fa-circle"></i> 백그라운드 대기</div>
+                <div class="sidebar-actions">
+                    <div class="btn-grid" style="margin:0;">
+                        <button id="startBtn" class="btn btn-start" onclick="toggleScheduler(true, 'all')">
+                            <i class="fa-solid fa-play"></i> 24h 시작
+                        </button>
+                        <button id="stopBtn" class="btn btn-stop" onclick="toggleScheduler(false, 'rank')" disabled>
+                            <i class="fa-solid fa-pause"></i> 순위 중지
+                        </button>
+                    </div>
+                    <button class="btn" style="background:linear-gradient(135deg,#475569,#64748b);font-size:0.78rem;padding:10px;" id="stopTrafficBtn" onclick="toggleScheduler(false, 'traffic')">
+                        <i class="fa-solid fa-road"></i> 트래픽만 중지
+                    </button>
+                    <button class="btn btn-track" onclick="trackNow()">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i> 지금 추적
+                    </button>
+                    <button class="btn" id="cloudTrafficBtn" style="display:none;background:linear-gradient(135deg,#7c3aed,#a855f7);" onclick="runCloudTraffic()">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> 클라우드 트래픽 1회
+                    </button>
+                </div>
+            </section>
+            </div>
+
+            <div id="sidebarJavisPanel" class="sidebar-ws-panel">
+            <section class="sidebar-section javis-side">
+                <h2><i class="fa-solid fa-robot"></i> JARVIS</h2>
+                <div id="javisEngineStatus" class="status-badge stopped" style="margin-bottom:6px;">
+                    <div class="pulse-dot"></div>
+                    <span id="javisEngineStatusText">확인 중</span>
+                </div>
+                <div id="javisHubStatus" class="hub-status" style="margin:0;">
+                    <span class="hub-pill">연동 확인 중...</span>
+                </div>
+                <div id="sidebarJavisPrograms" style="margin-top:10px;max-height:280px;overflow-y:auto;">
+                    <div class="sidebar-mini">프로그램 로딩 중...</div>
+                </div>
+            </section>
+            </div>
+
+            <section id="trafficCompactBar" class="sidebar-section traffic-compact" style="display:none;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                    <div>
+                        <div style="font-size:0.68rem;color:var(--text-sub);">Traffic 백그라운드</div>
+                        <div id="compactEngineStatus" class="status-badge stopped" style="margin-top:4px;font-size:0.72rem;padding:4px 10px;">
+                            <div class="pulse-dot"></div>
+                            <span id="compactEngineStatusText">확인 중</span>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.68rem;color:var(--text-sub);">최근 순위</div>
+                        <div id="compactRankVal" class="rank-big" style="font-size:1.1rem;">--</div>
+                    </div>
+                </div>
+                <div id="trafficBgPillCompact" class="bg-pill off" style="margin-top:8px;"><i class="fa-solid fa-circle"></i> 백그라운드 대기</div>
+            </section>
+        </aside>
+
+        <div class="main-area container">
+        <div id="installBanner" class="install-banner">
+            <div class="install-banner-text">
+                <h4>📱 홈 화면에 추가</h4>
+                <p>앱처럼 바로 순위를 확인하세요</p>
+            </div>
+            <button id="installBtn" class="btn-install">설치</button>
+        </div>
+
+        <header>
+            <h1 id="hubTitle">나눔랩 SEO · JARVIS 허브</h1>
+            <p id="hubSubtitle">Traffic은 24시간 백그라운드 · JARVIS는 좌측에서 바로 실행</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="tab-dashboard" data-ws="both">대시보드</button>
+            <button class="tab-btn" data-tab="tab-chart" data-ws="traffic-only">순위 그래프</button>
+            <button class="tab-btn" data-tab="tab-seo" data-ws="traffic-only">SEO 체크</button>
+            <button class="tab-btn" data-tab="tab-blog" data-ws="traffic-only">블로그</button>
+            <button class="tab-btn" data-tab="tab-local" data-ws="traffic-only">로컬 실행</button>
+            <button class="tab-btn" data-tab="tab-javis" data-ws="javis-only">JARVIS</button>
+            <button class="tab-btn" data-tab="tab-javis-bridge" data-ws="javis-only">연동·점검</button>
+            <button class="tab-btn" data-tab="tab-report" data-ws="both">일일 리포트</button>
+            <button class="tab-btn" data-tab="tab-logs" data-ws="both">로그</button>
+        </div>
+
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="glass-panel" id="keywordTrafficPanel" style="margin-bottom:16px;">
+                <h3 style="font-size:0.95rem;margin-bottom:10px;"><i class="fa-solid fa-key"></i> 추적 키워드 · 트래픽 대상</h3>
+                <div id="keywordTrafficBox" class="sidebar-mini">설정 로딩 중...</div>
+            </div>
+            <div class="glass-panel" style="margin-bottom:16px;border-color:rgba(59,130,246,0.35);">
+                <h3 style="font-size:0.95rem;margin-bottom:10px;"><i class="fa-solid fa-pen"></i> 내 키워드 (블로그·순위 공용)</h3>
+                <p style="font-size:0.75rem;color:var(--text-sub);margin-bottom:8px;">한 줄에 하나 · 쉼표로 구분 · 저장 시 accounts.json에 보관</p>
+                <textarea id="userKeywordsInput" rows="5" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(15,23,42,0.8);color:var(--text-main);font-size:0.85rem;resize:vertical;" placeholder="Permacoat 퀵&#10;Permacoat 티탄&#10;자동차 유리막 코팅"></textarea>
+                <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button class="btn" style="flex:1;min-width:120px;padding:10px;background:linear-gradient(135deg,#2563eb,#3b82f6);" onclick="saveUserKeywords()">
+                        <i class="fa-solid fa-floppy-disk"></i> 키워드 저장
+                    </button>
+                    <button class="btn" style="flex:1;min-width:120px;padding:10px;background:linear-gradient(135deg,#7c3aed,#a855f7);" onclick="openJarvisBlogStudio()">
+                        <i class="fa-solid fa-pen-nib"></i> 블로그 글쓰기
+                    </button>
+                </div>
+            </div>
+            <div class="glass-panel">
+                <div class="btn-grid btn-grid-3" style="margin-bottom:14px;">
+                    <button class="btn btn-audit" onclick="runSeoAudit()">
+                        <i class="fa-solid fa-list-check"></i> SEO 점검
+                    </button>
+                    <button class="btn" style="background:#6366f1;" onclick="showCompletionModal()">
+                        <i class="fa-solid fa-clipboard-check"></i> 결과
+                    </button>
+                    <button class="btn btn-track" onclick="trackNow()">
+                        <i class="fa-solid fa-rotate"></i> 새로고침
+                    </button>
+                </div>
+                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-ranking-star"></i> 최근 작업 결과</h3>
+                <div id="recentResults">
+                    <div class="empty-state" id="dashboardEmpty">
+                        아직 기록이 없습니다.<br>
+                        <strong>「지금 추적」</strong>으로 첫 순위를 기록하세요.<br>
+                        <span id="kwHint" style="font-size:0.78rem;margin-top:8px;display:block;color:#94a3b8;"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="value" id="totalTracksVal">0</div>
+                    <div class="label">총 추적 횟수</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="keywordCountVal">0</div>
+                    <div class="label">추적 키워드</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-chart" class="tab-content">
+            <div class="glass-panel" style="margin-bottom:16px;">
+                <h3 style="font-size:0.95rem;margin-bottom:8px;"><i class="fa-solid fa-list"></i> 키워드별 최근 순위</h3>
+                <div id="keywordRankTable" class="sidebar-mini">「지금 추적」 후 표시됩니다.</div>
+            </div>
+            <div class="glass-panel">
+                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-chart-line"></i> 순위 변동 (낮을수록 상위)</h3>
+                <div style="height:260px;"><canvas id="rankingChart"></canvas></div>
+                <div id="chartEmpty" class="empty-state" style="display:none;margin-top:12px;">
+                    순위 그래프는 「지금 추적」 후 표시됩니다.<br>
+                    PC에서는 <code style="color:#93c5fd;">python scripts/rank_daily.py</code>로 전체 키워드 일괄 추적 가능
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-seo" class="tab-content">
+            <div class="glass-panel" id="seoAuditBox">
+                <div class="empty-state">SEO 점검 버튼을 눌러 상품·블로그 페이지를 점검하세요.</div>
+            </div>
+        </div>
+
+        <div id="tab-blog" class="tab-content">
+            <div class="glass-panel" style="padding:0;overflow:hidden;min-height:calc(100vh - 200px);">
+                <iframe id="blogStudioFrame" src="/blog-studio/" title="JARVIS 블로그 스튜디오"
+                    style="width:100%;min-height:820px;border:none;display:block;background:#0f172a;"></iframe>
+            </div>
+        </div>
+
+        <div id="tab-local" class="tab-content">
+            <div class="glass-panel">
+                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-terminal"></i> Traffic · 로컬 프로그램</h3>
+                <p id="localHubHint" style="font-size:0.78rem;color:var(--text-sub);margin-bottom:12px;">anty traffic 저장소의 bat 런처 (순위·SEO·블로그·연동)</p>
+                <div id="trafficProgramList">
+                    <div class="empty-state">프로그램 목록 로딩 중...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-javis" class="tab-content">
+            <div class="glass-panel">
+                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-robot"></i> JARVIS 프로그램</h3>
+                <p style="font-size:0.78rem;color:var(--text-sub);margin-bottom:12px;">
+                    Git 카탈로그 <span id="javisCatalogCount">—</span>개 · Vercel 클라우드 또는 PC 로컬 실행
+                </p>
+                <div id="javisProgramList">
+                    <div class="empty-state">프로그램 목록 로딩 중...</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-javis-bridge" class="tab-content">
+            <div class="glass-panel">
+                <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-plug"></i> 연동 · 점검</h3>
+                <div id="javisBridgeBox" class="empty-state">연동 정보 로딩 중...</div>
+                <div class="btn-grid" style="margin-top:14px;">
+                    <button class="btn btn-audit" onclick="launchJavisProgram('traffic_javis_connect')">
+                        <i class="fa-solid fa-link"></i> JARVIS 연동
+                    </button>
+                    <button class="btn" style="background:#6366f1;" onclick="launchJavisProgram('traffic_programs_check')">
+                        <i class="fa-solid fa-stethoscope"></i> 전체 점검
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-report" class="tab-content">
+            <div class="glass-panel">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <h3 style="font-size:0.95rem;"><i class="fa-solid fa-file-lines"></i> 일일 리포트</h3>
+                    <button class="btn" style="padding:6px 12px;font-size:0.75rem;background:var(--accent-blue);" onclick="loadReport()">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+                <div id="reportBox" class="report-content">리포트 로딩 중...</div>
+            </div>
+        </div>
+
+        <div id="tab-logs" class="tab-content">
+            <div class="glass-panel" style="padding:14px;">
+                <div id="logTerminal" class="log-terminal">
+                    <div class="log-line">대기 중...</div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <div id="completionModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+        <div class="modal">
+            <h2><i class="fa-solid fa-circle-check"></i> 작업 완료 리포트</h2>
+            <div id="modalContent"></div>
+            <button class="modal-close" onclick="closeModal()">확인</button>
+        </div>
+    </div>
+
+    <script>
+        let chart = null;
+        const md = window.markdownit();
+        let lastReport = null;
+        let notifiedRank = null;
+        let appConfig = null;
+        let lastBlogAudit = null;
+        const WS_KEY = 'hubWorkspace';
+        let currentWorkspace = localStorage.getItem(WS_KEY) || 'traffic';
+        let javisProgramsCache = [];
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn));
+        });
+        document.getElementById('wsTrafficBtn').addEventListener('click', () => {
+            setWorkspace('traffic');
+            const first = document.querySelector('.tab-btn[data-tab="tab-dashboard"]');
+            if (first) switchTab('tab-dashboard', first);
+        });
+        document.getElementById('wsJavisBtn').addEventListener('click', () => {
+            setWorkspace('javis');
+            const first = document.querySelector('.tab-btn[data-tab="tab-javis"]');
+            if (first) switchTab('tab-javis', first);
+        });
+
+        function setWorkspace(ws) {
+            currentWorkspace = ws;
+            localStorage.setItem(WS_KEY, ws);
+            document.body.classList.remove('ws-traffic', 'ws-javis');
+            document.body.classList.add('ws-' + ws);
+
+            document.getElementById('wsTrafficBtn').classList.toggle('active', ws === 'traffic');
+            document.getElementById('wsJavisBtn').classList.toggle('active', ws === 'javis');
+            document.getElementById('sidebarTrafficPanel').classList.toggle('active', ws === 'traffic');
+            document.getElementById('sidebarJavisPanel').classList.toggle('active', ws === 'javis');
+            const compact = document.getElementById('trafficCompactBar');
+            if (compact) compact.style.display = ws === 'javis' ? 'block' : 'none';
+
+            const title = document.getElementById('hubTitle');
+            const sub = document.getElementById('hubSubtitle');
+            if (title) {
+                title.textContent = ws === 'javis' ? '나눔랩 JARVIS 허브' : '나눔랩 SEO · Traffic 허브';
+            }
+            if (sub) {
+                sub.textContent = ws === 'javis'
+                    ? 'Traffic은 서버에서 24시간 백그라운드 동작 · JARVIS 작업'
+                    : '서버 기동 시 자동 시작 · 순위·트래픽 24시간 (브라우저 불필요)';
+            }
+            if (ws === 'javis') loadProgramHub('javis');
+            else loadProgramHub('traffic');
+            updateTrafficBgPill();
+        }
+
+        function updateTrafficBgPill() {
+            const pillOn = document.getElementById('trafficBgPill')?.dataset?.trafficOn === '1'
+                || document.getElementById('compactEngineStatus')?.classList.contains('running');
+            const labelOn = '<i class="fa-solid fa-circle"></i> Traffic 백그라운드 동작 중';
+            const labelOff = '<i class="fa-solid fa-circle"></i> Traffic 대기';
+            ['trafficBgPill', 'trafficBgPillCompact'].forEach(id => {
+                const pill = document.getElementById(id);
+                if (!pill) return;
+                pill.className = pillOn ? 'bg-pill' : 'bg-pill off';
+                pill.innerHTML = pillOn ? labelOn : labelOff;
+            });
+        }
+
+        function hubAuto24h(data) {
+            return data && (data.auto_mode === 'cron' || data.auto_mode === 'daemon');
+        }
+
+        function syncCompactTrafficStatus(data, rankRunning) {
+            const trafficOn = !!(data && (data.traffic_running || data.traffic_loop));
+            const compactBadge = document.getElementById('compactEngineStatus');
+            const compactText = document.getElementById('compactEngineStatusText');
+            const compactRank = document.getElementById('compactRankVal');
+            const trafficPill = document.getElementById('trafficBgPill');
+            if (trafficPill) trafficPill.dataset.trafficOn = trafficOn ? '1' : '0';
+            if (compactBadge && compactText) {
+                if (trafficOn) {
+                    compactBadge.className = 'status-badge running';
+                    compactText.textContent = hubAuto24h(data) ? '24h 트래픽' : '트래픽 중';
+                } else {
+                    compactBadge.className = 'status-badge stopped';
+                    compactText.textContent = '트래픽 꺼짐';
+                }
+            }
+            if (compactRank && data) {
+                const rank = data.last_rank;
+                compactRank.textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
+            }
+        }
+
+        function renderSidebarJavis(programs, cloudMode) {
+            const box = document.getElementById('sidebarJavisPrograms');
+            if (!box) return;
+            const pool = cloudMode
+                ? (programs || []).filter(p => p.ui_visible !== false && p.runtime === 'cloud' && p.available)
+                : (programs || []).filter(p => p.available);
+            const items = pool.slice(0, 6);
+            if (!items.length) {
+                box.innerHTML = cloudMode
+                    ? '<div class="sidebar-mini">클라우드 실행 가능 프로그램만 표시됩니다. PC bat은 로컬에서 run_gui.bat 으로 실행하세요.</div>'
+                    : '<div class="sidebar-mini">실행 가능한 JARVIS 프로그램이 없습니다. PC에 javis/ 설치 후 새로고침하세요.</div>';
+                return;
+            }
+            box.innerHTML = items.map(p => `
+                <div class="sidebar-program">
+                    <span title="${p.description || ''}">${p.name}</span>
+                    <button type="button" onclick="launchJavisProgram('${p.id}')">실행</button>
+                </div>
+            `).join('');
+        }
+
+        async function ensureTrafficRunning() {
+            /* 서버(Cloudtype/Vercel/로컬)가 기동 시 자동 시작 — 페이지 로드 시 강제 시작하지 않음 */
+            updateStatus();
+        }
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            if (tabId.startsWith('tab-javis')) {
+                if (currentWorkspace !== 'javis') setWorkspace('javis');
+            } else if (['tab-chart', 'tab-seo', 'tab-blog', 'tab-local'].includes(tabId)) {
+                if (currentWorkspace !== 'traffic') setWorkspace('traffic');
+            }
+            if (tabId === 'tab-chart') loadChart();
+            if (tabId === 'tab-report') loadReport();
+            if (tabId === 'tab-seo') loadLatestAudit();
+            if (tabId === 'tab-blog') initBlogTab();
+            if (tabId === 'tab-javis' || tabId === 'tab-javis-bridge') loadProgramHub('javis');
+            if (tabId === 'tab-local') loadProgramHub('traffic');
+        }
+
+        function renderKeywordTrafficPanel(data, config) {
+            const box = document.getElementById('keywordTrafficBox');
+            if (!box) return;
+            const priority = (data.priority_keywords && data.priority_keywords.length)
+                ? data.priority_keywords
+                : (config.priority_keywords || []).slice(0, 12).map(p => ({
+                    keyword: p.keyword,
+                    product_id: p.product_id,
+                }));
+            const reportItems = (data.last_report && data.last_report.items) || [];
+            const rankByKw = {};
+            reportItems.forEach(item => {
+                if (item.keyword) rankByKw[item.keyword] = item.rank_text || item.rank || '—';
+            });
+
+            let html = '<div style="margin-bottom:10px;"><strong style="color:#e2e8f0;font-size:0.82rem;">순위 추적 키워드</strong> ';
+            html += `<span style="color:#94a3b8;">(우선 ${priority.length || data.priority_count || 0}개 · 전체 ${data.keyword_count || 0}개)</span></div>`;
+            if (!priority.length) {
+                html += '<div style="color:#94a3b8;">config.json → priority_keywords 가 비어 있습니다.</div>';
+            } else {
+                html += '<div style="margin-bottom:12px;">';
+                priority.forEach(p => {
+                    const rk = rankByKw[p.keyword];
+                    const rkLabel = rk ? `<small>${rk}</small>` : '';
+                    html += `<span class="kw-chip">${p.keyword}${rkLabel}</span>`;
+                });
+                html += '</div>';
+            }
+
+            const trafficUrl = data.traffic_target_url || '—';
+            html += '<div style="margin-bottom:6px;"><strong style="color:#e2e8f0;font-size:0.82rem;">트래픽 대상 (클라우드)</strong></div>';
+            html += `<div style="font-size:0.75rem;color:#93c5fd;word-break:break-all;margin-bottom:6px;">${trafficUrl}</div>`;
+            html += `<div style="font-size:0.72rem;color:#94a3b8;">${data.traffic_mode || '상품 URL 방문'}</div>`;
+            html += '<div style="font-size:0.72rem;color:#94a3b8;margin-top:8px;">PC 1회 방문: <code style="color:#93c5fd;">run_traffic_focus.bat</code> 또는 <code style="color:#93c5fd;">traffic_once.bat</code></div>';
+            box.innerHTML = html;
+        }
+
+        function renderKeywordRankTable(report, history) {
+            const box = document.getElementById('keywordRankTable');
+            if (!box) return;
+            const items = (report && report.items) ? report.items.filter(i => i.status !== '실패') : [];
+            if (items.length) {
+                box.innerHTML = items.map(item => `
+                    <div class="rank-row">
+                        <span>${item.keyword}</span>
+                        <span><strong>${item.rank_text || '—'}</strong> <span style="color:#94a3b8;">${item.status || ''}</span></span>
+                    </div>`).join('');
+                return;
+            }
+            if (history && history.length) {
+                const seen = new Set();
+                const rows = [];
+                for (let i = history.length - 1; i >= 0 && rows.length < 12; i--) {
+                    const r = history[i];
+                    const kw = r['키워드'] || r.keyword;
+                    if (!kw || seen.has(kw)) continue;
+                    seen.add(kw);
+                    const rank = parseInt(r['순위'] || r.rank) || 100;
+                    const rankText = rank >= 100 ? '100위 밖' : `${rank}위`;
+                    rows.push(`<div class="rank-row"><span>${kw}</span><strong>${rankText}</strong></div>`);
+                }
+                box.innerHTML = rows.length ? rows.join('') : '기록 없음';
+                return;
+            }
+            box.textContent = '「지금 추적」 후 키워드별 순위가 표시됩니다.';
+        }
+
+        async function loadUserKeywords() {
+            const box = document.getElementById('userKeywordsInput');
+            if (!box) return;
+            try {
+                const res = await fetch('/api/keywords');
+                const data = await res.json();
+                if (data.keywords_text) {
+                    box.value = data.keywords_text;
+                } else if (Array.isArray(data.keywords)) {
+                    box.value = data.keywords.join('\n');
+                }
+            } catch (e) {
+                console.warn('keywords load', e);
+            }
+        }
+
+        async function saveUserKeywords() {
+            const box = document.getElementById('userKeywordsInput');
+            if (!box) return;
+            const text = (box.value || '').trim();
+            try {
+                const res = await fetch('/api/keywords', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keywords_text: text }),
+                });
+                const data = await res.json();
+                if (!res.ok || data.success === false) {
+                    throw new Error(data.error || '저장 실패');
+                }
+                showToast(`키워드 ${data.count || 0}개 저장됨`);
+                appConfig = null;
+                await loadConfig();
+                updateStatus();
+            } catch (e) {
+                showToast('키워드 저장 실패: ' + e.message);
+            }
+        }
+
+        async function loadConfig() {
+            if (appConfig) return appConfig;
+            try {
+                const res = await fetch('/api/config');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                appConfig = await res.json();
+                return appConfig;
+            } catch (e) {
+                showToast('설정 로드 실패 — 서버 API 확인');
+                return appConfig || { products: [], keywords: [], brand: '나눔랩', store_name: '나눔랩' };
+            }
+        }
+
+        async function initBlogTab() {
+            const frame = document.getElementById('blogStudioFrame');
+            if (frame && (!frame.src || frame.src === 'about:blank')) {
+                frame.src = '/blog-studio/';
+            }
+        }
+
+        function contentToMarkdown(result) {
+            const c = result.content || {};
+            const lines = [`# ${c.title || result.workflow_label || '블로그 초안'}`, ''];
+            if (c.body) lines.push(c.body);
+            if (c.sections) {
+                Object.entries(c.sections).forEach(([k, v]) => {
+                    lines.push(`## ${k}`, '', v, '');
+                });
+            }
+            if (c.steps) {
+                lines.push('## 단계별 가이드', '');
+                c.steps.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
+            }
+            if (c.items) {
+                c.items.forEach(item => lines.push(`**Q.** ${item.q}\n\n**A.** ${item.a}\n`));
+            }
+            if (c.meta_description) lines.push('', `> ${c.meta_description}`);
+            lines.push('', `---`, `생성: ${result.generated_at || ''}`, `저장: ${result.saved_path || ''}`);
+            return lines.join('\n');
+        }
+
+        async function generateBlogContent() {
+            const keyword = (document.getElementById('blogKeyword').value || '').trim();
+            const workflow = document.getElementById('blogWorkflow').value;
+            const productId = document.getElementById('blogProduct').value;
+            const config = await loadConfig();
+            const product = (config.products || []).find(p => String(p.id) === String(productId)) || {};
+            if (!keyword) {
+                showToast('키워드를 입력하세요.');
+                return;
+            }
+            showToast('블로그 초안 생성 중...');
+            try {
+                const res = await fetch('/api/content/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        workflow,
+                        keyword,
+                        product_name: product.name,
+                        product_id: product.id,
+                        brand: config.brand || config.store_name,
+                    }),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || data.detail || ('HTTP ' + res.status));
+                }
+                const preview = document.getElementById('blogPreview');
+                const meta = document.getElementById('blogMeta');
+                if (!data.success) {
+                    preview.innerHTML = `<div style="color:var(--accent-red);">${data.error || '생성 실패'}</div>`;
+                    meta.innerHTML = '';
+                    showToast(data.error || '생성 실패');
+                    return;
+                }
+                preview.innerHTML = md.render(contentToMarkdown(data));
+                meta.innerHTML = [
+                    data.workflow_label,
+                    data.keyword,
+                    product.name || '',
+                    data.saved_path ? '저장 완료' : (data.save_warning ? '미저장(서버)' : 'Vercel 생성'),
+                ].filter(Boolean).map(t => `<span class="blog-chip">${t}</span>`).join('');
+                showToast('블로그 초안이 생성되었습니다.');
+                updateLogs();
+            } catch (e) {
+                const msg = (e && e.message) ? e.message : '서버 연결 확인';
+                showToast('블로그 생성 실패 — ' + msg);
+                document.getElementById('blogPreview').innerHTML =
+                    `<div style="color:var(--accent-red);">생성 실패: ${msg}<br><small>Cloudtype 순위 API와 별도로 블로그 API는 Vercel에서 동작해야 합니다. 잠시 후 다시 시도하세요.</small></div>`;
+            }
+        }
+
+        function renderProgramList(programs, listBox, cloudMode) {
+            const visible = cloudMode
+                ? (programs || []).filter(p => p.ui_visible !== false && p.runtime === 'cloud')
+                : (programs || []);
+            const byCat = {};
+            visible.forEach(p => {
+                if (!byCat[p.category]) byCat[p.category] = { label: p.category_label, items: [] };
+                byCat[p.category].items.push(p);
+            });
+            let html = '';
+            if (cloudMode && (programs || []).length > visible.length) {
+                const hidden = (programs || []).length - visible.length;
+                html += `<div class="hub-cat-title" style="color:var(--text-sub);font-weight:normal;">
+                    PC 전용 bat ${hidden}개는 클라우드에서 숨김 — 발행·Playwright는 run_gui.bat (로컬)
+                </div>`;
+            }
+            Object.values(byCat).forEach(group => {
+                html += `<div class="hub-cat-title">${group.label}</div><div class="program-grid">`;
+                group.items.forEach(p => {
+                    const isCloud = p.runtime === 'cloud' || (p.cloud_action && p.cloud_action !== 'local_hint');
+                    const isLocalOnly = p.runtime === 'local_only' || p.cloud_action === 'local_hint';
+                    const isLocalBat = p.runtime === 'local';
+                    let btnLabel = '실행';
+                    if (!p.available) btnLabel = '불가';
+                    else if (isLocalBat) btnLabel = 'PC 실행';
+                    else if (isCloud && isLocalOnly) btnLabel = '클라우드/PC';
+                    else if (isCloud) btnLabel = '클라우드 실행';
+                    else if (isLocalOnly) btnLabel = 'PC 전용';
+                    const badge = isCloud ? '<span class="hub-pill ok" style="font-size:0.65rem;margin-left:6px;">☁️</span>' : '';
+                    html += `<div class="program-card ${p.available ? '' : 'unavailable'}">
+                        <h4><i class="fa-solid ${p.icon || 'fa-play'}"></i> ${p.name}${badge}</h4>
+                        <p>${p.description}</p>
+                        <button class="btn-launch" ${p.available ? '' : 'disabled'} onclick="launchJavisProgram('${p.id}')">
+                            <i class="fa-solid fa-rocket"></i> ${btnLabel}
+                        </button>
+                    </div>`;
+                });
+                html += '</div>';
+            });
+            listBox.innerHTML = html || '<div class="empty-state">등록된 프로그램이 없습니다.</div>';
+        }
+
+        async function loadProgramHub(workspace) {
+            const listId = workspace === 'traffic' ? 'trafficProgramList' : 'javisProgramList';
+            const listBox = document.getElementById(listId);
+            if (!listBox) return;
+            try {
+                const res = await fetch('/api/javis/programs?workspace=' + encodeURIComponent(workspace));
+                const data = await res.json();
+                if (workspace === 'traffic') {
+                    const hint = document.getElementById('localHubHint');
+                    if (hint && data.setup_hint) {
+                        const mode = data.local_hub
+                            ? '<span class="hub-pill ok" style="margin-right:6px;">PC 로컬 허브</span>'
+                            : '<span class="hub-pill warn" style="margin-right:6px;">클라우드 모드</span>';
+                        const venv = data.venv_ready
+                            ? ''
+                            : ' · <strong style="color:#fbbf24;">run_install.bat 필요</strong>';
+                        hint.innerHTML = mode + data.setup_hint + venv;
+                    }
+                }
+                if (workspace === 'javis') {
+                    javisProgramsCache = data.programs || [];
+                    renderSidebarJavis(javisProgramsCache, !!data.cloud_mode);
+                    const statusBox = document.getElementById('javisHubStatus');
+                    const pills = [];
+                    pills.push(`<span class="hub-pill ${data.jarvis_installed ? 'ok' : 'warn'}">JARVIS ${data.jarvis_installed ? '설치됨' : '경로 없음'}</span>`);
+                    if (data.jarvis_bundled) pills.push('<span class="hub-pill ok">Git 번들 javis/</span>');
+                    pills.push(`<span class="hub-pill ${data.bridge?.ok ? 'ok' : 'warn'}">${data.bridge?.detail || '브리지'}</span>`);
+                    pills.push(`<span class="hub-pill">${(data.programs || []).filter(p => p.available && (!data.cloud_mode || p.runtime === 'cloud')).length}개 실행 가능</span>`);
+                    if (data.cloud_mode) {
+                        pills.push(`<span class="hub-pill ok">☁️ 클라우드 ${data.cloud_programs || 0}개</span>`);
+                        if (data.hidden_pc_only) {
+                            pills.push(`<span class="hub-pill warn">PC 전용 ${data.hidden_pc_only}개 숨김</span>`);
+                        }
+                    }
+                    if (statusBox) statusBox.innerHTML = pills.join('');
+
+                    const eng = document.getElementById('javisEngineStatus');
+                    const engText = document.getElementById('javisEngineStatusText');
+                    if (eng && engText) {
+                        if (data.jarvis_installed) {
+                            eng.className = 'status-badge running';
+                            engText.textContent = '준비됨';
+                        } else {
+                            eng.className = 'status-badge stopped';
+                            engText.textContent = '미설치';
+                        }
+                    }
+                    const rootHint = document.getElementById('javisRootHint');
+                    if (rootHint) rootHint.textContent = data.jarvis_root || '';
+                    const cnt = document.getElementById('javisCatalogCount');
+                    if (cnt) cnt.textContent = data.catalog_count || data.javis_count || '0';
+
+                    const bridgeBox = document.getElementById('javisBridgeBox');
+                    if (bridgeBox) {
+                        bridgeBox.innerHTML = `<div style="font-size:0.85rem;line-height:1.6;color:var(--text-sub);">
+                            <p><strong style="color:var(--text-main);">JARVIS 루트</strong><br>${data.jarvis_root || '—'}</p>
+                            <p style="margin-top:10px;"><strong style="color:var(--text-main);">원격 저장소</strong><br>
+                            <a href="${data.jarvis_remote || '#'}" style="color:#93c5fd;" target="_blank" rel="noopener">FatihMakes/Mark-XXXIX</a></p>
+                            <p style="margin-top:10px;">로컬에 없으면: <code style="color:#93c5fd;">git submodule update --init javis</code></p>
+                        </div>`;
+                    }
+                }
+                renderProgramList(data.programs, listBox, !!data.cloud_mode);
+            } catch (e) {
+                listBox.innerHTML = '<div class="empty-state">서버 연결을 확인하세요.</div>';
+            }
+        }
+
+        async function firstHubKeyword() {
+            const cfg = await loadConfig();
+            const pri = cfg.priority_keywords || [];
+            if (pri.length) {
+                const p = pri[0];
+                return (typeof p === 'object' ? (p.keyword || p.name) : p) || '나눔랩 코팅';
+            }
+            const kws = cfg.keywords || [];
+            if (kws.length) {
+                const k = kws[0];
+                return (typeof k === 'object' ? (k.keyword || k.name) : k) || '나눔랩 코팅';
+            }
+            return '나눔랩 코팅';
+        }
+
+        async function cloudFallbackLaunch(id) {
+            const low = (id || '').toLowerCase();
+            try {
+                if (low.includes('블로그') || low.includes('blog') || low.includes('briefing') || low.includes('content') || low.includes('detail')) {
+                    const keyword = await firstHubKeyword();
+                    const wf = low.includes('detail') ? 'product_detail' : (low.includes('video') || low.includes('shorts') ? 'shorts_script' : 'blog_review');
+                    const res = await fetch('/api/content/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                        body: JSON.stringify({ workflow: wf, keyword, product_name: keyword }),
+                    });
+                    const d = await res.json();
+                    if (d.success) {
+                        return {
+                            success: true,
+                            cloud: true,
+                            message: `☁️ 콘텐츠 생성 완료 (${keyword})` + (d.saved_path ? ' · 저장됨' : ''),
+                        };
+                    }
+                    return { success: false, cloud: true, message: d.message || '콘텐츠 생성 실패' };
+                }
+                if (low.includes('doctor') || low.includes('check') || low.includes('verify') || low.includes('점검') || low.includes('connect')) {
+                    const hres = await fetch('/api/health');
+                    const h = await hres.json();
+                    const ok = h.status === 'healthy';
+                    return {
+                        success: ok,
+                        cloud: true,
+                        message: `☁️ 허브 점검 — ${h.status || '?'} · 스케줄러 ${h.scheduler_running ? 'ON' : 'OFF'} · ${h.persistence || ''}`,
+                    };
+                }
+                if (low.includes('rank') || low.includes('seo') || low.includes('naver') || low.includes('hybrid') || low.includes('track') || low.includes('dashboard') || low.includes('hub')) {
+                    const sres = await fetch('/api/status');
+                    const s = await sres.json();
+                    return {
+                        success: true,
+                        cloud: true,
+                        message: `☁️ SEO 허브 동작 중 — 키워드 ${s.keyword_count || 0}개 · 자동추적 ${s.auto_started ? 'ON' : 'OFF'}`,
+                    };
+                }
+                if (low.includes('gui') || low.includes('autoblog')) {
+                    return {
+                        success: true,
+                        cloud: true,
+                        message: '☁️ Autoblog GUI는 PC 전용입니다. run_gui.bat을 실행하세요.',
+                        studio_url: '/blog-studio/',
+                    };
+                }
+            } catch (e) {
+                return { success: false, cloud: true, message: '클라우드 폴백 실패: ' + e.message };
+            }
+            return {
+                success: true,
+                cloud: true,
+                message: '☁️ 클라우드 대체 실행 완료. PC 전용 작업은 run.bat · run_gui.bat을 사용하세요.',
+            };
+        }
+
+        async function launchJavisProgram(id) {
+            showToast('프로그램 실행 요청 중…');
+            const res = await fetch('/api/javis/launch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json; charset=utf-8' },
+                body: JSON.stringify({ id }),
+            });
+            let data = {};
+            try { data = await res.json(); } catch (e) {
+                showToast('서버 응답 오류 — 클라우드 폴백 시도 중…');
+                data = await cloudFallbackLaunch(id);
+            }
+            const msg = data.message || data.error || (data.success ? '요청 완료' : '실행 실패');
+            if (!data.success && (msg.includes('실행 파일 없음') || msg.includes('실행 불가') || msg.includes('알 수 없는'))) {
+                data = await cloudFallbackLaunch(id);
+            }
+            const finalMsg = data.message || data.error || (data.success ? '요청 완료' : '실행 실패');
+            if (data.cloud || data.programs_engine) {
+                showToast('☁️ ' + finalMsg);
+                updateLogs();
+                if (data.studio_url || finalMsg.includes('블로그') || id.includes('블로그') || id === 'traffic_autoblog_gui' || id === 'local_run_gui') {
+                    const blogTab = document.querySelector('.tab-btn[data-tab="tab-blog"]');
+                    if (blogTab) switchTab('tab-blog', blogTab);
+                }
+                return;
+            }
+            if (!data.success && (finalMsg.includes('실행 파일 없음') || finalMsg.includes('실행 불가'))) {
+                showToast(finalMsg + ' — PC: run.bat · run_gui.bat');
+            } else {
+                showToast(finalMsg);
+            }
+            if (data.success && (data.studio_url || data.action === 'blog_studio' || id.includes('블로그') || id === 'traffic_autoblog_gui' || id === 'local_run_gui')) {
+                const blogTab = document.querySelector('.tab-btn[data-tab="tab-blog"]');
+                if (blogTab) switchTab('tab-blog', blogTab);
+            }
+            updateLogs();
+        }
+
+        function renderBlogSeo(audit) {
+            const box = document.getElementById('blogSeoBox');
+            if (!audit || !audit.blogs || !audit.blogs.length) {
+                box.innerHTML = '<div class="empty-state">등록된 블로그 URL이 없습니다.</div>';
+                return;
+            }
+            box.innerHTML = audit.blogs.map(page => {
+                if (!page.success) {
+                    return `<div class="blog-url-card"><strong>${page.url}</strong><div class="detail" style="color:var(--accent-red);margin-top:6px;">접근 실패</div></div>`;
+                }
+                const checks = page.checks.map(c =>
+                    `<div class="check-item"><span class="${c.passed ? 'check-pass' : 'check-fail'}">${c.passed ? '✓' : '✗'}</span><span><strong>${c.name}</strong><br><span style="color:var(--text-sub);font-size:0.78rem;">${c.message}</span></span></div>`
+                ).join('');
+                return `<div class="blog-url-card">
+                    <div style="font-size:0.85rem;font-weight:600;">📝 ${page.url}</div>
+                    <div style="color:#c4b5fd;margin:6px 0;">${page.percent}점 · ${page.grade}</div>
+                    ${checks}
+                </div>`;
+            }).join('');
+        }
+
+        async function auditBlogOnly() {
+            showToast('블로그 SEO 점검 중...');
+            const res = await fetch('/api/seo-audit', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                lastBlogAudit = data.audit;
+                renderBlogSeo(data.audit);
+                showToast(`블로그 ${data.audit.blogs.length}개 점검 완료`);
+            }
+        }
+
+        async function toggleScheduler(start, scope) {
+            try {
+                const body = scope ? JSON.stringify({ scope: scope || (start ? 'all' : 'rank') }) : JSON.stringify({ scope: start ? 'all' : 'rank' });
+                const res = await fetch(start ? '/api/start' : '/api/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body,
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                showToast(data.message || (data.success ? '완료' : '실패'));
+                updateStatus();
+            } catch (e) {
+                showToast('서버 연결 실패 — API를 확인하세요');
+            }
+        }
+
+        async function runCloudTraffic() {
+            showToast('클라우드 트래픽 실행 중...');
+            try {
+                const res = await fetch('/api/traffic', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({}),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`트래픽 OK · ${data.result?.elapsed_sec || '?'}초`);
+                    updateLogs();
+                    updateStatus();
+                } else {
+                    showToast(data.error || data.result?.status_code || '트래픽 실패');
+                }
+            } catch (e) {
+                showToast('트래픽 오류: ' + e.message);
+            }
+        }
+
+        async function trackNow() {
+            showToast('순위 추적 중...');
+            try {
+                const res = await fetch('/api/track-now', { method: 'POST' });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+                if (data.success) {
+                    lastReport = data.report;
+                    renderRecentResults(data.report);
+                    showCompletionModal();
+                    maybeNotify(data.report);
+                    updateStatus();
+                    updateLogs();
+                } else {
+                    showToast(data.error || '추적 실패');
+                }
+            } catch (e) {
+                showToast('순위 추적 실패 — 서버 연결을 확인하세요');
+            }
+        }
+
+        async function runSeoAudit() {
+            showToast('SEO 점검 중...');
+            const res = await fetch('/api/seo-audit', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                renderSeoAudit(data.audit);
+                switchTab('tab-seo', document.querySelector('[data-tab="tab-seo"]'));
+                showToast(`SEO 평균 ${data.audit.summary.average_score}점`);
+            }
+        }
+
+        function historyToReport(history) {
+            if (!history || !history.length) return null;
+            const seen = new Set();
+            const items = [];
+            for (let i = history.length - 1; i >= 0; i--) {
+                const r = history[i];
+                const kw = r['키워드'] || r.keyword;
+                if (!kw || seen.has(kw)) continue;
+                seen.add(kw);
+                const rank = parseInt(r['순위'] || r.rank) || 100;
+                const prev = parseInt(r['이전순위'] || r.prev_rank);
+                const change = r['변동'] || r.change || '유지';
+                let status = '유지';
+                if (change === '상승' || (Number.isFinite(prev) && rank < prev)) status = '상승';
+                else if (change === '하락' || (Number.isFinite(prev) && rank > prev)) status = '하락';
+                items.push({
+                    keyword: kw,
+                    rank_text: rank >= 100 ? '100위 밖' : `${rank}위`,
+                    prev_text: Number.isFinite(prev) && prev < 100 ? `${prev}위` : (prev >= 100 ? '100위 밖' : '—'),
+                    status,
+                    tasks: [(r['작업유형'] || r.task_type || '순위 추적')],
+                });
+                if (items.length >= 12) break;
+            }
+            return items.length ? { items, summary: `최근 기록 ${items.length}건` } : null;
+        }
+
+        function renderRecentResults(report) {
+            const box = document.getElementById('recentResults');
+            if (!report || !report.items || !report.items.length) {
+                box.innerHTML = `<div class="empty-state" id="dashboardEmpty">아직 기록이 없습니다.<br><strong>「지금 추적」</strong>으로 첫 순위를 기록하세요.<br><span id="kwHint" style="font-size:0.78rem;margin-top:8px;display:block;color:#94a3b8;"></span></div>`;
+                return;
+            }
+            box.innerHTML = report.items.map(item => {
+                if (item.status === '실패') {
+                    return `<div class="result-card"><div class="kw">${item.keyword}</div><div class="detail">조회 실패</div></div>`;
+                }
+                const cls = item.status === '상승' ? 'up' : (item.status === '하락' ? 'down' : '');
+                const badgeCls = item.status === '상승' ? 'badge-up' : (item.status === '하락' ? 'badge-down' : 'badge-same');
+                return `<div class="result-card ${cls}">
+                    <div class="kw">${item.keyword} <span class="badge ${badgeCls}">${item.status}</span></div>
+                    <div class="detail">${item.prev_text} → <strong>${item.rank_text}</strong></div>
+                    <div class="detail">작업: ${(item.tasks || []).join(', ')}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function showCompletionModal() {
+            const report = lastReport;
+            const modal = document.getElementById('completionModal');
+            const content = document.getElementById('modalContent');
+            if (!report || !report.items) {
+                fetch('/api/completion').then(r => r.json()).then(d => {
+                    lastReport = d.report;
+                    fillModal(d.report);
+                });
+            } else {
+                fillModal(report);
+            }
+            modal.classList.add('show');
+        }
+
+        function fillModal(report) {
+            const content = document.getElementById('modalContent');
+            if (!report || !report.items || !report.items.length) {
+                content.innerHTML = '<p style="color:var(--text-sub);">아직 완료된 작업이 없습니다.</p>';
+                return;
+            }
+            let html = `<p style="margin-bottom:12px;font-size:0.9rem;">${report.summary}</p>`;
+            html += `<p style="font-size:0.75rem;color:var(--text-sub);margin-bottom:12px;">${report.completed_at || ''}</p>`;
+            report.items.forEach(item => {
+                if (item.status === '실패') {
+                    html += `<div class="result-card"><div class="kw">${item.keyword}</div><div class="detail">순위 조회 실패</div></div>`;
+                } else {
+                    const cls = item.status === '상승' ? 'up' : (item.status === '하락' ? 'down' : '');
+                    html += `<div class="result-card ${cls}">
+                        <div class="kw">${item.keyword}</div>
+                        <div class="detail">${item.prev_text} → <strong>${item.rank_text}</strong> (${item.status})</div>
+                        <div class="detail">수행 작업: ${(item.tasks || ['순위 추적']).join(', ')}</div>
+                    </div>`;
+                }
+            });
+            content.innerHTML = html;
+        }
+
+        function closeModal() {
+            document.getElementById('completionModal').classList.remove('show');
+        }
+
+        function renderSeoAudit(audit) {
+            const box = document.getElementById('seoAuditBox');
+            if (!audit) {
+                box.innerHTML = '<div class="empty-state">점검 기록 없음</div>';
+                return;
+            }
+            const s = audit.summary;
+            let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <div><div style="font-size:0.8rem;color:var(--text-sub);">평균 SEO 점수</div>
+                <div style="font-size:1.6rem;font-weight:700;">${s.average_score}점</div></div>
+                <div class="grade-badge">${s.average_score >= 80 ? 'A' : s.average_score >= 60 ? 'B' : 'C'}</div>
+            </div>`;
+            if (s.product_total && s.product_limit && s.product_total > s.product_limit) {
+                html += `<p style="font-size:0.75rem;color:#94a3b8;margin-bottom:12px;">상품 ${s.product_limit}개 샘플 점검 (전체 ${s.product_total}개 · 네이버 차단 방지)</p>`;
+            }
+
+            [...audit.products, ...audit.blogs].forEach(page => {
+                if (!page.success) {
+                    const detail = page.error || '접근 실패';
+                    html += `<div style="margin-bottom:14px;"><strong style="font-size:0.85rem;">${page.url}</strong><div class="detail" style="color:var(--accent-red);margin-top:4px;font-size:0.78rem;">${detail}</div></div>`;
+                    return;
+                }
+                const partial = page.partial ? ' <span style="color:#fbbf24;font-size:0.72rem;">(config 폴백)</span>' : '';
+                html += `<div style="margin-bottom:16px;">
+                    <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">${page.page_type === 'product' ? '🛒' : '📝'} ${page.url} <span style="color:var(--accent-blue);">${page.percent}점 (${page.grade})</span>${partial}</div>`;
+                page.checks.forEach(c => {
+                    html += `<div class="check-item">
+                        <span class="${c.passed ? 'check-pass' : 'check-fail'}">${c.passed ? '✓' : '✗'}</span>
+                        <span><strong>${c.name}</strong><br><span style="color:var(--text-sub);font-size:0.78rem;">${c.message}</span></span>
+                    </div>`;
+                });
+                html += '</div>';
+            });
+
+            if (s.recommendations && s.recommendations.length) {
+                html += '<h4 style="font-size:0.9rem;margin:12px 0 8px;">개선 권장</h4><ul style="font-size:0.82rem;color:var(--text-sub);padding-left:18px;">';
+                s.recommendations.slice(0, 8).forEach(r => { html += `<li style="margin-bottom:4px;">${r}</li>`; });
+                html += '</ul>';
+            }
+            box.innerHTML = html;
+        }
+
+        async function loadLatestAudit() {
+            const res = await fetch('/api/seo-audit/latest');
+            const data = await res.json();
+            if (data.audit) renderSeoAudit(data.audit);
+        }
+
+        async function updateStatus() {
+            try {
+                const res = await fetch('/api/status');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const data = await res.json();
+            const badge = document.getElementById('engineStatus');
+            const text = document.getElementById('engineStatusText');
+            const running = !!data.running;
+            const trafficOn = !!(data.traffic_running || data.traffic_loop);
+            const trafficPill = document.getElementById('trafficBgPill');
+            if (trafficPill) trafficPill.dataset.trafficOn = trafficOn ? '1' : '0';
+            if (running) {
+                badge.className = 'status-badge running';
+                const label24 = data.auto_mode === 'cron' ? '24h Cron' : (data.auto_mode === 'daemon' ? '24h 백그라운드' : (data.traffic_loop ? '추적·트래픽' : '추적 중'));
+                text.textContent = hubAuto24h(data) ? label24 : (data.traffic_loop ? '추적·트래픽' : '추적 중');
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+            } else {
+                badge.className = 'status-badge stopped';
+                text.textContent = hubAuto24h(data) ? (data.auto_mode === 'cron' ? 'Cron 꺼짐' : '24h 꺼짐') : '중지됨';
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+            }
+            syncCompactTrafficStatus(data, running);
+            const cronHint = document.getElementById('cronHint');
+            if (cronHint) {
+                if (data.auto_mode === 'cron') {
+                    cronHint.style.display = 'block';
+                    const last = data.last_cron_at ? `마지막 Cron: ${data.last_cron_at}` : 'Cron 대기 중';
+                    const traffic = data.last_traffic_at ? ` · 트래픽: ${data.last_traffic_at}` : '';
+                    const store = data.persistence === 'supabase' ? ' · Supabase' : ' · Supabase 권장';
+                    cronHint.textContent = `${data.cron_schedule || '매시'}${traffic}${store} · ${last}`;
+                } else if (data.auto_mode === 'daemon') {
+                    cronHint.style.display = 'block';
+                    const plat = data.platform === 'cloudtype' ? 'Cloudtype' : '클라우드';
+                    const sched = data.daemon_schedule || `순위 ${data.interval_minutes || 60}분 · 트래픽 20분`;
+                    const store = data.persistence === 'supabase' ? 'Supabase' : 'Supabase 권장 (/tmp 휘발)';
+                    cronHint.textContent = `${plat} 24h · ${sched} · ${store}`;
+                } else if (data.running) {
+                    cronHint.style.display = 'block';
+                    cronHint.textContent = `로컬 백그라운드 · ${data.interval_minutes || 60}분 간격`;
+                } else {
+                    cronHint.style.display = 'none';
+                }
+            }
+            const cloudBtn = document.getElementById('cloudTrafficBtn');
+            if (cloudBtn) cloudBtn.style.display = data.auto_mode === 'cron' ? 'flex' : 'none';
+            const rank = data.last_rank;
+            document.getElementById('currentRankVal').textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
+            const rankKw = document.getElementById('currentRankKw');
+            if (rankKw) {
+                rankKw.textContent = data.last_rank_keyword ? `「${data.last_rank_keyword}」` : '';
+                rankKw.title = data.last_rank_keyword || '';
+            }
+            const trafficHint = document.getElementById('trafficTargetHint');
+            if (trafficHint && data.traffic_target_url) {
+                trafficHint.style.display = 'block';
+                const short = data.traffic_target_url.replace('https://', '');
+                trafficHint.innerHTML = `<i class="fa-solid fa-road"></i> 트래픽: <span style="color:#93c5fd;">${short}</span><br><span style="opacity:0.85;">키워드 검색 아님 · URL 방문만</span>`;
+            }
+            const config = await loadConfig();
+            renderKeywordTrafficPanel(data, config);
+            document.getElementById('totalTracksVal').textContent = data.total_tracks || 0;
+            document.getElementById('keywordCountVal').textContent = data.keyword_count || 0;
+            const hint = document.getElementById('kwHint');
+            if (hint) {
+                const batch = data.track_batch_count || data.keyword_count || 0;
+                hint.textContent = data.auto_mode === 'cron'
+                    ? `웹(Cron): 우선 ${batch}개 키워드 추적 · 전체 ${data.keyword_count || 0}개는 PC에서`
+                    : (data.auto_mode === 'daemon'
+                        ? `Cloud 24h: 키워드 ${data.keyword_count || 0}개 · 우선 ${data.priority_count || batch}개`
+                        : `등록 키워드 ${data.keyword_count || 0}개 · 우선 ${data.priority_count || batch}개`);
+            }
+            if (data.last_report) {
+                lastReport = data.last_report;
+                renderRecentResults(data.last_report);
+                renderKeywordRankTable(data.last_report, null);
+            } else {
+                try {
+                    const hres = await fetch('/api/history');
+                    if (hres.ok) {
+                        const history = await hres.json();
+                        const fallback = historyToReport(history);
+                        if (fallback) {
+                            lastReport = fallback;
+                            renderRecentResults(fallback);
+                        }
+                        renderKeywordRankTable(null, history);
+                    } else {
+                        renderKeywordRankTable(null, null);
+                    }
+                } catch (_) {
+                    renderKeywordRankTable(null, null);
+                }
+            }
+            updateTrafficBgPill();
+            } catch (e) {
+                const text = document.getElementById('engineStatusText');
+                if (text) text.textContent = '서버 오류';
+                const badge = document.getElementById('engineStatus');
+                if (badge) badge.className = 'status-badge stopped';
+            }
+        }
+
+        async function updateLogs() {
+            const res = await fetch('/api/logs');
+            const data = await res.json();
+            const term = document.getElementById('logTerminal');
+            if (data.logs && data.logs.length) {
+                term.innerHTML = data.logs.map(l => `<div class="log-line">${l}</div>`).join('');
+                term.scrollTop = term.scrollHeight;
+            }
+        }
+
+        async function loadChart() {
+            const res = await fetch('/api/history');
+            const data = await res.json();
+            const chartEmpty = document.getElementById('chartEmpty');
+            if (!data || !data.length) {
+                if (chart) chart.destroy();
+                if (chartEmpty) chartEmpty.style.display = 'block';
+                return;
+            }
+            if (chartEmpty) chartEmpty.style.display = 'none';
+            const labels = data.map(r => {
+                const t = (r.날짜 || '').split(' ')[1] || r.날짜 || '';
+                const kw = (r.키워드 || '').slice(0, 8);
+                return kw ? `${t}\n${kw}` : t;
+            });
+            const ranks = data.map(r => {
+                const n = parseInt(r.순위);
+                return Number.isFinite(n) && n > 0 ? Math.min(n, 100) : 100;
+            });
+            const keywords = data.map(r => r.키워드 || '');
+            const ctx = document.getElementById('rankingChart').getContext('2d');
+            if (chart) chart.destroy();
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: '순위',
+                        data: ranks,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59,130,246,0.1)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0', font: { size: 10 } } },
+                        tooltip: {
+                            callbacks: {
+                                title: (items) => {
+                                    const i = items[0]?.dataIndex;
+                                    return keywords[i] ? `키워드: ${keywords[i]}` : '순위';
+                                },
+                                label: (item) => `순위: ${item.raw >= 100 ? '100위 밖' : item.raw + '위'}`,
+                            },
+                        },
+                    },
+                    scales: {
+                        y: { reverse: true, min: 1, max: 100, ticks: { color: '#94a3b8', stepSize: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { ticks: { color: '#94a3b8', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+            renderKeywordRankTable(lastReport, data);
+        }
+
+        async function loadReport() {
+            const box = document.getElementById('reportBox');
+            box.innerHTML = '로딩 중...';
+            const res = await fetch('/api/report');
+            const data = await res.json();
+            box.innerHTML = md.render(data.report);
+        }
+
+        async function openJarvisBlogStudio() {
+            const frame = document.getElementById('blogStudioFrame');
+            const blogTab = document.querySelector('.tab-btn[data-tab="tab-blog"]');
+            if (blogTab) switchTab('tab-blog', blogTab);
+            if (frame) {
+                frame.src = '/blog-studio/?t=' + Date.now();
+                return;
+            }
+            const base = window.location.origin + '/blog-studio/';
+            try {
+                const r = await fetch('/api/javis/health');
+                if (r.ok) {
+                    window.open(base, '_blank');
+                    return;
+                }
+            } catch (_) {}
+            showToast('블로그 스튜디오 시작 중…');
+            try {
+                await fetch('/api/javis/launch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: 'traffic_autoblog_gui' }),
+                });
+            } catch (_) {}
+            setTimeout(() => window.open('http://127.0.0.1:8790/', '_blank'), 2500);
+        }
+
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.textContent = msg;
+            t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 20px;border-radius:10px;font-size:0.85rem;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2500);
+        }
+
+        function maybeNotify(report) {
+            if (!('Notification' in window)) return;
+            const improved = report.items.filter(i => i.status === '상승');
+            if (!improved.length) return;
+            const msg = improved.map(i => `${i.keyword}: ${i.rank_text}`).join(', ');
+            if (Notification.permission === 'granted') {
+                new Notification('순위 상승!', { body: msg });
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(p => {
+                    if (p === 'granted') new Notification('순위 상승!', { body: msg });
+                });
+            }
+        }
+
+        setInterval(() => {
+            updateStatus();
+            if (document.getElementById('tab-chart')?.classList.contains('active')) loadChart();
+            updateLogs();
+        }, 60000);
+        setInterval(() => {
+            updateStatus();
+            updateLogs();
+        }, 5000);
+
+        (async function initHub() {
+            setWorkspace(currentWorkspace);
+            const defaultTab = currentWorkspace === 'javis' ? 'tab-javis' : 'tab-dashboard';
+            const defaultBtn = document.querySelector(`.tab-btn[data-tab="${defaultTab}"]`);
+            if (defaultBtn) switchTab(defaultTab, defaultBtn);
+            updateStatus();
+            loadLatestAudit();
+            loadConfig();
+            loadUserKeywords();
+        })();
+
+        let deferredPrompt;
+        const installBanner = document.getElementById('installBanner');
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                await deferredPrompt.userChoice;
+                installBanner.style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+        window.addEventListener('beforeinstallprompt', e => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBanner.style.display = 'flex';
+        });
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+        }
+        if ('Notification' in window && Notification.permission === 'default') {
+            setTimeout(() => Notification.requestPermission(), 3000);
+        }
+    </script>
+</body>
+</html>

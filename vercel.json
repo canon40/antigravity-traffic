@@ -27,6 +27,18 @@
       "destination": "/static/blog_studio.html"
     },
     {
+      "source": "/sw.js",
+      "destination": "/static/sw.js"
+    },
+    {
+      "source": "/manifest.json",
+      "destination": "/static/manifest.json"
+    },
+    {
+      "source": "/",
+      "destination": "/static/index.html"
+    },
+    {
       "source": "/api/:path*",
       "destination": "https://port-0-antigravity-traffic-mqg8473t248a0738.sel3.cloudtype.app/api/:path*"
     }
@@ -70,7 +82,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/templates/index.html"
+      "dest": "/static/index.html"
     }
   ],
   "functions": {
