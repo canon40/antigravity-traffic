@@ -2,10 +2,8 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 set CANON_AUTOBLOG_PORT=8790
-set PY=%~dp0.venv\Scripts\python.exe
-set PYW=%~dp0.venv\Scripts\pythonw.exe
+set PY=C:\Users\hymin\AppData\Local\Python\bin\python.exe
 if not exist "%PY%" set PY=python
-if not exist "%PYW%" set PYW=%PY%
 
 "%PY%" "%~dp0blog_single_instance.py" --check
 if errorlevel 1 goto launch
@@ -33,9 +31,8 @@ if not defined BLOG_UNLOAD_AFTER_JOB set BLOG_UNLOAD_AFTER_JOB=1
 echo   Playwright 점검 중...
 "%PY%" -c "from playwright_bootstrap import ensure_playwright_ready; raise SystemExit(0 if ensure_playwright_ready() else 1)"
 if errorlevel 1 (
-  echo   Playwright 복구 실패. run_fix_playwright.bat 을 실행하세요.
-  pause
-  exit /b 1
+  echo   Playwright 점검 실패 — 웹 스튜디오는 계속 실행합니다.
+  echo   (발행 자동화가 필요하면 run_fix_playwright.bat 으로 복구하세요.)
 )
 
-start "Canon4040 Autoblog" /D "%~dp0" "%PYW%" "%~dp0blog_main.py"
+start "Canon4040 Autoblog Web" /D "%~dp0" "%PY%" "%~dp0blog_studio_web.py"

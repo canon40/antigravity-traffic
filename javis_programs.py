@@ -167,13 +167,16 @@ def get_catalog(*, workspace: str | None = None) -> dict[str, Any]:
         local_ok = path is not None
         cloud_ok = cloud_action is not None and cloud_action not in ("local_hint",)
         if on_cloud:
-            available = bool(cloud_ok or cloud_action == "local_hint")
+            available = bool(cloud_ok)
+            ui_visible = runtime == "cloud"
         else:
             available = local_ok or bool(cloud_ok)
+            ui_visible = True
         items.append({
             **entry,
             "category_label": CATEGORIES.get(entry.get("category", ""), entry.get("category", "")),
             "available": available,
+            "ui_visible": ui_visible,
             "runtime": runtime,
             "cloud_action": cloud_action,
             "launcher_path": str(path) if path else None,
@@ -206,7 +209,8 @@ def get_catalog(*, workspace: str | None = None) -> dict[str, Any]:
                 else "로컬 허브 — 실행 버튼이 PC의 run_*.bat 을 엽니다."
             )
         ),
-        "cloud_programs": sum(1 for p in items if p.get("runtime") == "cloud"),
+        "cloud_programs": sum(1 for p in items if p.get("runtime") == "cloud" and p.get("ui_visible")),
+        "hidden_pc_only": sum(1 for p in items if on_cloud and not p.get("ui_visible")),
         "traffic_count": sum(1 for p in items if p.get("workspace") == "traffic"),
         "javis_count": sum(1 for p in items if p.get("workspace") == "javis"),
     }

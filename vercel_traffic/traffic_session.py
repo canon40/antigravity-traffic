@@ -46,6 +46,10 @@ def run_traffic_session(target_url: str, timeout_sec: float = DEFAULT_TIMEOUT_SE
 
     elapsed = round(time.perf_counter() - started, 2)
     body_preview = response.text[:500] if response.text else ""
+    retry_after_sec = None
+    ra = response.headers.get("Retry-After")
+    if ra and str(ra).strip().isdigit():
+        retry_after_sec = int(str(ra).strip())
 
     return {
         "status_code": response.status_code,
@@ -55,4 +59,5 @@ def run_traffic_session(target_url: str, timeout_sec: float = DEFAULT_TIMEOUT_SE
         "content_length": len(response.content),
         "ok": 200 <= response.status_code < 400,
         "preview": body_preview,
+        "retry_after_sec": retry_after_sec,
     }

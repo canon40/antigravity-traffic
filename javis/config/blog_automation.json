@@ -1,0 +1,75 @@
+{
+  "title_ko": "블로그 자동 글쓰기·이미지·동영상·업로드",
+  "enabled": true,
+  "output_dir": "jarvis_output/blog_auto",
+  "registry_path": ".jarvis/blog_published/registry.jsonl",
+  "duplicate": {
+    "max_similarity": 0.72,
+    "max_regenerate_attempts": 1,
+    "forbid_same_keyword_repeat_hours": 168
+  },
+  "content": {
+    "min_chars": 1200,
+    "max_chars": 2800,
+    "tone": "전문적·신뢰·독창적",
+    "require_unique_angle": true
+  },
+  "media": {
+    "images_per_post": 1,
+    "video_enabled": false,
+    "video_max_seconds": 45,
+    "naver_tag_count": 30,
+    "image_source": "pillow",
+    "image_aspect_ratio": "16:9",
+    "image_note_ko": "API 절약: Pillow 로컬 이미지. 영상은 --with-video 시에만(기본 생략)."
+  },
+  "platforms": {
+    "tistory": {
+      "enabled": true,
+      "browser_dir": ".jarvis/tistory_browser",
+      "login_url": "https://www.tistory.com/auth/login",
+      "write_url": "https://www.tistory.com/guide/manage/newpost/",
+      "login_timeout_sec": 600,
+      "use_api_publish": true,
+      "visibility": "public",
+      "category_id": null,
+      "category_name": "",
+      "blog_name": "",
+      "publish_note_ko": "Alpha Autoblog/viruagent와 동일: Playwright 쿠키 + manage/post.json API. blog_name·category_id는 blog_credentials.local.json에도 설정 가능."
+    },
+    "naver": {
+      "enabled": true,
+      "browser_dir": ".jarvis/naver_blog_browser",
+      "login_url": "https://nid.naver.com/nidlogin.login",
+      "write_url": "https://blog.naver.com/{blog_id}?Redirect=Write&",
+      "blog_id_from_credentials": true,
+      "strip_underline": true,
+      "paste_plain_only": true,
+      "login_timeout_sec": 600,
+      "tag_count": 30,
+      "publish_flow_ko": "제목 → 이미지 → 본문 → 해시태그30 → 발행"
+    },
+    "blogger": {
+      "enabled": true,
+      "browser_dir": ".jarvis/blogger_browser",
+      "login_url": "https://accounts.google.com/",
+      "write_url": "https://www.blogger.com/",
+      "login_timeout_sec": 600
+    }
+  },
+  "publish_order": ["tistory", "naver", "blogger"],
+  "publish_all_note_ko": "naver 항목은 credentials 의 blogs[] 또는 accounts[] 개수만큼 자동 반복",
+  "headless_after_login": false,
+  "auto_login": true,
+  "signup_prefer_google": true,
+  "notify": {
+    "webhook_url": "",
+    "comment_ko": "n8n 웹훅 URL → 카카오 알림톡 연동. 또는 JARVIS_NOTIFY_WEBHOOK 환경변수"
+  },
+  "canon_autoblog": {
+    "enabled": true,
+    "gui_url": "http://127.0.0.1:8790",
+    "project_path": "D:\\@code\\antigravity\\blogauto\\login2",
+    "comment_ko": "JARVIS 「블로그 작성」→ canon4040 Autoblog(blog_main.py) HTTP 트리거. GUI 실행 중이어야 즉시 반응."
+  }
+}

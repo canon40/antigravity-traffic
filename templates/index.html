@@ -243,11 +243,8 @@
                             <i class="fa-solid fa-pause"></i> 순위 중지
                         </button>
                     </div>
-                    <button class="btn btn-stop" id="stopTrafficBtn" onclick="toggleScheduler(false, 'traffic')" disabled>
-                        <i class="fa-solid fa-stop"></i> 트래픽 중지
-                    </button>
-                    <button class="btn" style="background:linear-gradient(135deg,#059669,#10b981);font-size:0.78rem;padding:10px;display:none;" id="startTrafficBtn" onclick="toggleScheduler(true, 'traffic')">
-                        <i class="fa-solid fa-play"></i> 트래픽 재시작
+                    <button class="btn" style="background:linear-gradient(135deg,#475569,#64748b);font-size:0.78rem;padding:10px;" id="stopTrafficBtn" onclick="toggleScheduler(false, 'traffic')">
+                        <i class="fa-solid fa-road"></i> 트래픽만 중지
                     </button>
                     <button class="btn btn-track" onclick="trackNow()">
                         <i class="fa-solid fa-magnifying-glass-chart"></i> 지금 추적
@@ -393,13 +390,9 @@
 
         <div id="tab-blog" class="tab-content">
             <div class="glass-panel" style="padding:0;overflow:hidden;min-height:calc(100vh - 200px);">
-                <iframe id="blogStudioFrame" src="/static/blog_studio.html" title="canon4040 블로그 스튜디오"
-                    style="width:100%;min-height:880px;border:none;display:block;background:#0f172a;"></iframe>
+                <iframe id="blogStudioFrame" src="/blog-studio/" title="JARVIS 블로그 스튜디오"
+                    style="width:100%;min-height:820px;border:none;display:block;background:#0f172a;"></iframe>
             </div>
-            <p style="font-size:0.72rem;color:var(--text-sub);margin-top:8px;text-align:center;">
-                전체 화면: <a href="/static/blog_studio.html" target="_blank" rel="noopener" style="color:#93c5fd;">블로그 스튜디오</a>
-                · PC: <code style="color:#93c5fd;">run_blog_studio.bat</code>
-            </p>
         </div>
 
         <div id="tab-local" class="tab-content">
@@ -727,7 +720,7 @@
         async function initBlogTab() {
             const frame = document.getElementById('blogStudioFrame');
             if (frame && (!frame.src || frame.src === 'about:blank')) {
-                frame.src = '/static/blog_studio.html';
+                frame.src = '/blog-studio/';
             }
         }
 
