@@ -27,14 +27,23 @@ echo  [2/4] pip 업그레이드 ...
 echo  [3/4] requirements.txt 설치 ...
 "%PY%" -m pip install -r "%~dp0requirements.txt" -q
 
-echo  [4/6] 프로그램 카탈로그 갱신 (Git 번들 기준) ...
-"%PY%" "%~dp0scripts\sync_javis_catalog.py" --bundled-only
+echo  [4/6] 프로그램 카탈로그 갱신 ...
+if defined CLOUDTYPE (
+  "%PY%" "%~dp0scripts\sync_javis_catalog.py" --bundled-only
+) else (
+  "%PY%" "%~dp0scripts\sync_javis_catalog.py"
+)
 
 echo  [5/6] JARVIS 서브모듈 (선택) ...
 git submodule update --init --recursive javis 2>nul
 
 echo  [6/6] Playwright Chromium (블로그 발행/서이추) ...
-"%~dp0.venv\Scripts\playwright.exe" install chromium
+"%PY%" -m playwright install chromium
+if errorlevel 1 (
+  echo  Playwright Chromium 설치 실패
+  pause
+  exit /b 1
+)
 "%PY%" -c "from playwright_bootstrap import ensure_playwright_ready; import sys; sys.exit(0 if ensure_playwright_ready() else 1)"
 
 echo.

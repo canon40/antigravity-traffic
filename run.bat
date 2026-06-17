@@ -23,7 +23,11 @@ echo [1] 의존성 확인...
 echo.
 
 echo [2] 프로그램 카탈로그 동기화...
-"%PY%" "%~dp0scripts\sync_javis_catalog.py" --bundled-only
+if defined CLOUDTYPE (
+  "%PY%" "%~dp0scripts\sync_javis_catalog.py" --bundled-only
+) else (
+  "%PY%" "%~dp0scripts\sync_javis_catalog.py"
+)
 echo.
 
 echo [3] 서버 시작 (http://127.0.0.1:5000)

@@ -179,14 +179,22 @@ def main(argv=None) -> int:
     p.add_argument("--json", action="store_true")
     p.add_argument("--url", default="", help="배포 URL (예: https://www.permacoat.shop)")
     p.add_argument("--full", action="store_true", help="Cron·네이버 순위 추적 포함 (느림)")
+    p.add_argument("--vercel", action="store_true", help="Vercel 런타임/연동까지 함께 검증 (외부 의존성 포함)")
     args = p.parse_args(argv)
 
-    results: list[dict] = [_vercel_deps(), *_bundled_data()]
-    results.extend(_import_hub(vercel=True, full=args.full))
+    results: list[dict] = [*_bundled_data()]
+    if args.vercel:
+        results.insert(0, _vercel_deps())
+    results.extend(_import_hub(vercel=args.vercel, full=args.full))
     if args.url:
         results.extend(_probe_url(args.url))
 
-    critical = [r for r in results if r["name"].startswith(("requirements_", "import_app", "route:/api/status", "live:/api/status"))]
+    critical = [
+        r
+        for r in results
+        if r["name"].startswith(("import_app", "route:/api/status", "live:/api/status"))
+        or (args.vercel and r["name"].startswith("requirements_"))
+    ]
     ok = all(r["ok"] for r in critical)
 
     if args.json:

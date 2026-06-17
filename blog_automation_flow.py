@@ -584,9 +584,15 @@ async def run_main_loop(app, config):
         if config.get("use_google"):
             posting_targets.append({"type": "google"})
 
+        # 로컬에서 “발행까지”가 아니라 “초안 생성/이미지 생성”까지만 빠르게 검증할 때 사용
+        draft_only_flag = os.environ.get("BLOG_DRAFT_ONLY", "").strip().lower()
+        if draft_only_flag in ("1", "true", "yes", "on"):
+            app.log("   📝 BLOG_DRAFT_ONLY=1 감지 — 발행(브라우저) 생략하고 초안만 생성합니다.")
+            posting_targets = []
+
         if not posting_targets:
-            app.log("⚠️ 발행할 계정 정보가 없습니다. 대상을 선택해 주세요.")
-            return
+            app.log("⚠️ 발행할 계정 정보가 없습니다. 초안(원고·이미지)만 생성합니다.")
+            posting_targets = []
 
         from blog_constants import validate_automation_subject
 
@@ -629,9 +635,9 @@ async def run_main_loop(app, config):
 
         needs_browser = bool(posting_targets)
         if needs_browser:
-            from playwright_bootstrap import ensure_playwright_ready
+            from playwright_bootstrap import ensure_playwright_ready_async
 
-            if not ensure_playwright_ready(app.log):
+            if not await ensure_playwright_ready_async(app.log):
                 return
         async_playwright_fn, *_rest = _browser_stack()
 

@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "jarvis_root_hint": "D:\\@code\\antigravity\\blogauto\\login2\\javis",
+  "jarvis_root_hint": "D:\\@code\\javis",
   "jarvis_remote": "https://github.com/FatihMakes/Mark-XXXIX.git",
   "traffic_count": 12,
-  "javis_count": 0,
+  "javis_count": 95,
   "programs": [
     {
       "id": "traffic_web_hub",
@@ -129,6 +129,956 @@
       "description": "네이버+티스토리 전체 발행 1회",
       "icon": "fa-blog",
       "cloud_action": "blog_pipeline"
+    },
+    {
+      "id": "javis_run_1인홈페이지_수익",
+      "name": "1인홈페이지 수익",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_1인홈페이지_수익.bat",
+      "category": "agent",
+      "description": "run_1인홈페이지_수익.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_ai_briefing_seo",
+      "name": "ai briefing seo",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_ai_briefing_seo.bat",
+      "category": "seo",
+      "description": "run_ai_briefing_seo.bat — javis 로컬 실행",
+      "icon": "fa-magnifying-glass-chart"
+    },
+    {
+      "id": "javis_run_ai_erp",
+      "name": "ai erp",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_ai_erp.bat",
+      "category": "agent",
+      "description": "run_ai_erp.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_ai_money_easy",
+      "name": "ai money easy",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_ai_money_easy.bat",
+      "category": "agent",
+      "description": "run_ai_money_easy.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_ai돈버는법",
+      "name": "AI돈버는법",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_AI돈버는법.bat",
+      "category": "agent",
+      "description": "run_AI돈버는법.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_all_platforms",
+      "name": "all platforms",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_all_platforms.bat",
+      "category": "agent",
+      "description": "run_all_platforms.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_apply_lovable_keys",
+      "name": "apply lovable keys",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_apply_lovable_keys.bat",
+      "category": "agent",
+      "description": "run_apply_lovable_keys.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_blog_studio_login2",
+      "name": "blog studio login2",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_blog_studio_login2.bat",
+      "category": "blog",
+      "description": "run_blog_studio_login2.bat — javis 로컬 실행",
+      "icon": "fa-blog"
+    },
+    {
+      "id": "javis_run_claude_fable",
+      "name": "claude fable",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_claude_fable.bat",
+      "category": "agent",
+      "description": "run_claude_fable.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_claude_harness",
+      "name": "claude harness",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_claude_harness.bat",
+      "category": "agent",
+      "description": "run_claude_harness.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_claude_managed",
+      "name": "claude managed",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_claude_managed.bat",
+      "category": "agent",
+      "description": "run_claude_managed.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_colab_notebooks",
+      "name": "colab notebooks",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_colab_notebooks.bat",
+      "category": "agent",
+      "description": "run_colab_notebooks.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_dashboard",
+      "name": "dashboard",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_dashboard.bat",
+      "category": "agent",
+      "description": "run_dashboard.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_deepseek_tui",
+      "name": "deepseek tui",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_deepseek_tui.bat",
+      "category": "agent",
+      "description": "run_deepseek_tui.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_detail_page_studio",
+      "name": "detail page studio",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_detail_page_studio.bat",
+      "category": "studio",
+      "description": "run_detail_page_studio.bat — javis 로컬 실행",
+      "icon": "fa-store"
+    },
+    {
+      "id": "javis_run_doctor",
+      "name": "doctor",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_doctor.bat",
+      "category": "ops",
+      "description": "run_doctor.bat — javis 로컬 실행",
+      "icon": "fa-plug"
+    },
+    {
+      "id": "javis_run_exfield_ads",
+      "name": "exfield ads",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_exfield_ads.bat",
+      "category": "agent",
+      "description": "run_exfield_ads.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_flow_character",
+      "name": "flow character",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_flow_character.bat",
+      "category": "agent",
+      "description": "run_flow_character.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_free_claude",
+      "name": "free claude",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_free_claude.bat",
+      "category": "agent",
+      "description": "run_free_claude.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_free_genspark_skywork",
+      "name": "free genspark skywork",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_free_genspark_skywork.bat",
+      "category": "agent",
+      "description": "run_free_genspark_skywork.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_freebuff_무료코딩",
+      "name": "FreeBuff 무료코딩",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_FreeBuff_무료코딩.bat",
+      "category": "agent",
+      "description": "run_FreeBuff_무료코딩.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_g2g_conductor",
+      "name": "g2g conductor",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_g2g_conductor.bat",
+      "category": "agent",
+      "description": "run_g2g_conductor.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_genspark2api",
+      "name": "genspark2api",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_genspark2api.bat",
+      "category": "agent",
+      "description": "run_genspark2api.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_gov_ppt",
+      "name": "gov ppt",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_gov_ppt.bat",
+      "category": "agent",
+      "description": "run_gov_ppt.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_hermes_desktop",
+      "name": "hermes desktop",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_hermes_desktop.bat",
+      "category": "agent",
+      "description": "run_hermes_desktop.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_hermes_foundation",
+      "name": "hermes foundation",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_hermes_foundation.bat",
+      "category": "agent",
+      "description": "run_hermes_foundation.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_jarvis_mobile",
+      "name": "jarvis mobile",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_jarvis_mobile.bat",
+      "category": "agent",
+      "description": "run_jarvis_mobile.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_jarvis_ui_v3",
+      "name": "jarvis ui v3",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_jarvis_ui_v3.bat",
+      "category": "agent",
+      "description": "run_jarvis_ui_v3.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_jarvis_ui_v3_keepalive",
+      "name": "jarvis ui v3 keepalive",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_jarvis_ui_v3_keepalive.bat",
+      "category": "agent",
+      "description": "run_jarvis_ui_v3_keepalive.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_kakao_harness_marketplace",
+      "name": "kakao harness marketplace",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_kakao_harness_marketplace.bat",
+      "category": "agent",
+      "description": "run_kakao_harness_marketplace.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_keyword_video",
+      "name": "keyword video",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_keyword_video.bat",
+      "category": "video",
+      "description": "run_keyword_video.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_local_llm",
+      "name": "local llm",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_local_llm.bat",
+      "category": "agent",
+      "description": "run_local_llm.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_naver_hybrid",
+      "name": "naver hybrid",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_naver_hybrid.bat",
+      "category": "seo",
+      "description": "run_naver_hybrid.bat — javis 로컬 실행",
+      "icon": "fa-magnifying-glass-chart"
+    },
+    {
+      "id": "javis_run_naver_revenue",
+      "name": "naver revenue",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_naver_revenue.bat",
+      "category": "seo",
+      "description": "run_naver_revenue.bat — javis 로컬 실행",
+      "icon": "fa-magnifying-glass-chart"
+    },
+    {
+      "id": "javis_run_notebooklm_grabit",
+      "name": "notebooklm grabit",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_notebooklm_grabit.bat",
+      "category": "agent",
+      "description": "run_notebooklm_grabit.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_notebooklm_hub",
+      "name": "notebooklm hub",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_notebooklm_hub.bat",
+      "category": "agent",
+      "description": "run_notebooklm_hub.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_open_lovable",
+      "name": "open lovable",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_open_lovable.bat",
+      "category": "agent",
+      "description": "run_open_lovable.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_openclaw_ai_employee",
+      "name": "openclaw ai employee",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_openclaw_ai_employee.bat",
+      "category": "agent",
+      "description": "run_openclaw_ai_employee.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_overnight_shift",
+      "name": "overnight shift",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_overnight_shift.bat",
+      "category": "agent",
+      "description": "run_overnight_shift.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_paperclip_agent",
+      "name": "paperclip agent",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_paperclip_agent.bat",
+      "category": "agent",
+      "description": "run_paperclip_agent.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_paperclip_trading_firm",
+      "name": "paperclip trading firm",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_paperclip_trading_firm.bat",
+      "category": "agent",
+      "description": "run_paperclip_trading_firm.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_pc자율연결",
+      "name": "PC자율연결",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_PC자율연결.bat",
+      "category": "agent",
+      "description": "run_PC자율연결.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_production_engine",
+      "name": "production engine",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_production_engine.bat",
+      "category": "agent",
+      "description": "run_production_engine.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_revenue_shorts",
+      "name": "revenue shorts",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_revenue_shorts.bat",
+      "category": "video",
+      "description": "run_revenue_shorts.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_sangseopage",
+      "name": "sangseopage",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_sangseopage.bat",
+      "category": "studio",
+      "description": "run_sangseopage.bat — javis 로컬 실행",
+      "icon": "fa-store"
+    },
+    {
+      "id": "javis_run_setup_ppt_templates",
+      "name": "setup ppt templates",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_setup_ppt_templates.bat",
+      "category": "ops",
+      "description": "run_setup_ppt_templates.bat — javis 로컬 실행",
+      "icon": "fa-plug"
+    },
+    {
+      "id": "javis_run_shorts_e2e_all",
+      "name": "shorts e2e all",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_shorts_e2e_all.bat",
+      "category": "video",
+      "description": "run_shorts_e2e_all.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_shorts_factory",
+      "name": "shorts factory",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_shorts_factory.bat",
+      "category": "video",
+      "description": "run_shorts_factory.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_streamlit_detail_studio_shell",
+      "name": "streamlit detail studio shell",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_streamlit_detail_studio_shell.bat",
+      "category": "studio",
+      "description": "run_streamlit_detail_studio_shell.bat — javis 로컬 실행",
+      "icon": "fa-store"
+    },
+    {
+      "id": "javis_run_streamlit_studio_shell",
+      "name": "streamlit studio shell",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_streamlit_studio_shell.bat",
+      "category": "studio",
+      "description": "run_streamlit_studio_shell.bat — javis 로컬 실행",
+      "icon": "fa-store"
+    },
+    {
+      "id": "javis_run_talking_head",
+      "name": "talking head",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_talking_head.bat",
+      "category": "agent",
+      "description": "run_talking_head.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_topview_drama",
+      "name": "topview drama",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_topview_drama.bat",
+      "category": "agent",
+      "description": "run_topview_drama.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_triple_brain",
+      "name": "triple brain",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_triple_brain.bat",
+      "category": "agent",
+      "description": "run_triple_brain.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_ui",
+      "name": "ui",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_ui.bat",
+      "category": "agent",
+      "description": "run_ui.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_ui_only",
+      "name": "ui only",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_ui_only.bat",
+      "category": "agent",
+      "description": "run_ui_only.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_unified_studio",
+      "name": "unified studio",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_unified_studio.bat",
+      "category": "studio",
+      "description": "run_unified_studio.bat — javis 로컬 실행",
+      "icon": "fa-store"
+    },
+    {
+      "id": "javis_run_vanilla_agent",
+      "name": "vanilla agent",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_vanilla_agent.bat",
+      "category": "agent",
+      "description": "run_vanilla_agent.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_video_studio",
+      "name": "video studio",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_video_studio.bat",
+      "category": "video",
+      "description": "run_video_studio.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_workspace",
+      "name": "workspace",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_workspace.bat",
+      "category": "agent",
+      "description": "run_workspace.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_youtube_dldmgycgugo",
+      "name": "youtube dlDMgyCgUgo",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_youtube_dlDMgyCgUgo.bat",
+      "category": "video",
+      "description": "run_youtube_dlDMgyCgUgo.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_youtube_learn",
+      "name": "youtube learn",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_youtube_learn.bat",
+      "category": "video",
+      "description": "run_youtube_learn.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_youtube_oauth",
+      "name": "youtube oauth",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_youtube_oauth.bat",
+      "category": "video",
+      "description": "run_youtube_oauth.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_youtube_xqoyibtgfqq",
+      "name": "youtube XqOyibTGFQQ",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_youtube_XqOyibTGFQQ.bat",
+      "category": "video",
+      "description": "run_youtube_XqOyibTGFQQ.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_계면활성제_학습",
+      "name": "계면활성제 학습",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_계면활성제_학습.bat",
+      "category": "agent",
+      "description": "run_계면활성제_학습.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_관공서ppt_정리",
+      "name": "관공서PPT 정리",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_관공서PPT_정리.bat",
+      "category": "agent",
+      "description": "run_관공서PPT_정리.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_닥또리_채널학습",
+      "name": "닥또리 채널학습",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_닥또리_채널학습.bat",
+      "category": "agent",
+      "description": "run_닥또리_채널학습.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_동영상스튜디오",
+      "name": "동영상스튜디오",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_동영상스튜디오.bat",
+      "category": "video",
+      "description": "run_동영상스튜디오.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_모빈ai홈페이지",
+      "name": "모빈AI홈페이지",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_모빈AI홈페이지.bat",
+      "category": "agent",
+      "description": "run_모빈AI홈페이지.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_바로시작",
+      "name": "바로시작",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_바로시작.bat",
+      "category": "agent",
+      "description": "run_바로시작.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_바로시작_핵심",
+      "name": "바로시작 핵심",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_바로시작_핵심.bat",
+      "category": "agent",
+      "description": "run_바로시작_핵심.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_밤새_무인_자율",
+      "name": "밤새 무인 자율",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_밤새_무인_자율.bat",
+      "category": "agent",
+      "description": "run_밤새_무인_자율.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_밤새_전체진화",
+      "name": "밤새 전체진화",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_밤새_전체진화.bat",
+      "category": "agent",
+      "description": "run_밤새_전체진화.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_밤새학습",
+      "name": "밤새학습",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_밤새학습.bat",
+      "category": "agent",
+      "description": "run_밤새학습.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_밤새학습_상태",
+      "name": "밤새학습 상태",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_밤새학습_상태.bat",
+      "category": "agent",
+      "description": "run_밤새학습_상태.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_블로그_자동",
+      "name": "블로그 자동",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_블로그_자동.bat",
+      "category": "blog",
+      "description": "run_블로그_자동.bat — javis 로컬 실행",
+      "icon": "fa-blog"
+    },
+    {
+      "id": "javis_run_블로그_전체",
+      "name": "블로그 전체",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_블로그_전체.bat",
+      "category": "blog",
+      "description": "run_블로그_전체.bat — javis 로컬 실행",
+      "icon": "fa-blog"
+    },
+    {
+      "id": "javis_run_상세페이지스튜디오",
+      "name": "상세페이지스튜디오",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_상세페이지스튜디오.bat",
+      "category": "studio",
+      "description": "run_상세페이지스튜디오.bat — javis 로컬 실행",
+      "icon": "fa-store"
+    },
+    {
+      "id": "javis_run_실리콘_자동진화",
+      "name": "실리콘 자동진화",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_실리콘_자동진화.bat",
+      "category": "agent",
+      "description": "run_실리콘_자동진화.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_아이언맨_자비스_오토",
+      "name": "아이언맨 자비스 오토",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_아이언맨_자비스_오토.bat",
+      "category": "agent",
+      "description": "run_아이언맨_자비스_오토.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_야간_검증_루프",
+      "name": "야간 검증 루프",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_야간_검증_루프.bat",
+      "category": "ops",
+      "description": "run_야간_검증_루프.bat — javis 로컬 실행",
+      "icon": "fa-plug"
+    },
+    {
+      "id": "javis_run_영상_학습제작",
+      "name": "영상 학습제작",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_영상_학습제작.bat",
+      "category": "video",
+      "description": "run_영상_학습제작.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_영상도구허브",
+      "name": "영상도구허브",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_영상도구허브.bat",
+      "category": "video",
+      "description": "run_영상도구허브.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_익스필드_브랜드",
+      "name": "익스필드 브랜드",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_익스필드_브랜드.bat",
+      "category": "agent",
+      "description": "run_익스필드_브랜드.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_자동전체",
+      "name": "자동전체",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_자동전체.bat",
+      "category": "agent",
+      "description": "run_자동전체.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_자비스_상태확인",
+      "name": "자비스 상태확인",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_자비스_상태확인.bat",
+      "category": "agent",
+      "description": "run_자비스_상태확인.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_자율_진화",
+      "name": "자율 진화",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_자율_진화.bat",
+      "category": "agent",
+      "description": "run_자율_진화.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_전체검증",
+      "name": "전체검증",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_전체검증.bat",
+      "category": "ops",
+      "description": "run_전체검증.bat — javis 로컬 실행",
+      "icon": "fa-plug"
+    },
+    {
+      "id": "javis_run_제미나이3_스플라인_홈페이지",
+      "name": "제미나이3 스플라인 홈페이지",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_제미나이3_스플라인_홈페이지.bat",
+      "category": "agent",
+      "description": "run_제미나이3_스플라인_홈페이지.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_제트투지_채널학습",
+      "name": "제트투지 채널학습",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_제트투지_채널학습.bat",
+      "category": "agent",
+      "description": "run_제트투지_채널학습.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_카파시_하네스",
+      "name": "카파시 하네스",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_카파시_하네스.bat",
+      "category": "agent",
+      "description": "run_카파시_하네스.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_콘텐츠_자동",
+      "name": "콘텐츠 자동",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_콘텐츠_자동.bat",
+      "category": "agent",
+      "description": "run_콘텐츠_자동.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_클로드코드_홈페이지",
+      "name": "클로드코드 홈페이지",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_클로드코드_홈페이지.bat",
+      "category": "agent",
+      "description": "run_클로드코드_홈페이지.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_키워드영상",
+      "name": "키워드영상",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_키워드영상.bat",
+      "category": "video",
+      "description": "run_키워드영상.bat — javis 로컬 실행",
+      "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_플랫폼기동",
+      "name": "플랫폼기동",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_플랫폼기동.bat",
+      "category": "agent",
+      "description": "run_플랫폼기동.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_힉스필드_슈퍼컴",
+      "name": "힉스필드 슈퍼컴",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_힉스필드_슈퍼컴.bat",
+      "category": "agent",
+      "description": "run_힉스필드_슈퍼컴.bat — javis 로컬 실행",
+      "icon": "fa-robot"
     }
   ]
 }

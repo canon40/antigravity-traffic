@@ -2,15 +2,13 @@
 chcp 65001 >nul
 cd /d "%~dp0"
 set PY=%~dp0.venv\Scripts\python.exe
-set PW=%~dp0.venv\Scripts\playwright.exe
 if not exist "%PY%" set PY=python
-if not exist "%PW%" set PW=playwright
 
 echo.
 echo   Playwright 브라우저 복구 (글 발행 / 서이추 / 티스토리에 필요)
 echo.
 "%PY%" -m pip install --force-reinstall playwright
-"%PW%" install chromium
+"%PY%" -m playwright install chromium
 "%PY%" -c "from playwright_bootstrap import ensure_playwright_ready; import sys; sys.exit(0 if ensure_playwright_ready() else 1)"
 echo.
 if errorlevel 1 (

@@ -40,6 +40,30 @@ def probe_playwright() -> bool:
         return False
 
 
+async def ensure_playwright_ready_async(log=None, *, auto_install: bool = True) -> bool:
+    """async 컨텍스트에서 Playwright Chromium 준비를 확인한다."""
+    log = log or (lambda _m: None)
+    try:
+        ok = await _probe_async()
+        if ok:
+            return True
+    except Exception:
+        ok = False
+
+    if not auto_install:
+        log("   ⛔ Playwright 미설치 — run_fix_playwright.bat 실행 필요")
+        return False
+
+    # install_chromium은 동기 함수이므로 이벤트 루프를 막지 않기 위해 to_thread 사용
+    ok = await asyncio.to_thread(install_chromium, log)
+    if not ok:
+        return False
+    try:
+        return await _probe_async()
+    except Exception:
+        return False
+
+
 def install_chromium(log=None) -> bool:
     log = log or (lambda _m: None)
     py = python_exe()

@@ -160,9 +160,9 @@ async def run_blog_automation_for_account(
         ]
     log = logger or print
 
-    from playwright_bootstrap import ensure_playwright_ready
+    from playwright_bootstrap import ensure_playwright_ready_async
 
-    if not ensure_playwright_ready(log):
+    if not await ensure_playwright_ready_async(log):
         raise RuntimeError(
             "Playwright 브라우저를 실행할 수 없습니다. run_fix_playwright.bat 실행 후 재시도하세요."
         )

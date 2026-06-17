@@ -40,10 +40,9 @@ def _resolve_jarvis_root() -> Path:
     external = Path(os.environ.get("JARVIS_ROOT", r"D:\@code\javis"))
     bundled_count = len(list(bundled.glob("run_*.bat"))) if bundled.is_dir() else 0
     external_count = len(list(external.glob("run_*.bat"))) if external.is_dir() else 0
-    if bundled_count > 0:
-        return bundled.resolve()
-    if external_count > 0:
-        return external.resolve()
+    if external_count > 0 or bundled_count > 0:
+        # run_*.bat이 더 많은 경로를 우선 사용 (카탈로그 누락 방지)
+        return (external if external_count >= bundled_count else bundled).resolve()
     for path in (external, bundled):
         if path.is_dir() and any(path.glob("run_*.bat")):
             return path.resolve()
@@ -58,8 +57,26 @@ JARVIS_ROOT = _resolve_jarvis_root()
 PROGRAM_ID_ALIASES: dict[str, str] = {
     "traffic_blog_studio": "traffic_autoblog_gui",
     "local_run_gui": "traffic_autoblog_gui",
+    "traffic_autoblog_gui": "local_run_gui",
     "local_run_blog_post": "traffic_blog_post",
+    "traffic_blog_post": "local_run_blog_post",
 }
+
+
+def _resolve_program_entry(programs: list[dict[str, Any]], program_id: str) -> dict[str, Any] | None:
+    id_set = {program_id}
+    alias = PROGRAM_ID_ALIASES.get(program_id)
+    if alias:
+        id_set.add(alias)
+    # 역방향 alias도 허용
+    for src, dst in PROGRAM_ID_ALIASES.items():
+        if dst == program_id:
+            id_set.add(src)
+    for pid in id_set:
+        hit = next((p for p in programs if p.get("id") == pid), None)
+        if hit:
+            return hit
+    return None
 
 
 def _load_catalog_raw() -> dict[str, Any]:
@@ -233,17 +250,17 @@ def _must_use_serverless(path: Path | None) -> bool:
 
 
 def launch_program(program_id: str, *, logger: Callable[[str], None] | None = None) -> dict[str, Any]:
-    program_id = PROGRAM_ID_ALIASES.get(program_id, program_id)
     programs = _load_catalog_programs()
-    entry = next((p for p in programs if p["id"] == program_id), None)
+    entry = _resolve_program_entry(programs, program_id)
     if not entry:
         return {"success": False, "error": "알 수 없는 프로그램 ID"}
+    effective_program_id = str(entry.get("id") or program_id)
 
     path = _launcher_path(entry)
     log = logger or (lambda _m: None)
 
     if _must_use_serverless(path) or not _can_run_local_bat(path):
-        return run_serverless_program(program_id, entry, log)
+        return run_serverless_program(effective_program_id, entry, log)
 
     cwd = path.parent
     try:
@@ -255,7 +272,7 @@ def launch_program(program_id: str, *, logger: Callable[[str], None] | None = No
         )
     except OSError as exc:
         log(f"로컬 bat 실행 실패 → 클라우드 대체: {exc}")
-        return run_serverless_program(program_id, entry, log)
+        return run_serverless_program(effective_program_id, entry, log)
     return {
         "success": True,
         "message": f"{entry['name']} 실행 요청됨 (PC)",
