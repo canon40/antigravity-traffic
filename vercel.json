@@ -3,6 +3,14 @@
   "installCommand": "pip install -r requirements-vercel-proxy.txt",
   "rewrites": [
     {
+      "source": "/api/javis/launch",
+      "destination": "/api/javis_hub"
+    },
+    {
+      "source": "/api/javis/programs",
+      "destination": "/api/javis_hub"
+    },
+    {
       "source": "/api/content/:path*",
       "destination": "/api/hub_content"
     },
@@ -36,6 +44,9 @@
   "functions": {
     "api/hub_content.py": {
       "maxDuration": 30
+    },
+    "api/javis_hub.py": {
+      "maxDuration": 60
     }
   }
 }
