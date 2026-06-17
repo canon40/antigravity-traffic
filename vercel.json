@@ -1,6 +1,11 @@
 {
   "version": 2,
+  "installCommand": "pip install -r requirements-vercel-proxy.txt",
   "rewrites": [
+    {
+      "source": "/api/content/:path*",
+      "destination": "/api/hub_content"
+    },
     {
       "source": "/api/:path*",
       "destination": "https://port-0-antigravity-traffic-mqg8473t248a0738.sel3.cloudtype.app/api/:path*"
@@ -27,5 +32,10 @@
       "src": "/(.*)",
       "dest": "/templates/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/hub_content.py": {
+      "maxDuration": 30
+    }
+  }
 }

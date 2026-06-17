@@ -675,8 +675,10 @@
                         brand: config.brand || config.store_name,
                     }),
                 });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const data = await res.json();
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(data.error || data.detail || ('HTTP ' + res.status));
+                }
                 const preview = document.getElementById('blogPreview');
                 const meta = document.getElementById('blogMeta');
                 if (!data.success) {
@@ -690,12 +692,15 @@
                     data.workflow_label,
                     data.keyword,
                     product.name || '',
-                    data.saved_path ? '저장 완료' : (data.save_warning ? '미저장(서버)' : ''),
+                    data.saved_path ? '저장 완료' : (data.save_warning ? '미저장(서버)' : 'Vercel 생성'),
                 ].filter(Boolean).map(t => `<span class="blog-chip">${t}</span>`).join('');
                 showToast('블로그 초안이 생성되었습니다.');
                 updateLogs();
             } catch (e) {
-                showToast('블로그 생성 실패 — 서버 연결 확인');
+                const msg = (e && e.message) ? e.message : '서버 연결 확인';
+                showToast('블로그 생성 실패 — ' + msg);
+                document.getElementById('blogPreview').innerHTML =
+                    `<div style="color:var(--accent-red);">생성 실패: ${msg}<br><small>Cloudtype 순위 API와 별도로 블로그 API는 Vercel에서 동작해야 합니다. 잠시 후 다시 시도하세요.</small></div>`;
             }
         }
 

@@ -98,6 +98,10 @@ def _meta_tags(keyword, product_name, brand):
 
 
 def generate_content(workflow_type, keyword, product_name=None, brand=None):
+    keyword = (keyword or "").strip()
+    if not keyword:
+        return {"success": False, "error": "키워드를 입력하세요."}
+
     config = load_config()
     brand = brand or config.get("store_name", "나눔랩")
     product_name = product_name or config.get("default_product_name", "퍼마코트")
@@ -134,6 +138,34 @@ def generate_content(workflow_type, keyword, product_name=None, brand=None):
                 {"q": "유지 기간은?", "a": "사용 환경에 따라 3~6개월, 구체 수치를 명시하세요."},
                 {"q": "세차 후 바로 도포?", "a": "물기·오일 잔여물 제거 후 도포를 권장합니다."},
             ],
+        },
+        "seasonal": lambda: {
+            "workflow": "seasonal",
+            "title": f"[{datetime.now().month}월] {keyword} 시즌 케어 가이드",
+            "body": (
+                f"## 이번 시즌 왜 {keyword}인가\n"
+                f"장마·여름 강우, 겨울 염분 등 계절 요인으로 도장면 손상이 빨라집니다.\n\n"
+                f"## {brand} {product_name} 시즌 포인트\n"
+                f"- 발수·방오로 세차 부담 줄이기\n"
+                f"- UV·오염으로부터 외장 보호\n"
+                f"- 시즌 한정 체험 후기·전후 사진 삽입\n\n"
+                f"## CTA\n"
+                f"스마트스토어 링크와 시즌 키워드('{keyword}')를 제목·첫 문단에 자연스럽게 넣으세요."
+            ),
+        },
+        "benefit": lambda: {
+            "workflow": "benefit",
+            "title": f"{product_name} 핵심 혜택 — {keyword}",
+            "body": (
+                f"## 한 줄 요약\n"
+                f"{brand} {product_name}는 '{keyword}' 검색 고객에게 **셀프 코팅 + 발수 + 광택**을 동시에 제안합니다.\n\n"
+                f"## 3가지 혜택\n"
+                f"1. **시간 절약** — 세차·관리 횟수 감소\n"
+                f"2. **비용 절약** — 전문샵 대비 합리적 셀프 솔루션\n"
+                f"3. **지속 광택** — 균일 도포 시 3~6개월 유지(환경별 상이)\n\n"
+                f"## 블로그 작성 팁\n"
+                f"숫자·전후 비교·실사용 사진을 넣고 과장 없는 1인칭 톤을 유지하세요."
+            ),
         },
     }
 
