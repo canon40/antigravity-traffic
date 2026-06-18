@@ -110,6 +110,47 @@
         .result-card .detail { font-size: 0.82rem; color: var(--text-sub); margin-top: 4px; }
         .kw-chip { display: inline-block; font-size: 0.72rem; padding: 4px 8px; margin: 3px 4px 3px 0; border-radius: 999px; background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
         .kw-chip small { color: #64748b; margin-left: 4px; }
+        .product-pill {
+            display: inline-block; font-size: 0.72rem; padding: 4px 10px; margin-top: 6px;
+            border-radius: 8px; background: rgba(52,211,153,0.12); color: #6ee7b7;
+            border: 1px solid rgba(52,211,153,0.28); max-width: 100%;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .product-pill.lg {
+            display: block; font-size: 0.78rem; font-weight: 700; padding: 6px 10px;
+            margin-top: 6px; max-width: 160px; white-space: normal; line-height: 1.35;
+        }
+        .rank-product-banner {
+            background: linear-gradient(135deg, rgba(16,185,129,0.18), rgba(59,130,246,0.1));
+            border: 1px solid rgba(52,211,153,0.35); border-radius: 14px;
+            padding: 14px 16px; margin-bottom: 14px;
+        }
+        .rank-product-banner .banner-label {
+            font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em;
+            margin-bottom: 4px;
+        }
+        .rank-product-banner .banner-product-name {
+            font-size: 1.08rem; font-weight: 700; color: #6ee7b7; line-height: 1.35;
+        }
+        .rank-product-banner .banner-keyword {
+            font-size: 0.8rem; color: #cbd5e1; margin-top: 6px;
+        }
+        .rank-product-banner .banner-link {
+            font-size: 0.72rem; margin-top: 8px;
+        }
+        .rank-product-banner .banner-link a { color: #93c5fd; text-decoration: none; }
+        .result-card .product-line {
+            font-size: 0.75rem; color: #6ee7b7; margin-top: 4px; font-weight: 600;
+        }
+        .chart-filter-row {
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px;
+        }
+        .chart-filter-row select {
+            flex: 1; min-width: 160px; padding: 8px 10px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.12); background: rgba(15,23,42,0.85);
+            color: var(--text-main); font-size: 0.82rem;
+        }
+        .rank-row .product-tag { display: block; font-size: 0.68rem; color: #6ee7b7; margin-top: 2px; }
         .rank-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.8rem; }
         .rank-row:last-child { border-bottom: none; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; }
@@ -228,7 +269,8 @@
                     <div style="text-align:right;">
                         <div style="font-size:0.72rem;color:var(--text-sub);">최근 순위</div>
                         <div id="currentRankVal" class="rank-big" style="font-size:1.4rem;">--</div>
-                        <div id="currentRankKw" class="sidebar-mini" style="margin-top:2px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                        <div id="currentRankProduct" class="product-pill lg" style="display:none;" title=""></div>
+                        <div id="currentRankKw" class="sidebar-mini" style="margin-top:4px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
                     </div>
                 </div>
                 <div id="cronHint" class="sidebar-mini" style="display:none;"></div>
@@ -368,12 +410,27 @@
         </div>
 
         <div id="tab-chart" class="tab-content">
+            <div id="chartProductBanner" class="rank-product-banner" style="display:none;">
+                <div class="banner-label"><i class="fa-solid fa-box"></i> 추적 상품</div>
+                <div class="banner-product-name" id="chartBannerProduct">—</div>
+                <div class="banner-keyword" id="chartBannerKeyword">키워드: —</div>
+                <div class="banner-link" id="chartBannerLink"></div>
+            </div>
             <div class="glass-panel" style="margin-bottom:16px;">
                 <h3 style="font-size:0.95rem;margin-bottom:8px;"><i class="fa-solid fa-list"></i> 키워드별 최근 순위</h3>
                 <div id="keywordRankTable" class="sidebar-mini">「지금 추적」 후 표시됩니다.</div>
             </div>
             <div class="glass-panel">
                 <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-chart-line"></i> 순위 변동 (낮을수록 상위)</h3>
+                <div class="chart-filter-row">
+                    <label style="font-size:0.78rem;color:var(--text-sub);white-space:nowrap;">
+                        <i class="fa-solid fa-filter"></i> 키워드·제품
+                    </label>
+                    <select id="chartKeywordFilter" onchange="loadChart()">
+                        <option value="">전체 키워드 (혼합)</option>
+                    </select>
+                    <span id="chartProductLabel" style="font-size:0.75rem;color:#94a3b8;flex:1;min-width:120px;"></span>
+                </div>
                 <div style="height:260px;"><canvas id="rankingChart"></canvas></div>
                 <div id="chartEmpty" class="empty-state" style="display:none;margin-top:12px;">
                     순위 그래프는 「지금 추적」 후 표시됩니다.<br>
@@ -472,6 +529,100 @@
         const WS_KEY = 'hubWorkspace';
         let currentWorkspace = localStorage.getItem(WS_KEY) || 'traffic';
         let javisProgramsCache = [];
+        let productMaps = { byId: {}, byKw: {} };
+        let lastStatusData = null;
+
+        function buildProductMaps(config) {
+            const byId = {};
+            (config?.products || []).forEach(p => {
+                const id = String(p.id || '').trim();
+                if (!id) return;
+                byId[id] = {
+                    name: p.name || `상품 ${id}`,
+                    url: p.url || `https://smartstore.naver.com/nanumlab/products/${id}`,
+                };
+            });
+            const byKw = {};
+            (config?.priority_keywords || []).forEach(p => {
+                const kw = (p.keyword || '').trim();
+                const pid = String(p.product_id || '').trim();
+                if (!kw || !pid) return;
+                byKw[kw] = byId[pid] || { name: `상품 ${pid}`, url: `https://smartstore.naver.com/nanumlab/products/${pid}`, id: pid };
+                byKw[kw].id = pid;
+            });
+            productMaps = { byId, byKw };
+            return productMaps;
+        }
+
+        function productForKeyword(keyword, statusData) {
+            const kw = (keyword || '').trim();
+            if (!kw) return null;
+            const fromStatus = (statusData?.priority_keywords || []).find(p => p.keyword === kw);
+            if (fromStatus?.product_name) {
+                return {
+                    name: fromStatus.product_name,
+                    url: fromStatus.product_url || '',
+                    id: fromStatus.product_id || '',
+                };
+            }
+            const hit = productMaps.byKw[kw];
+            return hit ? { name: hit.name, url: hit.url, id: hit.id } : null;
+        }
+
+        function formatRankProductLine(keyword, statusData) {
+            const prod = productForKeyword(keyword, statusData);
+            if (!prod) return keyword ? `키워드: ${keyword}` : '';
+            return `🛒 ${prod.name} · 「${keyword}」`;
+        }
+
+        function updateRankProductDisplay(data, keywordOverride) {
+            const kw = (keywordOverride || data?.last_rank_keyword || '').trim();
+            const prod = data?.last_rank_product_name && !keywordOverride && kw === (data?.last_rank_keyword || '')
+                ? { name: data.last_rank_product_name, url: data.last_rank_product_url || '' }
+                : productForKeyword(kw, data);
+
+            const prodEl = document.getElementById('currentRankProduct');
+            const kwEl = document.getElementById('currentRankKw');
+            if (prodEl) {
+                if (prod?.name) {
+                    prodEl.style.display = 'block';
+                    prodEl.textContent = `🛒 ${prod.name}`;
+                    prodEl.title = prod.url || prod.name;
+                } else {
+                    prodEl.style.display = 'none';
+                    prodEl.textContent = '';
+                    prodEl.title = '';
+                }
+            }
+            if (kwEl) {
+                kwEl.textContent = kw ? `키워드: ${kw}` : (data?.last_rank_keyword ? '' : '키워드 없음');
+                kwEl.title = kw || '';
+            }
+
+            const banner = document.getElementById('chartProductBanner');
+            const bannerProd = document.getElementById('chartBannerProduct');
+            const bannerKw = document.getElementById('chartBannerKeyword');
+            const bannerLink = document.getElementById('chartBannerLink');
+            if (banner && bannerProd && bannerKw) {
+                if (prod?.name || kw) {
+                    banner.style.display = 'block';
+                    bannerProd.textContent = prod?.name ? `🛒 ${prod.name}` : '제품 매핑 없음 (config.json 확인)';
+                    bannerKw.textContent = kw ? `키워드: 「${kw}」` : '키워드: —';
+                    if (bannerLink) {
+                        bannerLink.innerHTML = prod?.url
+                            ? `<a href="${prod.url}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> 스마트스토어 상품 페이지</a>`
+                            : '';
+                    }
+                } else if (data?.products?.length) {
+                    banner.style.display = 'block';
+                    bannerProd.textContent = `추적 상품 ${data.products.length}개 · 드롭다운에서 선택`;
+                    bannerKw.textContent = data.products.slice(0, 3).map(p => p.name).join(' · ');
+                    if (bannerLink) bannerLink.innerHTML = '';
+                } else {
+                    banner.style.display = 'none';
+                }
+            }
+        }
 
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn));
@@ -613,7 +764,17 @@
                 if (item.keyword) rankByKw[item.keyword] = item.rank_text || item.rank || '—';
             });
 
-            let html = '<div style="margin-bottom:10px;"><strong style="color:#e2e8f0;font-size:0.82rem;">순위 추적 키워드</strong> ';
+            let html = '';
+            if (data.products && data.products.length) {
+                html += '<div style="margin-bottom:8px;"><strong style="color:#e2e8f0;font-size:0.82rem;">추적 상품</strong></div>';
+                html += '<div style="margin-bottom:12px;">';
+                data.products.forEach(p => {
+                    const link = p.url ? ` title="${p.url}"` : '';
+                    html += `<span class="kw-chip"${link}>🛒 ${p.name}<small>${p.keyword_count || 0}개 키워드</small></span>`;
+                });
+                html += '</div>';
+            }
+            html += '<div style="margin-bottom:10px;"><strong style="color:#e2e8f0;font-size:0.82rem;">순위 추적 키워드</strong> ';
             html += `<span style="color:#94a3b8;">(우선 ${priority.length || data.priority_count || 0}개 · 전체 ${data.keyword_count || 0}개)</span></div>`;
             if (!priority.length) {
                 html += '<div style="color:#94a3b8;">config.json → priority_keywords 가 비어 있습니다.</div>';
@@ -622,7 +783,8 @@
                 priority.forEach(p => {
                     const rk = rankByKw[p.keyword];
                     const rkLabel = rk ? `<small>${rk}</small>` : '';
-                    html += `<span class="kw-chip">${p.keyword}${rkLabel}</span>`;
+                    const prodLabel = p.product_name ? `<small style="color:#6ee7b7;"> · ${p.product_name}</small>` : '';
+                    html += `<span class="kw-chip" title="${p.product_name || ''}">${p.keyword}${prodLabel}${rkLabel}</span>`;
                 });
                 html += '</div>';
             }
@@ -639,30 +801,41 @@
             const box = document.getElementById('keywordRankTable');
             if (!box) return;
             const items = (report && report.items) ? report.items.filter(i => i.status !== '실패') : [];
+            const rowHtml = (kw, rankText, status, prodName) => {
+                const prodTag = prodName ? `<span class="product-tag">🛒 ${prodName}</span>` : '';
+                const statusHtml = status ? ` <span style="color:#94a3b8;">${status}</span>` : '';
+                return `<div class="rank-row"><span><strong style="color:#e2e8f0;">${kw}</strong>${prodTag}</span><span><strong>${rankText}</strong>${statusHtml}</span></div>`;
+            };
             if (items.length) {
-                box.innerHTML = items.map(item => `
-                    <div class="rank-row">
-                        <span>${item.keyword}</span>
-                        <span><strong>${item.rank_text || '—'}</strong> <span style="color:#94a3b8;">${item.status || ''}</span></span>
-                    </div>`).join('');
+                box.innerHTML = items.map(item => {
+                    const prod = productForKeyword(item.keyword, lastStatusData);
+                    return rowHtml(item.keyword, item.rank_text || '—', item.status || '', prod?.name);
+                }).join('');
                 return;
             }
             if (history && history.length) {
                 const seen = new Set();
                 const rows = [];
-                for (let i = history.length - 1; i >= 0 && rows.length < 12; i--) {
+                const groups = {};
+                for (let i = history.length - 1; i >= 0; i--) {
                     const r = history[i];
                     const kw = r['키워드'] || r.keyword;
                     if (!kw || seen.has(kw)) continue;
                     seen.add(kw);
                     const rank = parseInt(r['순위'] || r.rank) || 100;
                     const rankText = rank >= 100 ? '100위 밖' : `${rank}위`;
-                    rows.push(`<div class="rank-row"><span>${kw}</span><strong>${rankText}</strong></div>`);
+                    const prod = productForKeyword(kw, lastStatusData);
+                    const prodName = prod?.name || '기타';
+                    if (!groups[prodName]) groups[prodName] = [];
+                    groups[prodName].push(rowHtml(kw, rankText, '', prod?.name));
                 }
-                box.innerHTML = rows.length ? rows.join('') : '기록 없음';
+                const html = Object.entries(groups).map(([prodName, lines]) =>
+                    `<div style="margin-bottom:10px;"><div style="font-size:0.72rem;color:#6ee7b7;font-weight:700;margin-bottom:4px;">🛒 ${prodName}</div>${lines.join('')}</div>`
+                ).join('');
+                box.innerHTML = html || '기록 없음';
                 return;
             }
-            box.textContent = '「지금 추적」 후 키워드별 순위가 표시됩니다.';
+            box.textContent = '「지금 추적」 후 키워드·제품별 순위가 표시됩니다.';
         }
 
         async function loadUserKeywords() {
@@ -705,15 +878,62 @@
         }
 
         async function loadConfig() {
-            if (appConfig) return appConfig;
+            if (appConfig) {
+                buildProductMaps(appConfig);
+                return appConfig;
+            }
             try {
                 const res = await fetch('/api/config');
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 appConfig = await res.json();
+                buildProductMaps(appConfig);
                 return appConfig;
             } catch (e) {
                 showToast('설정 로드 실패 — 서버 API 확인');
-                return appConfig || { products: [], keywords: [], brand: '나눔랩', store_name: '나눔랩' };
+                const fallback = appConfig || { products: [], keywords: [], brand: '나눔랩', store_name: '나눔랩', priority_keywords: [] };
+                buildProductMaps(fallback);
+                return fallback;
+            }
+        }
+
+        function populateChartKeywordFilter(history, statusData) {
+            const sel = document.getElementById('chartKeywordFilter');
+            if (!sel) return;
+            const prev = sel.value;
+            const kws = new Set();
+            (history || []).forEach(r => {
+                const kw = (r['키워드'] || r.keyword || '').trim();
+                if (kw) kws.add(kw);
+            });
+            (statusData?.priority_keywords || []).forEach(p => {
+                if (p.keyword) kws.add(p.keyword);
+            });
+            const sorted = Array.from(kws).sort((a, b) => a.localeCompare(b, 'ko'));
+            sel.innerHTML = '<option value="">전체 키워드 (혼합)</option>' + sorted.map(kw => {
+                const prod = productForKeyword(kw, statusData);
+                const label = prod ? `${kw} — ${prod.name}` : kw;
+                return `<option value="${kw.replace(/"/g, '&quot;')}">${label}</option>`;
+            }).join('');
+            if (prev && sorted.includes(prev)) sel.value = prev;
+            else if (statusData?.last_rank_keyword && sorted.includes(statusData.last_rank_keyword)) {
+                sel.value = statusData.last_rank_keyword;
+            }
+        }
+
+        function updateChartProductLabel(keyword, statusData) {
+            const el = document.getElementById('chartProductLabel');
+            if (!el) return;
+            if (!keyword) {
+                el.innerHTML = '<span style="color:#f59e0b;">⚠️ 키워드가 섞여 표시됩니다 — 드롭다운에서 제품을 선택하세요</span>';
+                return;
+            }
+            const prod = productForKeyword(keyword, statusData);
+            if (prod?.url) {
+                el.innerHTML = `추적 대상: <strong style="color:#6ee7b7;">${prod.name}</strong> · <a href="${prod.url}" target="_blank" rel="noopener" style="color:#93c5fd;">상품 보기</a>`;
+            } else if (prod) {
+                el.innerHTML = `추적 대상: <strong style="color:#6ee7b7;">${prod.name}</strong>`;
+            } else {
+                el.innerHTML = `키워드: <strong>${keyword}</strong> <span style="color:#94a3b8;">(제품 매핑 없음)</span>`;
             }
         }
 
@@ -1157,10 +1377,13 @@
                 if (item.status === '실패') {
                     return `<div class="result-card"><div class="kw">${item.keyword}</div><div class="detail">조회 실패</div></div>`;
                 }
+                const prod = productForKeyword(item.keyword, lastStatusData);
+                const prodLine = prod?.name ? `<div class="product-line">🛒 ${prod.name}</div>` : '';
                 const cls = item.status === '상승' ? 'up' : (item.status === '하락' ? 'down' : '');
                 const badgeCls = item.status === '상승' ? 'badge-up' : (item.status === '하락' ? 'badge-down' : 'badge-same');
                 return `<div class="result-card ${cls}">
                     <div class="kw">${item.keyword} <span class="badge ${badgeCls}">${item.status}</span></div>
+                    ${prodLine}
                     <div class="detail">${item.prev_text} → <strong>${item.rank_text}</strong></div>
                     <div class="detail">작업: ${(item.tasks || []).join(', ')}</div>
                 </div>`;
@@ -1306,11 +1529,8 @@
             if (cloudBtn) cloudBtn.style.display = data.auto_mode === 'cron' ? 'flex' : 'none';
             const rank = data.last_rank;
             document.getElementById('currentRankVal').textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
-            const rankKw = document.getElementById('currentRankKw');
-            if (rankKw) {
-                rankKw.textContent = data.last_rank_keyword ? `「${data.last_rank_keyword}」` : '';
-                rankKw.title = data.last_rank_keyword || '';
-            }
+            lastStatusData = data;
+            updateRankProductDisplay(data);
             const trafficHint = document.getElementById('trafficTargetHint');
             if (trafficHint && data.traffic_target_url) {
                 trafficHint.style.display = 'block';
@@ -1372,33 +1592,52 @@
         }
 
         async function loadChart() {
+            await loadConfig();
             const res = await fetch('/api/history');
             const data = await res.json();
             const chartEmpty = document.getElementById('chartEmpty');
-            if (!data || !data.length) {
+            populateChartKeywordFilter(data, lastStatusData);
+            const filterKw = (document.getElementById('chartKeywordFilter')?.value || '').trim();
+            updateChartProductLabel(filterKw, lastStatusData);
+            updateRankProductDisplay(lastStatusData, filterKw || undefined);
+            let rows = data || [];
+            if (filterKw) {
+                rows = rows.filter(r => (r['키워드'] || r.keyword || '').trim() === filterKw);
+            }
+            if (!rows.length) {
                 if (chart) chart.destroy();
-                if (chartEmpty) chartEmpty.style.display = 'block';
+                if (chartEmpty) {
+                    chartEmpty.style.display = 'block';
+                    chartEmpty.innerHTML = filterKw
+                        ? `「${filterKw}」에 대한 순위 기록이 없습니다.<br>「지금 추적」을 실행하세요.`
+                        : '순위 그래프는 「지금 추적」 후 표시됩니다.<br>PC에서는 <code style="color:#93c5fd;">python scripts/rank_daily.py</code>로 전체 키워드 일괄 추적 가능';
+                }
                 return;
             }
             if (chartEmpty) chartEmpty.style.display = 'none';
-            const labels = data.map(r => {
+            const labels = rows.map(r => {
                 const t = (r.날짜 || '').split(' ')[1] || r.날짜 || '';
                 const kw = (r.키워드 || '').slice(0, 8);
-                return kw ? `${t}\n${kw}` : t;
+                return filterKw ? t : (kw ? `${t}\n${kw}` : t);
             });
-            const ranks = data.map(r => {
+            const ranks = rows.map(r => {
                 const n = parseInt(r.순위);
                 return Number.isFinite(n) && n > 0 ? Math.min(n, 100) : 100;
             });
-            const keywords = data.map(r => r.키워드 || '');
+            const keywords = rows.map(r => r.키워드 || '');
+            const products = rows.map(r => {
+                const p = productForKeyword(r.키워드 || '', lastStatusData);
+                return p?.name || '';
+            });
             const ctx = document.getElementById('rankingChart').getContext('2d');
             if (chart) chart.destroy();
+            const chartTitle = filterKw ? formatRankProductLine(filterKw, lastStatusData) : '전체 키워드 혼합';
             chart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels,
                     datasets: [{
-                        label: '순위',
+                        label: chartTitle,
                         data: ranks,
                         borderColor: '#3b82f6',
                         backgroundColor: 'rgba(59,130,246,0.1)',
@@ -1416,7 +1655,10 @@
                             callbacks: {
                                 title: (items) => {
                                     const i = items[0]?.dataIndex;
-                                    return keywords[i] ? `키워드: ${keywords[i]}` : '순위';
+                                    const kw = keywords[i] || '';
+                                    const prod = products[i];
+                                    if (prod && kw) return `🛒 ${prod}\n키워드: ${kw}`;
+                                    return kw ? `키워드: ${kw}` : '순위';
                                 },
                                 label: (item) => `순위: ${item.raw >= 100 ? '100위 밖' : item.raw + '위'}`,
                             },

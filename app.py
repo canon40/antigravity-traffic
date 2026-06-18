@@ -402,6 +402,46 @@ def api_program_detail(program_id: str):
     return jsonify({"success": True, "program": entry})
 
 
+def _product_catalog(config: dict) -> dict[str, dict[str, str]]:
+    catalog: dict[str, dict[str, str]] = {}
+    for product in config.get("products") or []:
+        pid = str(product.get("id") or "").strip()
+        if not pid:
+            continue
+        catalog[pid] = {
+            "name": (product.get("name") or pid).strip(),
+            "url": (product.get("url") or "").strip(),
+        }
+    return catalog
+
+
+def _keyword_product_map(config: dict) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for item in config.get("priority_keywords") or []:
+        kw = (item.get("keyword") or "").strip()
+        pid = str(item.get("product_id") or "").strip()
+        if kw and pid:
+            mapping[kw] = pid
+    return mapping
+
+
+def _product_info_for_keyword(config: dict, keyword: str | None) -> dict[str, str | None]:
+    kw = (keyword or "").strip()
+    if not kw:
+        return {"product_id": None, "product_name": None, "product_url": None}
+    catalog = _product_catalog(config)
+    pid = _keyword_product_map(config).get(kw)
+    if not pid:
+        return {"product_id": None, "product_name": None, "product_url": None}
+    info = catalog.get(pid) or {}
+    url = info.get("url") or f"https://smartstore.naver.com/nanumlab/products/{pid}"
+    return {
+        "product_id": pid,
+        "product_name": info.get("name") or f"상품 {pid}",
+        "product_url": url,
+    }
+
+
 @app.route("/api/status")
 def api_status():
     try:
@@ -417,6 +457,9 @@ def api_status():
                 last_rank = 100
 
         config = load_config()
+        catalog = _product_catalog(config)
+        kw_to_pid = _keyword_product_map(config)
+        last_product = _product_info_for_keyword(config, last_rank_keyword)
         keywords = config.get("keywords") or []
         priority = config.get("priority_keywords") or []
         on_cron = is_cron_mode()
@@ -440,14 +483,31 @@ def api_status():
         report = last_completion_report or state.get("last_report")
         auto_mode = "cron" if on_cron else ("daemon" if is_cloudtype() else "local")
         traffic_url = _traffic_target_url()
-        priority_preview = [
+        priority_preview = []
+        for p in priority:
+            kw = (p.get("keyword") or "").strip()
+            if not kw:
+                continue
+            pid = str(p.get("product_id") or kw_to_pid.get(kw) or "").strip()
+            pinfo = catalog.get(pid) if pid else {}
+            priority_preview.append({
+                "keyword": kw,
+                "product_id": pid or None,
+                "product_name": (pinfo or {}).get("name") if pid else None,
+                "product_url": (pinfo or {}).get("url") if pid else None,
+            })
+            if len(priority_preview) >= 12:
+                break
+
+        products_summary = [
             {
-                "keyword": (p.get("keyword") or "").strip(),
-                "product_id": (p.get("product_id") or "").strip(),
+                "id": pid,
+                "name": info.get("name") or pid,
+                "url": info.get("url") or "",
+                "keyword_count": sum(1 for k, p in kw_to_pid.items() if p == pid),
             }
-            for p in priority
-            if (p.get("keyword") or "").strip()
-        ][:12]
+            for pid, info in catalog.items()
+        ]
 
         return jsonify({
             "running": running,
@@ -458,6 +518,10 @@ def api_status():
             "auto_started": _boot_auto_started or running,
             "last_rank": last_rank,
             "last_rank_keyword": last_rank_keyword,
+            "last_rank_product_id": last_product.get("product_id"),
+            "last_rank_product_name": last_product.get("product_name"),
+            "last_rank_product_url": last_product.get("product_url"),
+            "products": products_summary,
             "total_tracks": len(history),
             "keyword_count": len(keywords),
             "priority_count": len(priority) or min(len(keywords), int(config.get("priority_track_limit") or 10)),

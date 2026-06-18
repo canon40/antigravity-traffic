@@ -629,6 +629,7 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
             results.append({
                 "keyword": keyword,
                 "store_name": store_name,
+                "product_id": product_id,
                 "rank": None,
                 "prev_rank": prev,
                 "change": None,
@@ -645,6 +646,7 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
             results.append({
                 "keyword": keyword,
                 "store_name": store_name,
+                "product_id": product_id,
                 "rank": None,
                 "prev_rank": prev,
                 "change": None,
@@ -664,6 +666,7 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
             results.append({
                 "keyword": keyword,
                 "store_name": store_name,
+                "product_id": product_id,
                 "rank": None,
                 "prev_rank": prev,
                 "change": None,
@@ -688,6 +691,7 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
         results.append({
             "keyword": keyword,
             "store_name": store_name,
+            "product_id": product_id,
             "rank": rank,
             "prev_rank": prev,
             "change": prev - rank if prev is not None else 0,
@@ -751,6 +755,7 @@ def build_completion_report(results):
         items.append({
             "keyword": r["keyword"],
             "store_name": r["store_name"],
+            "product_id": r.get("product_id"),
             "status": status,
             "prev_rank": prev,
             "current_rank": rank,
