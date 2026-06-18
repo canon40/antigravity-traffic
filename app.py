@@ -732,7 +732,10 @@ def api_logs():
 
 @app.route("/api/history")
 def api_history():
-    return jsonify(get_history())
+    limit = request.args.get("limit", type=int)
+    if limit is not None:
+        limit = max(1, min(limit, 5000))
+    return jsonify(get_history(limit=limit))
 
 
 @app.route("/api/report")

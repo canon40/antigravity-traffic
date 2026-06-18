@@ -741,7 +741,7 @@
             } else if (['tab-chart', 'tab-seo', 'tab-blog', 'tab-local'].includes(tabId)) {
                 if (currentWorkspace !== 'traffic') setWorkspace('traffic');
             }
-            if (tabId === 'tab-chart') loadChart();
+            if (tabId === 'tab-chart') setTimeout(() => loadChart(), 0);
             if (tabId === 'tab-report') loadReport();
             if (tabId === 'tab-seo') loadLatestAudit();
             if (tabId === 'tab-blog') initBlogTab();
@@ -896,27 +896,54 @@
             }
         }
 
+        function asHistoryList(payload) {
+            if (Array.isArray(payload)) return payload;
+            if (payload && Array.isArray(payload.history)) return payload.history;
+            if (payload && Array.isArray(payload.rows)) return payload.rows;
+            return [];
+        }
+
+        function sortHistoryRows(rows) {
+            return [...rows].sort((a, b) => {
+                const da = String(a['날짜'] || a.recorded_at || '');
+                const db = String(b['날짜'] || b.recorded_at || '');
+                return da.localeCompare(db);
+            });
+        }
+
+        function historyKeywords(rows) {
+            const kws = new Set();
+            (rows || []).forEach(r => {
+                const kw = (r['키워드'] || r.keyword || '').trim();
+                if (kw) kws.add(kw);
+            });
+            return Array.from(kws).sort((a, b) => a.localeCompare(b, 'ko'));
+        }
+
+        function sliceChartRows(rows, filterKw, maxPoints = 120) {
+            let sorted = sortHistoryRows(rows);
+            if (filterKw) {
+                sorted = sorted.filter(r => (r['키워드'] || r.keyword || '').trim() === filterKw);
+            }
+            if (sorted.length > maxPoints) sorted = sorted.slice(-maxPoints);
+            return sorted;
+        }
+
         function populateChartKeywordFilter(history, statusData) {
             const sel = document.getElementById('chartKeywordFilter');
             if (!sel) return;
             const prev = sel.value;
-            const kws = new Set();
-            (history || []).forEach(r => {
-                const kw = (r['키워드'] || r.keyword || '').trim();
-                if (kw) kws.add(kw);
-            });
-            (statusData?.priority_keywords || []).forEach(p => {
-                if (p.keyword) kws.add(p.keyword);
-            });
-            const sorted = Array.from(kws).sort((a, b) => a.localeCompare(b, 'ko'));
+            const sorted = historyKeywords(history);
             sel.innerHTML = '<option value="">전체 키워드 (혼합)</option>' + sorted.map(kw => {
                 const prod = productForKeyword(kw, statusData);
                 const label = prod ? `${kw} — ${prod.name}` : kw;
-                return `<option value="${kw.replace(/"/g, '&quot;')}">${label}</option>`;
+                const safe = kw.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+                return `<option value="${safe}">${label}</option>`;
             }).join('');
-            if (prev && sorted.includes(prev)) sel.value = prev;
-            else if (statusData?.last_rank_keyword && sorted.includes(statusData.last_rank_keyword)) {
-                sel.value = statusData.last_rank_keyword;
+            if (prev && sorted.includes(prev)) {
+                sel.value = prev;
+            } else {
+                sel.value = '';
             }
         }
 
@@ -1592,85 +1619,117 @@
         }
 
         async function loadChart() {
-            await loadConfig();
-            const res = await fetch('/api/history');
-            const data = await res.json();
             const chartEmpty = document.getElementById('chartEmpty');
-            populateChartKeywordFilter(data, lastStatusData);
-            const filterKw = (document.getElementById('chartKeywordFilter')?.value || '').trim();
-            updateChartProductLabel(filterKw, lastStatusData);
-            updateRankProductDisplay(lastStatusData, filterKw || undefined);
-            let rows = data || [];
-            if (filterKw) {
-                rows = rows.filter(r => (r['키워드'] || r.keyword || '').trim() === filterKw);
-            }
-            if (!rows.length) {
-                if (chart) chart.destroy();
+            const canvas = document.getElementById('rankingChart');
+            if (!canvas || typeof Chart === 'undefined') {
                 if (chartEmpty) {
                     chartEmpty.style.display = 'block';
-                    chartEmpty.innerHTML = filterKw
-                        ? `「${filterKw}」에 대한 순위 기록이 없습니다.<br>「지금 추적」을 실행하세요.`
-                        : '순위 그래프는 「지금 추적」 후 표시됩니다.<br>PC에서는 <code style="color:#93c5fd;">python scripts/rank_daily.py</code>로 전체 키워드 일괄 추적 가능';
+                    chartEmpty.textContent = '차트 라이브러리를 불러오지 못했습니다. 새로고침 해주세요.';
                 }
                 return;
             }
-            if (chartEmpty) chartEmpty.style.display = 'none';
-            const labels = rows.map(r => {
-                const t = (r.날짜 || '').split(' ')[1] || r.날짜 || '';
-                const kw = (r.키워드 || '').slice(0, 8);
-                return filterKw ? t : (kw ? `${t}\n${kw}` : t);
-            });
-            const ranks = rows.map(r => {
-                const n = parseInt(r.순위);
-                return Number.isFinite(n) && n > 0 ? Math.min(n, 100) : 100;
-            });
-            const keywords = rows.map(r => r.키워드 || '');
-            const products = rows.map(r => {
-                const p = productForKeyword(r.키워드 || '', lastStatusData);
-                return p?.name || '';
-            });
-            const ctx = document.getElementById('rankingChart').getContext('2d');
-            if (chart) chart.destroy();
-            const chartTitle = filterKw ? formatRankProductLine(filterKw, lastStatusData) : '전체 키워드 혼합';
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels,
-                    datasets: [{
-                        label: chartTitle,
-                        data: ranks,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59,130,246,0.1)',
-                        tension: 0.3,
-                        fill: true,
-                        pointRadius: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: '#e2e8f0', font: { size: 10 } } },
-                        tooltip: {
-                            callbacks: {
-                                title: (items) => {
-                                    const i = items[0]?.dataIndex;
-                                    const kw = keywords[i] || '';
-                                    const prod = products[i];
-                                    if (prod && kw) return `🛒 ${prod}\n키워드: ${kw}`;
-                                    return kw ? `키워드: ${kw}` : '순위';
+            try {
+                await loadConfig();
+                if (!lastStatusData) {
+                    try {
+                        const sres = await fetch('/api/status');
+                        if (sres.ok) lastStatusData = await sres.json();
+                    } catch (_) {}
+                }
+                const res = await fetch('/api/history?limit=800');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const payload = await res.json();
+                const allRows = asHistoryList(payload);
+                populateChartKeywordFilter(allRows, lastStatusData);
+                let filterKw = (document.getElementById('chartKeywordFilter')?.value || '').trim();
+                let rows = sliceChartRows(allRows, filterKw, filterKw ? 120 : 80);
+                if (!rows.length && filterKw) {
+                    filterKw = '';
+                    const sel = document.getElementById('chartKeywordFilter');
+                    if (sel) sel.value = '';
+                    rows = sliceChartRows(allRows, '', 80);
+                }
+                updateChartProductLabel(filterKw, lastStatusData);
+                updateRankProductDisplay(lastStatusData, filterKw || undefined);
+                if (!rows.length) {
+                    if (chart) { chart.destroy(); chart = null; }
+                    if (chartEmpty) {
+                        chartEmpty.style.display = 'block';
+                        chartEmpty.innerHTML = '순위 그래프는 「지금 추적」 후 표시됩니다.<br>PC에서는 <code style="color:#93c5fd;">python scripts/rank_daily.py</code>로 전체 키워드 일괄 추적 가능';
+                    }
+                    renderKeywordRankTable(lastReport, allRows);
+                    return;
+                }
+                if (chartEmpty) chartEmpty.style.display = 'none';
+                const labels = rows.map(r => {
+                    const raw = String(r['날짜'] || r.recorded_at || '');
+                    const t = raw.split(' ')[1] || raw;
+                    const kw = String(r['키워드'] || r.keyword || '').slice(0, 8);
+                    return filterKw ? t : (kw ? `${t}\n${kw}` : t);
+                });
+                const ranks = rows.map(r => {
+                    const n = parseInt(r['순위'] || r.rank, 10);
+                    return Number.isFinite(n) && n > 0 ? Math.min(n, 100) : 100;
+                });
+                const keywords = rows.map(r => r['키워드'] || r.keyword || '');
+                const products = rows.map(r => {
+                    const p = productForKeyword(r['키워드'] || r.keyword || '', lastStatusData);
+                    return p?.name || '';
+                });
+                const ctx = canvas.getContext('2d');
+                if (chart) chart.destroy();
+                const chartTitle = filterKw ? formatRankProductLine(filterKw, lastStatusData) : `전체 키워드 (최근 ${rows.length}건)`;
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: chartTitle,
+                            data: ranks,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59,130,246,0.12)',
+                            tension: 0.25,
+                            fill: true,
+                            pointRadius: rows.length > 60 ? 0 : 3,
+                            pointHoverRadius: 4,
+                            borderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: {
+                            legend: { labels: { color: '#e2e8f0', font: { size: 10 } } },
+                            tooltip: {
+                                callbacks: {
+                                    title: (items) => {
+                                        const i = items[0]?.dataIndex;
+                                        const kw = keywords[i] || '';
+                                        const prod = products[i];
+                                        if (prod && kw) return `🛒 ${prod}\n키워드: ${kw}`;
+                                        return kw ? `키워드: ${kw}` : '순위';
+                                    },
+                                    label: (item) => `순위: ${item.raw >= 100 ? '100위 밖' : item.raw + '위'}`,
                                 },
-                                label: (item) => `순위: ${item.raw >= 100 ? '100위 밖' : item.raw + '위'}`,
                             },
                         },
-                    },
-                    scales: {
-                        y: { reverse: true, min: 1, max: 100, ticks: { color: '#94a3b8', stepSize: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        x: { ticks: { color: '#94a3b8', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        scales: {
+                            y: { reverse: true, min: 1, max: 100, ticks: { color: '#94a3b8', stepSize: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            x: { ticks: { color: '#94a3b8', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
                     }
+                });
+                requestAnimationFrame(() => { try { chart?.resize(); } catch (_) {} });
+                renderKeywordRankTable(lastReport, allRows);
+            } catch (e) {
+                console.error('loadChart', e);
+                if (chart) { chart.destroy(); chart = null; }
+                if (chartEmpty) {
+                    chartEmpty.style.display = 'block';
+                    chartEmpty.innerHTML = `그래프 로드 실패: ${e.message || e}<br>새로고침 후 다시 시도하세요.`;
                 }
-            });
-            renderKeywordRankTable(lastReport, data);
+            }
         }
 
         async function loadReport() {
@@ -1745,10 +1804,13 @@
             const defaultTab = currentWorkspace === 'javis' ? 'tab-javis' : 'tab-dashboard';
             const defaultBtn = document.querySelector(`.tab-btn[data-tab="${defaultTab}"]`);
             if (defaultBtn) switchTab(defaultTab, defaultBtn);
-            updateStatus();
+            await updateStatus();
             loadLatestAudit();
             loadConfig();
             loadUserKeywords();
+            if (document.getElementById('tab-chart')?.classList.contains('active')) {
+                setTimeout(() => loadChart(), 0);
+            }
         })();
 
         let deferredPrompt;
