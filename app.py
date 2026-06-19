@@ -780,10 +780,10 @@ def api_stop():
     state = load_hub_state()
     if scope in ("rank", "all"):
         state["auto_enabled"] = False
-        rank_stop_event.set()
+        _stop_rank_scheduler()
     if scope in ("traffic", "all"):
         state["traffic_enabled"] = False
-        traffic_stop_event.set()
+        _stop_traffic_loop()
     save_hub_state(state)
 
     if is_serverless():
@@ -796,16 +796,14 @@ def api_stop():
         add_log(f"⏸️ Cron 중지 (scope={scope})")
         return jsonify({"success": True, "message": msg, "mode": "cron", "scope": scope})
 
-    if scope == "traffic" and traffic_loop_running:
+    if scope == "traffic":
         add_log("⏸️ 트래픽 루프 중지 (순위 추적 유지)")
-        return jsonify({"success": True, "message": "트래픽만 중지했습니다. 순위 추적은 계속됩니다.", "scope": scope})
-    if scope == "rank" and scheduler_running:
+        return jsonify({"success": True, "message": "트래픽이 중지되었습니다. 순위 추적은 계속됩니다.", "scope": scope})
+    if scope == "rank":
         add_log("⏸️ 순위 추적 중지 (트래픽 유지)")
-        return jsonify({"success": True, "message": "순위 추적만 중지했습니다. 트래픽은 계속됩니다.", "scope": scope})
-    if scope == "all" and (scheduler_running or traffic_loop_running):
-        add_log("⏸️ 순위·트래픽 모두 중지")
-        return jsonify({"success": True, "message": "순위·트래픽이 모두 중지됩니다.", "scope": scope})
-    return jsonify({"success": True, "message": "중지 상태로 저장했습니다.", "scope": scope})
+        return jsonify({"success": True, "message": "순위 추적이 중지되었습니다. 트래픽은 계속됩니다.", "scope": scope})
+    add_log("⏸️ 순위·트래픽 모두 중지")
+    return jsonify({"success": True, "message": "순위·트래픽이 모두 중지되었습니다.", "scope": scope})
 
 
 @app.route("/api/logs")

@@ -285,8 +285,11 @@
                             <i class="fa-solid fa-pause"></i> 순위 중지
                         </button>
                     </div>
-                    <button class="btn" style="background:linear-gradient(135deg,#475569,#64748b);font-size:0.78rem;padding:10px;" id="stopTrafficBtn" onclick="toggleScheduler(false, 'traffic')">
-                        <i class="fa-solid fa-road"></i> 트래픽만 중지
+                    <button class="btn btn-stop" id="stopTrafficBtn" onclick="toggleScheduler(false, 'traffic')" disabled>
+                        <i class="fa-solid fa-stop"></i> 트래픽 중지
+                    </button>
+                    <button class="btn btn-start" id="startTrafficBtn" onclick="toggleScheduler(true, 'traffic')" style="font-size:0.78rem;padding:10px;">
+                        <i class="fa-solid fa-road"></i> 트래픽 재시작
                     </button>
                     <button class="btn btn-track" onclick="trackNow()">
                         <i class="fa-solid fa-magnifying-glass-chart"></i> 지금 추적
@@ -699,8 +702,14 @@
             return data && (data.auto_mode === 'cron' || data.auto_mode === 'daemon');
         }
 
+        function trafficIsOn(data) {
+            if (!data) return false;
+            if (data.traffic_enabled === false) return false;
+            return !!(data.traffic_running || data.traffic_loop);
+        }
+
         function syncCompactTrafficStatus(data, rankRunning) {
-            const trafficOn = !!(data && (data.traffic_running || data.traffic_loop));
+            const trafficOn = trafficIsOn(data);
             const compactBadge = document.getElementById('compactEngineStatus');
             const compactText = document.getElementById('compactEngineStatusText');
             const compactRank = document.getElementById('compactRankVal');
@@ -1560,7 +1569,11 @@
                 const badge = document.getElementById('engineStatus');
                 const text = document.getElementById('engineStatusText');
                 const running = !!data.running;
-                const trafficOn = !!(data.traffic_running || data.traffic_loop);
+                const trafficOn = trafficIsOn(data);
+                const stopTrafficBtn = document.getElementById('stopTrafficBtn');
+                const startTrafficBtn = document.getElementById('startTrafficBtn');
+                if (stopTrafficBtn) stopTrafficBtn.disabled = !trafficOn;
+                if (startTrafficBtn) startTrafficBtn.disabled = trafficOn;
                 const trafficPill = document.getElementById('trafficBgPill');
                 if (trafficPill) trafficPill.dataset.trafficOn = trafficOn ? '1' : '0';
                 if (running) {
