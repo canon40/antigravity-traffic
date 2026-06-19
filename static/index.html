@@ -1669,7 +1669,12 @@
                 console.error('updateStatus', e);
                 const text = document.getElementById('engineStatusText');
                 const msg = (e && e.message) ? String(e.message) : '서버 오류';
-                if (text) text.textContent = msg.startsWith('HTTP') || msg.includes('Failed') ? '서버 연결 실패' : `오류: ${msg.slice(0, 40)}`;
+                const connFail = msg.startsWith('HTTP') || msg.includes('Failed') || msg.includes('fetch');
+                if (text) {
+                    text.textContent = connFail
+                        ? '서버 연결 실패 — run.bat 실행'
+                        : `오류: ${msg.slice(0, 40)}`;
+                }
                 const badge = document.getElementById('engineStatus');
                 if (badge) badge.className = 'status-badge stopped';
             }
