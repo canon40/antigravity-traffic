@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import importlib
 import os
 import subprocess
 import sys
@@ -39,6 +40,13 @@ def _ensure_jarvis_on_path() -> bool:
     if root_s not in sys.path:
         sys.path.insert(0, root_s)
     return True
+
+
+def bootstrap_jarvis_imports() -> Path | None:
+    """JARVIS integrations import 전에 sys.path 등록."""
+    if not _ensure_jarvis_on_path():
+        return None
+    return resolve_jarvis_root()
 
 
 def _platforms_from_payload(p: dict[str, Any]) -> list[str] | None:
@@ -96,9 +104,14 @@ def run_jarvis_pipeline(
 
     log = on_status or (lambda _m: None)
     try:
-        from integrations.blog_auto_pipeline import format_failure_summary_ko, run_blog_auto
+        import integrations.blog_auto_pipeline as blog_auto_pipeline
 
-        log(f"JARVIS 블로그 파이프라인: {kw[:80]}")
+        # Streamlit 패널과 동일 — 장시간 실행 중에도 D:\@code\javis 수정분 반영.
+        blog_auto_pipeline = importlib.reload(blog_auto_pipeline)
+        format_failure_summary_ko = blog_auto_pipeline.format_failure_summary_ko
+        run_blog_auto = blog_auto_pipeline.run_blog_auto
+
+        log(f"JARVIS 블로그 파이프라인 ({resolve_jarvis_root()}): {kw[:80]}")
         report = run_blog_auto(
             kw,
             platforms=_platforms_from_payload(payload),
@@ -185,11 +198,12 @@ def run_pipeline(
     except ImportError:
         pass
 
-    use_jarvis = jarvis_pipeline_available() if prefer_jarvis is None else bool(prefer_jarvis)
-    if use_jarvis and jarvis_pipeline_available():
-        result = run_jarvis_pipeline(payload, on_status=on_status)
-        if result.get("ok") or prefer_jarvis is True:
-            return result
+    standalone = os.environ.get("BLOG_STANDALONE", "").strip().lower() in ("1", "true", "yes", "on")
+    use_jarvis = (not standalone) if prefer_jarvis is None else bool(prefer_jarvis)
+    if use_jarvis:
+        if not jarvis_pipeline_available():
+            return {"ok": False, "error": f"JARVIS 파이프라인 없음: {resolve_jarvis_root()}"}
+        return run_jarvis_pipeline(payload, on_status=on_status)
     return run_standalone_pipeline(payload, on_status=on_status)
 
 

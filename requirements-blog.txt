@@ -1,0 +1,11 @@
+# canon4040 Autoblog (blog_main.py) — 로컬 데스크톱 전용
+google-genai>=1.0.0
+google-auth-oauthlib>=1.0.0
+google-api-python-client>=2.0.0
+google-auth>=2.0.0
+python-dotenv>=1.0.0
+playwright>=1.40.0
+pyperclip>=1.8.0
+Pillow>=10.0.0
+pywin32>=306; sys_platform == "win32"
+requests>=2.31.0

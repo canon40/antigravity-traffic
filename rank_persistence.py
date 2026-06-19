@@ -108,6 +108,11 @@ def _request(
             return {"ok": True, "rows": rows}
     except urllib.error.HTTPError as e:
         return {"ok": False, "error": e.read().decode("utf-8", errors="replace"), "status": e.code}
+    except urllib.error.URLError as e:
+        reason = getattr(e, "reason", e)
+        return {"ok": False, "error": str(reason) or "network_unreachable"}
+    except Exception as e:
+        return {"ok": False, "error": str(e) or e.__class__.__name__}
 
 
 def _runtime_state_path() -> Path:
@@ -204,7 +209,7 @@ def save_hub_state(state: dict[str, Any]) -> dict[str, Any]:
         )
         if res.get("ok"):
             return {"ok": True, "backend": "supabase"}
-        return {"ok": False, "backend": "supabase", "error": res.get("error")}
+        # ponytail: Supabase 장애 시 로컬 폴백
 
     paths = [_runtime_state_path()]
     if not uses_ephemeral_disk():

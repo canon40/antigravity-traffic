@@ -32,6 +32,15 @@ from hub_llm_env import apply_blog_llm_env
 
 apply_blog_llm_env()
 
+try:
+    from blog_pipeline_runner import bootstrap_jarvis_imports, resolve_jarvis_root
+
+    _jarvis_boot = bootstrap_jarvis_imports()
+    if _jarvis_boot:
+        os.environ.setdefault("JARVIS_ROOT", str(_jarvis_boot))
+except Exception:
+    _jarvis_boot = None
+
 app = Flask(__name__, template_folder="templates")
 _logs: list[str] = []
 _job_lock = threading.Lock()
@@ -86,7 +95,7 @@ def _run_pipeline(payload: dict[str, Any], *, manage_lock: bool = True) -> dict[
         from blog_pipeline_runner import run_pipeline
 
         _log(f"블로그 파이프라인 시작: {kw[:80]}")
-        result = run_pipeline(payload, on_status=_log)
+        result = run_pipeline(payload, on_status=_log, prefer_jarvis=True)
         _last_report = result if isinstance(result, dict) else {"ok": False, "raw": result}
         if _last_report.get("ok"):
             _log("블로그 파이프라인 완료")
@@ -170,18 +179,20 @@ def index():
 @app.route("/api/javis/health")
 def javis_health():
     try:
-        from blog_pipeline_runner import jarvis_pipeline_available
+        from blog_pipeline_runner import bootstrap_jarvis_imports, resolve_jarvis_root
 
-        jarvis_ok = jarvis_pipeline_available()
+        root = bootstrap_jarvis_imports() or resolve_jarvis_root()
+        jarvis_ok = bool(root and (root / "integrations" / "blog_auto_pipeline.py").is_file())
     except Exception:
         jarvis_ok = JARVIS_ROOT.is_dir()
+        root = JARVIS_ROOT
     return jsonify({
         "ok": True,
-        "service": "canon4040-autoblog",
+        "service": "jarvis-blog-studio",
         "port": PORT,
-        "jarvis_root": str(JARVIS_ROOT),
+        "jarvis_root": str(root),
         "jarvis_installed": jarvis_ok,
-        "standalone": True,
+        "standalone": not jarvis_ok,
         "job_running": _job_running,
         "llm": apply_blog_llm_env(),
     })
@@ -196,16 +207,23 @@ def javis_start():
 @app.route("/api/blog/status")
 def blog_status():
     try:
-        from blog_pipeline_runner import jarvis_pipeline_available
+        from blog_pipeline_runner import bootstrap_jarvis_imports, resolve_jarvis_root
 
-        if jarvis_pipeline_available():
+        root = bootstrap_jarvis_imports()
+        if root:
             from integrations.blog_auto_pipeline import format_status_ko
 
-            return jsonify({"ok": True, "text": format_status_ko(), "mode": "jarvis"})
+            text = format_status_ko()
+            return jsonify({
+                "ok": True,
+                "text": text,
+                "mode": "jarvis",
+                "jarvis_root": str(root),
+            })
         return jsonify({
             "ok": True,
-            "text": "단독 모드 — accounts.json·GUI 설정으로 실행됩니다.",
-            "mode": "standalone",
+            "text": f"JARVIS 없음 ({resolve_jarvis_root()}) — D:\\@code\\javis 확인",
+            "mode": "missing",
         })
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)})
@@ -215,9 +233,9 @@ def blog_status():
 def blog_last():
     report = dict(_last_report) if _last_report else {}
     try:
-        from blog_pipeline_runner import jarvis_pipeline_available
+        from blog_pipeline_runner import bootstrap_jarvis_imports
 
-        if jarvis_pipeline_available() and not report:
+        if bootstrap_jarvis_imports() and not report:
             from integrations.blog_auto_pipeline import load_last_blog_report
 
             report = load_last_blog_report() or {}
@@ -258,6 +276,7 @@ def blog_run():
 
 
 @app.route("/api/logs")
+@app.route("/api/blog/logs")
 def api_logs():
     return jsonify({"logs": _logs[-80:]})
 

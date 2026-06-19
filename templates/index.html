@@ -440,6 +440,22 @@
         </div>
 
         <div id="tab-seo" class="tab-content">
+            <div class="glass-panel" style="padding:14px;margin-bottom:12px;">
+                <div class="btn-grid btn-grid-3">
+                    <button class="btn btn-audit" onclick="runSeoAudit()">
+                        <i class="fa-solid fa-list-check"></i> SEO 점검
+                    </button>
+                    <button class="btn" style="background:#10b981;" onclick="runSeoAutoFix()">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 메타·키워드 자동 보완
+                    </button>
+                    <button class="btn" style="background:#6366f1;" onclick="loadLatestAudit()">
+                        <i class="fa-solid fa-rotate"></i> 새로고침
+                    </button>
+                </div>
+                <p id="seoAutoFixHint" style="font-size:0.75rem;color:#94a3b8;margin-top:10px;margin-bottom:0;">
+                    네이버 차단 시 config에 메타·키워드를 자동 저장합니다. 트래픽 루프마다 상품별로 보완·키워드 추가 후 순위 추적이 이어집니다.
+                </p>
+            </div>
             <div class="glass-panel" id="seoAuditBox">
                 <div class="empty-state">SEO 점검 버튼을 눌러 상품·블로그 페이지를 점검하세요.</div>
             </div>
@@ -1363,7 +1379,31 @@
             if (data.success) {
                 renderSeoAudit(data.audit);
                 switchTab('tab-seo', document.querySelector('[data-tab="tab-seo"]'));
-                showToast(`SEO 평균 ${data.audit.summary.average_score}점`);
+                const fixN = data.audit?.summary?.auto_fix_count || 0;
+                showToast(fixN ? `SEO 평균 ${data.audit.summary.average_score}점 · 자동 보완 ${fixN}건` : `SEO 평균 ${data.audit.summary.average_score}점`);
+            } else {
+                showToast(data.error || 'SEO 점검 실패');
+            }
+        }
+
+        async function runSeoAutoFix() {
+            showToast('메타·키워드 자동 보완 중...');
+            try {
+                const res = await fetch('/api/seo-auto-fix', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                const data = await res.json();
+                if (!res.ok || data.success === false) throw new Error(data.error || '보완 실패');
+                const fixes = (data.fixes || [data.result]).filter(Boolean);
+                const changed = fixes.filter(f => f.ok && f.changed && f.changed.length).length;
+                const hint = document.getElementById('seoAutoFixHint');
+                if (hint && changed) {
+                    hint.innerHTML = `✅ <strong style="color:#6ee7b7;">${changed}개</strong> 상품·블로그에 메타·키워드 저장됨. 스마트스토어·블로그 관리자에 메타 설명을 붙여넣으세요. <code style="color:#93c5fd;">generated_content/</code> 폴더에 초안도 저장됩니다.`;
+                }
+                showToast(changed ? `자동 보완 ${changed}건 완료` : '이미 보완됨 또는 변경 없음');
+                appConfig = null;
+                await loadConfig();
+                await runSeoAudit();
+            } catch (e) {
+                showToast('자동 보완 실패: ' + (e.message || e));
             }
         }
 
@@ -1474,6 +1514,9 @@
             if (s.product_total && s.product_limit && s.product_total > s.product_limit) {
                 html += `<p style="font-size:0.75rem;color:#94a3b8;margin-bottom:12px;">상품 ${s.product_limit}개 샘플 점검 (전체 ${s.product_total}개 · 네이버 차단 방지)</p>`;
             }
+            if (s.auto_fix_count) {
+                html += `<p style="font-size:0.78rem;color:#6ee7b7;margin-bottom:12px;">🔧 자동 보완 ${s.auto_fix_count}건 — config 메타·키워드 저장됨 (스마트스토어 관리자에 메타 설명 붙여넣기)</p>`;
+            }
 
             [...audit.products, ...audit.blogs].forEach(page => {
                 if (!page.success) {
@@ -1481,7 +1524,7 @@
                     html += `<div style="margin-bottom:14px;"><strong style="font-size:0.85rem;">${page.url}</strong><div class="detail" style="color:var(--accent-red);margin-top:4px;font-size:0.78rem;">${detail}</div></div>`;
                     return;
                 }
-                const partial = page.partial ? ' <span style="color:#fbbf24;font-size:0.72rem;">(config 폴백)</span>' : '';
+                const partial = page.partial ? ' <span style="color:#fbbf24;font-size:0.72rem;">(config 자동 보완)</span>' : '';
                 html += `<div style="margin-bottom:16px;">
                     <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">${page.page_type === 'product' ? '🛒' : '📝'} ${page.url} <span style="color:var(--accent-blue);">${page.percent}점 (${page.grade})</span>${partial}</div>`;
                 page.checks.forEach(c => {
@@ -1510,26 +1553,32 @@
         async function updateStatus() {
             try {
                 const res = await fetch('/api/status');
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const data = await res.json();
-            const badge = document.getElementById('engineStatus');
-            const text = document.getElementById('engineStatusText');
-            const running = !!data.running;
-            const trafficOn = !!(data.traffic_running || data.traffic_loop);
-            const trafficPill = document.getElementById('trafficBgPill');
-            if (trafficPill) trafficPill.dataset.trafficOn = trafficOn ? '1' : '0';
-            if (running) {
-                badge.className = 'status-badge running';
-                const label24 = data.auto_mode === 'cron' ? '24h Cron' : (data.auto_mode === 'daemon' ? '24h 백그라운드' : (data.traffic_loop ? '추적·트래픽' : '추적 중'));
-                text.textContent = hubAuto24h(data) ? label24 : (data.traffic_loop ? '추적·트래픽' : '추적 중');
-                document.getElementById('startBtn').disabled = true;
-                document.getElementById('stopBtn').disabled = false;
-            } else {
-                badge.className = 'status-badge stopped';
-                text.textContent = hubAuto24h(data) ? (data.auto_mode === 'cron' ? 'Cron 꺼짐' : '24h 꺼짐') : '중지됨';
-                document.getElementById('startBtn').disabled = false;
-                document.getElementById('stopBtn').disabled = true;
-            }
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) {
+                    throw new Error(data.error || `HTTP ${res.status}`);
+                }
+                const badge = document.getElementById('engineStatus');
+                const text = document.getElementById('engineStatusText');
+                const running = !!data.running;
+                const trafficOn = !!(data.traffic_running || data.traffic_loop);
+                const trafficPill = document.getElementById('trafficBgPill');
+                if (trafficPill) trafficPill.dataset.trafficOn = trafficOn ? '1' : '0';
+                if (running) {
+                    if (badge) badge.className = 'status-badge running';
+                    const label24 = data.auto_mode === 'cron' ? '24h Cron' : (data.auto_mode === 'daemon' ? '24h 백그라운드' : (data.traffic_loop ? '추적·트래픽' : '추적 중'));
+                    if (text) text.textContent = hubAuto24h(data) ? label24 : (data.traffic_loop ? '추적·트래픽' : '추적 중');
+                    const startBtn = document.getElementById('startBtn');
+                    const stopBtn = document.getElementById('stopBtn');
+                    if (startBtn) startBtn.disabled = true;
+                    if (stopBtn) stopBtn.disabled = false;
+                } else {
+                    if (badge) badge.className = 'status-badge stopped';
+                    if (text) text.textContent = hubAuto24h(data) ? (data.auto_mode === 'cron' ? 'Cron 꺼짐' : '24h 꺼짐') : '중지됨';
+                    const startBtn = document.getElementById('startBtn');
+                    const stopBtn = document.getElementById('stopBtn');
+                    if (startBtn) startBtn.disabled = false;
+                    if (stopBtn) stopBtn.disabled = true;
+                }
             syncCompactTrafficStatus(data, running);
             const cronHint = document.getElementById('cronHint');
             if (cronHint) {
@@ -1555,7 +1604,8 @@
             const cloudBtn = document.getElementById('cloudTrafficBtn');
             if (cloudBtn) cloudBtn.style.display = data.auto_mode === 'cron' ? 'flex' : 'none';
             const rank = data.last_rank;
-            document.getElementById('currentRankVal').textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
+            const rankEl = document.getElementById('currentRankVal');
+            if (rankEl) rankEl.textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
             lastStatusData = data;
             updateRankProductDisplay(data);
             const trafficHint = document.getElementById('trafficTargetHint');
@@ -1566,8 +1616,10 @@
             }
             const config = await loadConfig();
             renderKeywordTrafficPanel(data, config);
-            document.getElementById('totalTracksVal').textContent = data.total_tracks || 0;
-            document.getElementById('keywordCountVal').textContent = data.keyword_count || 0;
+            const tracksEl = document.getElementById('totalTracksVal');
+            const kwCountEl = document.getElementById('keywordCountVal');
+            if (tracksEl) tracksEl.textContent = data.total_tracks || 0;
+            if (kwCountEl) kwCountEl.textContent = data.keyword_count || 0;
             const hint = document.getElementById('kwHint');
             if (hint) {
                 const batch = data.track_batch_count || data.keyword_count || 0;
@@ -1585,7 +1637,7 @@
                 try {
                     const hres = await fetch('/api/history');
                     if (hres.ok) {
-                        const history = await hres.json();
+                        const history = asHistoryList(await hres.json());
                         const fallback = historyToReport(history);
                         if (fallback) {
                             lastReport = fallback;
@@ -1601,8 +1653,10 @@
             }
             updateTrafficBgPill();
             } catch (e) {
+                console.error('updateStatus', e);
                 const text = document.getElementById('engineStatusText');
-                if (text) text.textContent = '서버 오류';
+                const msg = (e && e.message) ? String(e.message) : '서버 오류';
+                if (text) text.textContent = msg.startsWith('HTTP') || msg.includes('Failed') ? '서버 연결 실패' : `오류: ${msg.slice(0, 40)}`;
                 const badge = document.getElementById('engineStatus');
                 if (badge) badge.className = 'status-badge stopped';
             }

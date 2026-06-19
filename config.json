@@ -7,6 +7,66 @@
   "priority_track_limit": 10,
   "priority_keywords": [
     {
+      "keyword": "광택",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "차량관리",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "자동차코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "유리막",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "셀프코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "나눔랩",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "곰팡이억제",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "발수코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "가구 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "싱크대코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "타일코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "욕실코팅제",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
       "keyword": "바이크 디테일링",
       "store_name": "나눔랩",
       "product_id": "10713170202"
@@ -131,17 +191,59 @@
     {
       "id": "10713170202",
       "name": "듀라코트 리빙코트",
-      "url": "https://smartstore.naver.com/nanumlab/products/10713170202"
+      "url": "https://smartstore.naver.com/nanumlab/products/10713170202",
+      "meta_title": "나눔랩 듀라코트 리빙코트 곰팡이억제",
+      "meta_description": "나눔랩 듀라코트 리빙코트 — 곰팡이억제 추천. 셀프 유리막 코팅으로 광택·발수·오염 방지를 한 번에. 사용법·후기·구매 안내.",
+      "tags": [
+        "곰팡이억제",
+        "나눔랩",
+        "셀프코팅",
+        "유리막",
+        "자동차코팅",
+        "차량관리",
+        "광택",
+        "발수코팅"
+      ],
+      "seo_updated_at": "2026-06-18 19:50",
+      "seo_source": "auto_fix"
     },
     {
       "id": "12639296730",
       "name": "퍼마코트 자동차 코팅제",
-      "url": "https://smartstore.naver.com/nanumlab/products/12639296730"
+      "url": "https://smartstore.naver.com/nanumlab/products/12639296730",
+      "meta_title": "나눔랩 퍼마코트 자동차 코팅제 퍼마코트 자동차 코팅제",
+      "meta_description": "나눔랩 퍼마코트 자동차 코팅제 — 퍼마코트 자동차 코팅제 추천. 셀프 유리막 코팅으로 광택·발수·오염 방지를 한 번에. 사용법·후기·구매 안내.",
+      "tags": [
+        "퍼마코트 자동차 코팅제",
+        "나눔랩",
+        "셀프코팅",
+        "유리막",
+        "자동차코팅",
+        "차량관리",
+        "광택",
+        "발수코팅"
+      ],
+      "seo_updated_at": "2026-06-18 19:50",
+      "seo_source": "auto_fix"
     },
     {
       "id": "12634187514",
       "name": "나눔랩 코팅 상품",
-      "url": "https://smartstore.naver.com/nanumlab/products/12634187514"
+      "url": "https://smartstore.naver.com/nanumlab/products/12634187514",
+      "meta_title": "나눔랩 나눔랩 코팅 상품 나눔랩 코팅제",
+      "meta_description": "나눔랩 나눔랩 코팅 상품 — 나눔랩 코팅제 추천. 셀프 유리막 코팅으로 광택·발수·오염 방지를 한 번에. 사용법·후기·구매 안내.",
+      "tags": [
+        "나눔랩 코팅제",
+        "나눔랩",
+        "셀프코팅",
+        "유리막",
+        "자동차코팅",
+        "차량관리",
+        "광택",
+        "발수코팅"
+      ],
+      "seo_updated_at": "2026-06-18 19:50",
+      "seo_source": "auto_fix"
     },
     {
       "id": "12808787263",
@@ -559,6 +661,71 @@
       "keyword": "바이크 디테일링",
       "store_name": "나눔랩",
       "product_id": "10713170202"
+    },
+    {
+      "keyword": "욕실코팅제",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "타일코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "싱크대코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "가구 코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "발수코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "곰팡이억제",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "나눔랩",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "셀프코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "유리막",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "자동차코팅",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "차량관리",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "광택",
+      "store_name": "나눔랩",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "퍼마코트 자동차 코팅제",
+      "store_name": "나눔랩",
+      "product_id": "12639296730"
     }
   ],
   "product_urls": [
@@ -576,5 +743,49 @@
     "https://blog.naver.com/hymini1",
     "https://blog.naver.com/selfcoat",
     "https://hymini1.tistory.com/"
-  ]
+  ],
+  "blog_seo": {
+    "https://blog.naver.com/hymini1": {
+      "meta_title": "[직접 써봤어요] 광택 후기 — 네이버 블로그",
+      "meta_description": "나눔랩 광택 — ## 왜 광택를 알아보게 됐나요 세차 후 금방 다시 흐려지는 게 스트레스였습니다.  ## 나눔랩 네이버 블로그 사용 과정 1. 세차 후 물기 제거 2. 균일 도포 3. 24시간 경화  ## 한 달 사용 소감 발수감과 광택 유지가 눈에 띄었습니다. 상세페이지 링크는 글 하",
+      "target_keywords": [
+        "광택",
+        "차량관리",
+        "자동차코팅",
+        "유리막",
+        "셀프코팅"
+      ],
+      "seo_updated_at": "2026-06-18 19:50",
+      "seo_source": "auto_fix",
+      "apply_hint": "블로그 관리 → 기본 설정 → 검색·메타 설명에 붙여넣기"
+    },
+    "https://blog.naver.com/selfcoat": {
+      "meta_title": "[직접 써봤어요] 광택 후기 — 네이버 블로그",
+      "meta_description": "나눔랩 광택 — ## 왜 광택를 알아보게 됐나요 세차 후 금방 다시 흐려지는 게 스트레스였습니다.  ## 나눔랩 네이버 블로그 사용 과정 1. 세차 후 물기 제거 2. 균일 도포 3. 24시간 경화  ## 한 달 사용 소감 발수감과 광택 유지가 눈에 띄었습니다. 상세페이지 링크는 글 하",
+      "target_keywords": [
+        "광택",
+        "차량관리",
+        "자동차코팅",
+        "유리막",
+        "셀프코팅"
+      ],
+      "seo_updated_at": "2026-06-18 19:50",
+      "seo_source": "auto_fix",
+      "apply_hint": "블로그 관리 → 기본 설정 → 검색·메타 설명에 붙여넣기"
+    },
+    "https://hymini1.tistory.com": {
+      "meta_title": "[직접 써봤어요] 광택 후기 — 티스토리",
+      "meta_description": "나눔랩 광택 — ## 왜 광택를 알아보게 됐나요 세차 후 금방 다시 흐려지는 게 스트레스였습니다.  ## 나눔랩 티스토리 사용 과정 1. 세차 후 물기 제거 2. 균일 도포 3. 24시간 경화  ## 한 달 사용 소감 발수감과 광택 유지가 눈에 띄었습니다. 상세페이지 링크는 글 하단에 ",
+      "target_keywords": [
+        "광택",
+        "차량관리",
+        "자동차코팅",
+        "유리막",
+        "셀프코팅"
+      ],
+      "seo_updated_at": "2026-06-18 19:50",
+      "seo_source": "auto_fix",
+      "apply_hint": "블로그 관리 → 기본 설정 → 검색·메타 설명에 붙여넣기"
+    }
+  }
 }

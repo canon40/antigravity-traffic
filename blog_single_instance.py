@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Autoblog GUI 단일 인스턴스 — 중복 창 방지."""
+"""Autoblog GUI 단일 인스턴스 — 중복 창·포트 방지."""
 
 from __future__ import annotations
 
 import atexit
+import os
+import socket
 import sys
 
 _MUTEX_NAME = "Global\\canon4040_autoblog_gui_v1"
@@ -62,6 +64,20 @@ def _show_already_running_message() -> None:
 
 def _gui_window_visible() -> bool:
     return _find_window(_WINDOW_TITLE) > 0
+
+
+def _blog_studio_port() -> int:
+    try:
+        return int(os.environ.get("CANON_AUTOBLOG_PORT", "8790"))
+    except ValueError:
+        return 8790
+
+
+def _port_in_use(port: int) -> bool:
+    """블로그 스튜디오(Flask)가 이미 8790 등에서 listen 중인지."""
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.4)
+        return sock.connect_ex(("127.0.0.1", port)) == 0
 
 
 def _mutex_taken() -> bool:
@@ -134,8 +150,8 @@ def focus_existing_window() -> bool:
 
 
 def another_instance_running() -> bool:
-    """외부 스크립트(bat/JARVIS)용 — GUI 창 또는 mutex 보유 프로세스."""
-    return _gui_window_visible() or _mutex_taken()
+    """외부 스크립트(bat/JARVIS)용 — GUI 창, mutex, 또는 블로그 스튜디오 포트."""
+    return _gui_window_visible() or _mutex_taken() or _port_in_use(_blog_studio_port())
 
 
 if __name__ == "__main__":

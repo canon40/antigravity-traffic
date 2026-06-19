@@ -163,9 +163,13 @@
             if (d.job_running) {
                 badge.className = 'badge busy';
                 badge.textContent = '작업 실행 중…';
-            } else {
+            } else if (d.jarvis_installed && !d.standalone) {
                 badge.className = 'badge';
-                badge.textContent = 'JARVIS 연결 OK · 포트 ' + d.port;
+                const root = (d.jarvis_root || '').split('\\').pop() || 'javis';
+                badge.textContent = 'JARVIS 블로그 자동 · ' + root + ' · :' + d.port;
+            } else {
+                badge.className = 'badge err';
+                badge.textContent = 'JARVIS 미연결 — D:\\@code\\javis 확인';
             }
         } catch (e) {
             badge.className = 'badge err';
@@ -174,12 +178,23 @@
     }
 
     async function loadStatus() {
+        const box = document.getElementById('statusBox');
         try {
             const r = await fetch('/api/blog/status');
             const d = await r.json();
-            document.getElementById('statusBox').textContent = d.text || d.error || '—';
+            if (!d.ok) {
+                box.style.color = '#f87171';
+                box.textContent = d.error || '상태 조회 실패';
+                return;
+            }
+            box.style.color = '';
+            const head = d.mode === 'jarvis'
+                ? '엔진: D:\\@code\\javis (수정본)\n\n'
+                : (d.mode === 'missing' ? '' : '');
+            box.textContent = head + (d.text || '—');
         } catch (e) {
-            document.getElementById('statusBox').textContent = String(e);
+            box.style.color = '#f87171';
+            box.textContent = String(e);
         }
     }
 

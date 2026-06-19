@@ -18,6 +18,7 @@ from rank_tracker import (
     track_all_keywords,
 )
 from seo_checker import get_latest_audit, run_full_audit
+from seo_auto_fix import remediate_after_traffic, remediate_from_audit, ensure_product_seo
 from keyword_analyzer import analyze_keyword, suggest_keywords_for_product, analyze_all_products
 from seo_content_builder import generate_content, list_workflows, save_content
 from rank_tracker import check_product_rank
@@ -38,11 +39,14 @@ if _VT_ROOT.is_dir() and str(_VT_ROOT) not in sys.path:
 try:
     from traffic_session import run_traffic_session
     from traffic_backoff import apply_traffic_result, effective_interval_sec, format_backoff_note
+    from traffic_targets import pick_traffic_url, traffic_pool_summary
 except ImportError:
     run_traffic_session = None
     apply_traffic_result = None
     effective_interval_sec = None
     format_backoff_note = lambda _s: ""
+    pick_traffic_url = None
+    traffic_pool_summary = None
 
 _ROOT = Path(__file__).resolve().parent
 app = Flask(__name__)
@@ -78,7 +82,7 @@ _boot_auto_started = False
 
 def _json_error(endpoint: str, exc: Exception, status_code: int = 500):
     """클라이언트 JSON 파싱 실패 방지: 모든 서버 예외를 JSON으로 반환."""
-    detail = str(exc) or exc.__class__.__name__
+    detail = str(exc) or repr(exc) or exc.__class__.__name__
     add_log(f"❌ {endpoint} 오류: {detail}")
     return jsonify({
         "success": False,
@@ -207,6 +211,28 @@ def scheduler_loop():
     add_log("🛑 순위 추적 스케줄러가 중지되었습니다.")
 
 
+def _stop_rank_scheduler(*, wait_sec: float = 12.0) -> None:
+    """순위 스케줄러 중지 + 스레드 join 후 플래그 정리."""
+    global scheduler_running, scheduler_thread
+    rank_stop_event.set()
+    th = scheduler_thread
+    if th and th.is_alive():
+        th.join(timeout=wait_sec)
+    scheduler_running = False
+    scheduler_thread = None
+
+
+def _stop_traffic_loop(*, wait_sec: float = 12.0) -> None:
+    """트래픽 루프 중지 + 스레드 join 후 플래그 정리."""
+    global traffic_loop_running, traffic_thread
+    traffic_stop_event.set()
+    th = traffic_thread
+    if th and th.is_alive():
+        th.join(timeout=wait_sec)
+    traffic_loop_running = False
+    traffic_thread = None
+
+
 def _run_traffic_once(target_url: str, *, log_label: str = "자동") -> dict | None:
     """1회 트래픽 방문 + 429 백오프 상태 저장."""
     if run_traffic_session is None:
@@ -231,6 +257,24 @@ def _run_traffic_once(target_url: str, *, log_label: str = "자동") -> dict | N
         state["last_traffic_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         state["logs"] = logs_queue[-100:]
         save_hub_state(state)
+
+    try:
+        fix = remediate_after_traffic(target_url, logger=add_log)
+        if fix.get("ok") and fix.get("changed"):
+            state = load_hub_state()
+            fixes = list(state.get("seo_auto_fixes") or [])[-19:]
+            fixes.append({
+                "at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "url": target_url,
+                "product_id": fix.get("product_id"),
+                "changed": fix.get("changed"),
+            })
+            state["seo_auto_fixes"] = fixes
+            state["logs"] = logs_queue[-100:]
+            save_hub_state(state)
+    except Exception as exc:
+        add_log(f"⚠️ SEO 자동 보완 스킵: {exc}")
+
     return result
 
 
@@ -240,33 +284,45 @@ def traffic_loop():
     if run_traffic_session is None:
         traffic_loop_running = False
         return
-    state0 = load_hub_state()
-    base_iv = effective_interval_sec(state0) if effective_interval_sec else max(
-        300, int(os.environ.get("TRAFFIC_INTERVAL_SEC", "1200"))
-    )
-    add_log(f"🚗 트래픽 루프 시작 (기본 {base_iv // 60}분 간격, 429 시 자동 연장)")
-
-    while not traffic_stop_event.is_set():
-        target_url = _traffic_target_url()
-        try:
-            _run_traffic_once(target_url, log_label="자동")
-        except Exception:
-            pass
-
-        state = load_hub_state()
-        interval_sec = effective_interval_sec(state) if effective_interval_sec else max(
+    try:
+        state0 = load_hub_state()
+        base_iv = effective_interval_sec(state0) if effective_interval_sec else max(
             300, int(os.environ.get("TRAFFIC_INTERVAL_SEC", "1200"))
         )
-        if int(state.get("traffic_backoff_streak") or 0) > 0:
-            add_log(f"⏳ 다음 트래픽까지 {interval_sec // 60}분 대기 (rate limit 백오프)")
+        add_log(f"🚗 트래픽 루프 시작 (기본 {base_iv // 60}분 간격, 429 시 자동 연장)")
 
-        waited = 0
-        while waited < interval_sec and not traffic_stop_event.is_set():
-            time.sleep(10)
-            waited += 10
+        while not traffic_stop_event.is_set():
+            state = load_hub_state()
+            if not state.get("traffic_enabled", True):
+                add_log("⏸️ traffic_enabled=off — 트래픽 루프 종료")
+                break
+            if pick_traffic_url is not None:
+                config = load_config()
+                target_url, state = pick_traffic_url(config, state, advance=True)
+                save_hub_state(state)
+            else:
+                target_url = _traffic_target_url()
+            try:
+                _run_traffic_once(target_url, log_label="자동")
+            except Exception:
+                pass
 
-    traffic_loop_running = False
-    add_log("🛑 로컬 트래픽 루프가 중지되었습니다.")
+            state = load_hub_state()
+            if not state.get("traffic_enabled", True):
+                break
+            interval_sec = effective_interval_sec(state) if effective_interval_sec else max(
+                300, int(os.environ.get("TRAFFIC_INTERVAL_SEC", "1200"))
+            )
+            if int(state.get("traffic_backoff_streak") or 0) > 0:
+                add_log(f"⏳ 다음 트래픽까지 {interval_sec // 60}분 대기 (rate limit 백오프)")
+
+            waited = 0
+            while waited < interval_sec and not traffic_stop_event.is_set():
+                time.sleep(10)
+                waited += 10
+    finally:
+        traffic_loop_running = False
+        add_log("🛑 로컬 트래픽 루프가 중지되었습니다.")
 
 
 def ensure_background_services(*, log_boot: bool = False) -> None:
@@ -476,7 +532,7 @@ def api_status():
         if on_cron:
             running = rank_on
 
-        traffic_running = traffic_loop_running
+        traffic_running = traffic_on and traffic_loop_running
         if on_cron:
             traffic_running = traffic_on
 
@@ -640,6 +696,33 @@ def api_seo_audit():
 def api_seo_audit_latest():
     audit = get_latest_audit()
     return jsonify({"audit": audit})
+
+
+@app.route("/api/seo-auto-fix", methods=["POST"])
+def api_seo_auto_fix():
+    """차단·누락 SEO 항목 config 자동 보완 (메타·키워드)."""
+    data = request.get_json(silent=True) or {}
+    try:
+        if data.get("product_id"):
+            config = load_config()
+            result = ensure_product_seo(config, str(data["product_id"]), logger=add_log)
+            return jsonify({"success": result.get("ok", False), "result": result})
+        audit = get_latest_audit()
+        if audit:
+            fixes = remediate_from_audit(audit, logger=add_log)
+            return jsonify({"success": True, "fixes": fixes, "count": len(fixes)})
+        config = load_config()
+        fixes = []
+        for product in config.get("products") or []:
+            if not isinstance(product, dict):
+                continue
+            pid = str(product.get("id") or "").strip()
+            if pid:
+                fixes.append(ensure_product_seo(config, pid, logger=add_log))
+        return jsonify({"success": True, "fixes": fixes, "count": len(fixes)})
+    except Exception as exc:
+        add_log(traceback.format_exc())
+        return _json_error("/api/seo-auto-fix", exc)
 
 
 def _parse_scope(body: dict | None, default: str) -> str:
@@ -851,7 +934,11 @@ def _traffic_target_url() -> str:
     explicit = os.environ.get("TRAFFIC_TARGET_URL", "").strip()
     if explicit:
         return explicit
+    state = load_hub_state()
     config = load_config()
+    if pick_traffic_url is not None:
+        url, _ = pick_traffic_url(config, dict(state), advance=False)
+        return url
     products = config.get("products") or []
     for product in products:
         url = (product or {}).get("url", "")

@@ -110,6 +110,47 @@
         .result-card .detail { font-size: 0.82rem; color: var(--text-sub); margin-top: 4px; }
         .kw-chip { display: inline-block; font-size: 0.72rem; padding: 4px 8px; margin: 3px 4px 3px 0; border-radius: 999px; background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
         .kw-chip small { color: #64748b; margin-left: 4px; }
+        .product-pill {
+            display: inline-block; font-size: 0.72rem; padding: 4px 10px; margin-top: 6px;
+            border-radius: 8px; background: rgba(52,211,153,0.12); color: #6ee7b7;
+            border: 1px solid rgba(52,211,153,0.28); max-width: 100%;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .product-pill.lg {
+            display: block; font-size: 0.78rem; font-weight: 700; padding: 6px 10px;
+            margin-top: 6px; max-width: 160px; white-space: normal; line-height: 1.35;
+        }
+        .rank-product-banner {
+            background: linear-gradient(135deg, rgba(16,185,129,0.18), rgba(59,130,246,0.1));
+            border: 1px solid rgba(52,211,153,0.35); border-radius: 14px;
+            padding: 14px 16px; margin-bottom: 14px;
+        }
+        .rank-product-banner .banner-label {
+            font-size: 0.68rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em;
+            margin-bottom: 4px;
+        }
+        .rank-product-banner .banner-product-name {
+            font-size: 1.08rem; font-weight: 700; color: #6ee7b7; line-height: 1.35;
+        }
+        .rank-product-banner .banner-keyword {
+            font-size: 0.8rem; color: #cbd5e1; margin-top: 6px;
+        }
+        .rank-product-banner .banner-link {
+            font-size: 0.72rem; margin-top: 8px;
+        }
+        .rank-product-banner .banner-link a { color: #93c5fd; text-decoration: none; }
+        .result-card .product-line {
+            font-size: 0.75rem; color: #6ee7b7; margin-top: 4px; font-weight: 600;
+        }
+        .chart-filter-row {
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 12px;
+        }
+        .chart-filter-row select {
+            flex: 1; min-width: 160px; padding: 8px 10px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.12); background: rgba(15,23,42,0.85);
+            color: var(--text-main); font-size: 0.82rem;
+        }
+        .rank-row .product-tag { display: block; font-size: 0.68rem; color: #6ee7b7; margin-top: 2px; }
         .rank-row { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 0.8rem; }
         .rank-row:last-child { border-bottom: none; }
         .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 600; }
@@ -228,7 +269,8 @@
                     <div style="text-align:right;">
                         <div style="font-size:0.72rem;color:var(--text-sub);">최근 순위</div>
                         <div id="currentRankVal" class="rank-big" style="font-size:1.4rem;">--</div>
-                        <div id="currentRankKw" class="sidebar-mini" style="margin-top:2px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                        <div id="currentRankProduct" class="product-pill lg" style="display:none;" title=""></div>
+                        <div id="currentRankKw" class="sidebar-mini" style="margin-top:4px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
                     </div>
                 </div>
                 <div id="cronHint" class="sidebar-mini" style="display:none;"></div>
@@ -368,12 +410,27 @@
         </div>
 
         <div id="tab-chart" class="tab-content">
+            <div id="chartProductBanner" class="rank-product-banner" style="display:none;">
+                <div class="banner-label"><i class="fa-solid fa-box"></i> 추적 상품</div>
+                <div class="banner-product-name" id="chartBannerProduct">—</div>
+                <div class="banner-keyword" id="chartBannerKeyword">키워드: —</div>
+                <div class="banner-link" id="chartBannerLink"></div>
+            </div>
             <div class="glass-panel" style="margin-bottom:16px;">
                 <h3 style="font-size:0.95rem;margin-bottom:8px;"><i class="fa-solid fa-list"></i> 키워드별 최근 순위</h3>
                 <div id="keywordRankTable" class="sidebar-mini">「지금 추적」 후 표시됩니다.</div>
             </div>
             <div class="glass-panel">
                 <h3 style="font-size:0.95rem;margin-bottom:12px;"><i class="fa-solid fa-chart-line"></i> 순위 변동 (낮을수록 상위)</h3>
+                <div class="chart-filter-row">
+                    <label style="font-size:0.78rem;color:var(--text-sub);white-space:nowrap;">
+                        <i class="fa-solid fa-filter"></i> 키워드·제품
+                    </label>
+                    <select id="chartKeywordFilter" onchange="loadChart()">
+                        <option value="">전체 키워드 (혼합)</option>
+                    </select>
+                    <span id="chartProductLabel" style="font-size:0.75rem;color:#94a3b8;flex:1;min-width:120px;"></span>
+                </div>
                 <div style="height:260px;"><canvas id="rankingChart"></canvas></div>
                 <div id="chartEmpty" class="empty-state" style="display:none;margin-top:12px;">
                     순위 그래프는 「지금 추적」 후 표시됩니다.<br>
@@ -383,6 +440,22 @@
         </div>
 
         <div id="tab-seo" class="tab-content">
+            <div class="glass-panel" style="padding:14px;margin-bottom:12px;">
+                <div class="btn-grid btn-grid-3">
+                    <button class="btn btn-audit" onclick="runSeoAudit()">
+                        <i class="fa-solid fa-list-check"></i> SEO 점검
+                    </button>
+                    <button class="btn" style="background:#10b981;" onclick="runSeoAutoFix()">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> 메타·키워드 자동 보완
+                    </button>
+                    <button class="btn" style="background:#6366f1;" onclick="loadLatestAudit()">
+                        <i class="fa-solid fa-rotate"></i> 새로고침
+                    </button>
+                </div>
+                <p id="seoAutoFixHint" style="font-size:0.75rem;color:#94a3b8;margin-top:10px;margin-bottom:0;">
+                    네이버 차단 시 config에 메타·키워드를 자동 저장합니다. 트래픽 루프마다 상품별로 보완·키워드 추가 후 순위 추적이 이어집니다.
+                </p>
+            </div>
             <div class="glass-panel" id="seoAuditBox">
                 <div class="empty-state">SEO 점검 버튼을 눌러 상품·블로그 페이지를 점검하세요.</div>
             </div>
@@ -472,6 +545,100 @@
         const WS_KEY = 'hubWorkspace';
         let currentWorkspace = localStorage.getItem(WS_KEY) || 'traffic';
         let javisProgramsCache = [];
+        let productMaps = { byId: {}, byKw: {} };
+        let lastStatusData = null;
+
+        function buildProductMaps(config) {
+            const byId = {};
+            (config?.products || []).forEach(p => {
+                const id = String(p.id || '').trim();
+                if (!id) return;
+                byId[id] = {
+                    name: p.name || `상품 ${id}`,
+                    url: p.url || `https://smartstore.naver.com/nanumlab/products/${id}`,
+                };
+            });
+            const byKw = {};
+            (config?.priority_keywords || []).forEach(p => {
+                const kw = (p.keyword || '').trim();
+                const pid = String(p.product_id || '').trim();
+                if (!kw || !pid) return;
+                byKw[kw] = byId[pid] || { name: `상품 ${pid}`, url: `https://smartstore.naver.com/nanumlab/products/${pid}`, id: pid };
+                byKw[kw].id = pid;
+            });
+            productMaps = { byId, byKw };
+            return productMaps;
+        }
+
+        function productForKeyword(keyword, statusData) {
+            const kw = (keyword || '').trim();
+            if (!kw) return null;
+            const fromStatus = (statusData?.priority_keywords || []).find(p => p.keyword === kw);
+            if (fromStatus?.product_name) {
+                return {
+                    name: fromStatus.product_name,
+                    url: fromStatus.product_url || '',
+                    id: fromStatus.product_id || '',
+                };
+            }
+            const hit = productMaps.byKw[kw];
+            return hit ? { name: hit.name, url: hit.url, id: hit.id } : null;
+        }
+
+        function formatRankProductLine(keyword, statusData) {
+            const prod = productForKeyword(keyword, statusData);
+            if (!prod) return keyword ? `키워드: ${keyword}` : '';
+            return `🛒 ${prod.name} · 「${keyword}」`;
+        }
+
+        function updateRankProductDisplay(data, keywordOverride) {
+            const kw = (keywordOverride || data?.last_rank_keyword || '').trim();
+            const prod = data?.last_rank_product_name && !keywordOverride && kw === (data?.last_rank_keyword || '')
+                ? { name: data.last_rank_product_name, url: data.last_rank_product_url || '' }
+                : productForKeyword(kw, data);
+
+            const prodEl = document.getElementById('currentRankProduct');
+            const kwEl = document.getElementById('currentRankKw');
+            if (prodEl) {
+                if (prod?.name) {
+                    prodEl.style.display = 'block';
+                    prodEl.textContent = `🛒 ${prod.name}`;
+                    prodEl.title = prod.url || prod.name;
+                } else {
+                    prodEl.style.display = 'none';
+                    prodEl.textContent = '';
+                    prodEl.title = '';
+                }
+            }
+            if (kwEl) {
+                kwEl.textContent = kw ? `키워드: ${kw}` : (data?.last_rank_keyword ? '' : '키워드 없음');
+                kwEl.title = kw || '';
+            }
+
+            const banner = document.getElementById('chartProductBanner');
+            const bannerProd = document.getElementById('chartBannerProduct');
+            const bannerKw = document.getElementById('chartBannerKeyword');
+            const bannerLink = document.getElementById('chartBannerLink');
+            if (banner && bannerProd && bannerKw) {
+                if (prod?.name || kw) {
+                    banner.style.display = 'block';
+                    bannerProd.textContent = prod?.name ? `🛒 ${prod.name}` : '제품 매핑 없음 (config.json 확인)';
+                    bannerKw.textContent = kw ? `키워드: 「${kw}」` : '키워드: —';
+                    if (bannerLink) {
+                        bannerLink.innerHTML = prod?.url
+                            ? `<a href="${prod.url}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> 스마트스토어 상품 페이지</a>`
+                            : '';
+                    }
+                } else if (data?.products?.length) {
+                    banner.style.display = 'block';
+                    bannerProd.textContent = `추적 상품 ${data.products.length}개 · 드롭다운에서 선택`;
+                    bannerKw.textContent = data.products.slice(0, 3).map(p => p.name).join(' · ');
+                    if (bannerLink) bannerLink.innerHTML = '';
+                } else {
+                    banner.style.display = 'none';
+                }
+            }
+        }
 
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => switchTab(btn.dataset.tab, btn));
@@ -590,7 +757,7 @@
             } else if (['tab-chart', 'tab-seo', 'tab-blog', 'tab-local'].includes(tabId)) {
                 if (currentWorkspace !== 'traffic') setWorkspace('traffic');
             }
-            if (tabId === 'tab-chart') loadChart();
+            if (tabId === 'tab-chart') setTimeout(() => loadChart(), 0);
             if (tabId === 'tab-report') loadReport();
             if (tabId === 'tab-seo') loadLatestAudit();
             if (tabId === 'tab-blog') initBlogTab();
@@ -613,7 +780,17 @@
                 if (item.keyword) rankByKw[item.keyword] = item.rank_text || item.rank || '—';
             });
 
-            let html = '<div style="margin-bottom:10px;"><strong style="color:#e2e8f0;font-size:0.82rem;">순위 추적 키워드</strong> ';
+            let html = '';
+            if (data.products && data.products.length) {
+                html += '<div style="margin-bottom:8px;"><strong style="color:#e2e8f0;font-size:0.82rem;">추적 상품</strong></div>';
+                html += '<div style="margin-bottom:12px;">';
+                data.products.forEach(p => {
+                    const link = p.url ? ` title="${p.url}"` : '';
+                    html += `<span class="kw-chip"${link}>🛒 ${p.name}<small>${p.keyword_count || 0}개 키워드</small></span>`;
+                });
+                html += '</div>';
+            }
+            html += '<div style="margin-bottom:10px;"><strong style="color:#e2e8f0;font-size:0.82rem;">순위 추적 키워드</strong> ';
             html += `<span style="color:#94a3b8;">(우선 ${priority.length || data.priority_count || 0}개 · 전체 ${data.keyword_count || 0}개)</span></div>`;
             if (!priority.length) {
                 html += '<div style="color:#94a3b8;">config.json → priority_keywords 가 비어 있습니다.</div>';
@@ -622,7 +799,8 @@
                 priority.forEach(p => {
                     const rk = rankByKw[p.keyword];
                     const rkLabel = rk ? `<small>${rk}</small>` : '';
-                    html += `<span class="kw-chip">${p.keyword}${rkLabel}</span>`;
+                    const prodLabel = p.product_name ? `<small style="color:#6ee7b7;"> · ${p.product_name}</small>` : '';
+                    html += `<span class="kw-chip" title="${p.product_name || ''}">${p.keyword}${prodLabel}${rkLabel}</span>`;
                 });
                 html += '</div>';
             }
@@ -639,30 +817,41 @@
             const box = document.getElementById('keywordRankTable');
             if (!box) return;
             const items = (report && report.items) ? report.items.filter(i => i.status !== '실패') : [];
+            const rowHtml = (kw, rankText, status, prodName) => {
+                const prodTag = prodName ? `<span class="product-tag">🛒 ${prodName}</span>` : '';
+                const statusHtml = status ? ` <span style="color:#94a3b8;">${status}</span>` : '';
+                return `<div class="rank-row"><span><strong style="color:#e2e8f0;">${kw}</strong>${prodTag}</span><span><strong>${rankText}</strong>${statusHtml}</span></div>`;
+            };
             if (items.length) {
-                box.innerHTML = items.map(item => `
-                    <div class="rank-row">
-                        <span>${item.keyword}</span>
-                        <span><strong>${item.rank_text || '—'}</strong> <span style="color:#94a3b8;">${item.status || ''}</span></span>
-                    </div>`).join('');
+                box.innerHTML = items.map(item => {
+                    const prod = productForKeyword(item.keyword, lastStatusData);
+                    return rowHtml(item.keyword, item.rank_text || '—', item.status || '', prod?.name);
+                }).join('');
                 return;
             }
             if (history && history.length) {
                 const seen = new Set();
                 const rows = [];
-                for (let i = history.length - 1; i >= 0 && rows.length < 12; i--) {
+                const groups = {};
+                for (let i = history.length - 1; i >= 0; i--) {
                     const r = history[i];
                     const kw = r['키워드'] || r.keyword;
                     if (!kw || seen.has(kw)) continue;
                     seen.add(kw);
                     const rank = parseInt(r['순위'] || r.rank) || 100;
                     const rankText = rank >= 100 ? '100위 밖' : `${rank}위`;
-                    rows.push(`<div class="rank-row"><span>${kw}</span><strong>${rankText}</strong></div>`);
+                    const prod = productForKeyword(kw, lastStatusData);
+                    const prodName = prod?.name || '기타';
+                    if (!groups[prodName]) groups[prodName] = [];
+                    groups[prodName].push(rowHtml(kw, rankText, '', prod?.name));
                 }
-                box.innerHTML = rows.length ? rows.join('') : '기록 없음';
+                const html = Object.entries(groups).map(([prodName, lines]) =>
+                    `<div style="margin-bottom:10px;"><div style="font-size:0.72rem;color:#6ee7b7;font-weight:700;margin-bottom:4px;">🛒 ${prodName}</div>${lines.join('')}</div>`
+                ).join('');
+                box.innerHTML = html || '기록 없음';
                 return;
             }
-            box.textContent = '「지금 추적」 후 키워드별 순위가 표시됩니다.';
+            box.textContent = '「지금 추적」 후 키워드·제품별 순위가 표시됩니다.';
         }
 
         async function loadUserKeywords() {
@@ -705,15 +894,89 @@
         }
 
         async function loadConfig() {
-            if (appConfig) return appConfig;
+            if (appConfig) {
+                buildProductMaps(appConfig);
+                return appConfig;
+            }
             try {
                 const res = await fetch('/api/config');
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 appConfig = await res.json();
+                buildProductMaps(appConfig);
                 return appConfig;
             } catch (e) {
                 showToast('설정 로드 실패 — 서버 API 확인');
-                return appConfig || { products: [], keywords: [], brand: '나눔랩', store_name: '나눔랩' };
+                const fallback = appConfig || { products: [], keywords: [], brand: '나눔랩', store_name: '나눔랩', priority_keywords: [] };
+                buildProductMaps(fallback);
+                return fallback;
+            }
+        }
+
+        function asHistoryList(payload) {
+            if (Array.isArray(payload)) return payload;
+            if (payload && Array.isArray(payload.history)) return payload.history;
+            if (payload && Array.isArray(payload.rows)) return payload.rows;
+            return [];
+        }
+
+        function sortHistoryRows(rows) {
+            return [...rows].sort((a, b) => {
+                const da = String(a['날짜'] || a.recorded_at || '');
+                const db = String(b['날짜'] || b.recorded_at || '');
+                return da.localeCompare(db);
+            });
+        }
+
+        function historyKeywords(rows) {
+            const kws = new Set();
+            (rows || []).forEach(r => {
+                const kw = (r['키워드'] || r.keyword || '').trim();
+                if (kw) kws.add(kw);
+            });
+            return Array.from(kws).sort((a, b) => a.localeCompare(b, 'ko'));
+        }
+
+        function sliceChartRows(rows, filterKw, maxPoints = 120) {
+            let sorted = sortHistoryRows(rows);
+            if (filterKw) {
+                sorted = sorted.filter(r => (r['키워드'] || r.keyword || '').trim() === filterKw);
+            }
+            if (sorted.length > maxPoints) sorted = sorted.slice(-maxPoints);
+            return sorted;
+        }
+
+        function populateChartKeywordFilter(history, statusData) {
+            const sel = document.getElementById('chartKeywordFilter');
+            if (!sel) return;
+            const prev = sel.value;
+            const sorted = historyKeywords(history);
+            sel.innerHTML = '<option value="">전체 키워드 (혼합)</option>' + sorted.map(kw => {
+                const prod = productForKeyword(kw, statusData);
+                const label = prod ? `${kw} — ${prod.name}` : kw;
+                const safe = kw.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+                return `<option value="${safe}">${label}</option>`;
+            }).join('');
+            if (prev && sorted.includes(prev)) {
+                sel.value = prev;
+            } else {
+                sel.value = '';
+            }
+        }
+
+        function updateChartProductLabel(keyword, statusData) {
+            const el = document.getElementById('chartProductLabel');
+            if (!el) return;
+            if (!keyword) {
+                el.innerHTML = '<span style="color:#f59e0b;">⚠️ 키워드가 섞여 표시됩니다 — 드롭다운에서 제품을 선택하세요</span>';
+                return;
+            }
+            const prod = productForKeyword(keyword, statusData);
+            if (prod?.url) {
+                el.innerHTML = `추적 대상: <strong style="color:#6ee7b7;">${prod.name}</strong> · <a href="${prod.url}" target="_blank" rel="noopener" style="color:#93c5fd;">상품 보기</a>`;
+            } else if (prod) {
+                el.innerHTML = `추적 대상: <strong style="color:#6ee7b7;">${prod.name}</strong>`;
+            } else {
+                el.innerHTML = `키워드: <strong>${keyword}</strong> <span style="color:#94a3b8;">(제품 매핑 없음)</span>`;
             }
         }
 
@@ -1116,7 +1379,31 @@
             if (data.success) {
                 renderSeoAudit(data.audit);
                 switchTab('tab-seo', document.querySelector('[data-tab="tab-seo"]'));
-                showToast(`SEO 평균 ${data.audit.summary.average_score}점`);
+                const fixN = data.audit?.summary?.auto_fix_count || 0;
+                showToast(fixN ? `SEO 평균 ${data.audit.summary.average_score}점 · 자동 보완 ${fixN}건` : `SEO 평균 ${data.audit.summary.average_score}점`);
+            } else {
+                showToast(data.error || 'SEO 점검 실패');
+            }
+        }
+
+        async function runSeoAutoFix() {
+            showToast('메타·키워드 자동 보완 중...');
+            try {
+                const res = await fetch('/api/seo-auto-fix', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                const data = await res.json();
+                if (!res.ok || data.success === false) throw new Error(data.error || '보완 실패');
+                const fixes = (data.fixes || [data.result]).filter(Boolean);
+                const changed = fixes.filter(f => f.ok && f.changed && f.changed.length).length;
+                const hint = document.getElementById('seoAutoFixHint');
+                if (hint && changed) {
+                    hint.innerHTML = `✅ <strong style="color:#6ee7b7;">${changed}개</strong> 상품·블로그에 메타·키워드 저장됨. 스마트스토어·블로그 관리자에 메타 설명을 붙여넣으세요. <code style="color:#93c5fd;">generated_content/</code> 폴더에 초안도 저장됩니다.`;
+                }
+                showToast(changed ? `자동 보완 ${changed}건 완료` : '이미 보완됨 또는 변경 없음');
+                appConfig = null;
+                await loadConfig();
+                await runSeoAudit();
+            } catch (e) {
+                showToast('자동 보완 실패: ' + (e.message || e));
             }
         }
 
@@ -1157,10 +1444,13 @@
                 if (item.status === '실패') {
                     return `<div class="result-card"><div class="kw">${item.keyword}</div><div class="detail">조회 실패</div></div>`;
                 }
+                const prod = productForKeyword(item.keyword, lastStatusData);
+                const prodLine = prod?.name ? `<div class="product-line">🛒 ${prod.name}</div>` : '';
                 const cls = item.status === '상승' ? 'up' : (item.status === '하락' ? 'down' : '');
                 const badgeCls = item.status === '상승' ? 'badge-up' : (item.status === '하락' ? 'badge-down' : 'badge-same');
                 return `<div class="result-card ${cls}">
                     <div class="kw">${item.keyword} <span class="badge ${badgeCls}">${item.status}</span></div>
+                    ${prodLine}
                     <div class="detail">${item.prev_text} → <strong>${item.rank_text}</strong></div>
                     <div class="detail">작업: ${(item.tasks || []).join(', ')}</div>
                 </div>`;
@@ -1224,6 +1514,9 @@
             if (s.product_total && s.product_limit && s.product_total > s.product_limit) {
                 html += `<p style="font-size:0.75rem;color:#94a3b8;margin-bottom:12px;">상품 ${s.product_limit}개 샘플 점검 (전체 ${s.product_total}개 · 네이버 차단 방지)</p>`;
             }
+            if (s.auto_fix_count) {
+                html += `<p style="font-size:0.78rem;color:#6ee7b7;margin-bottom:12px;">🔧 자동 보완 ${s.auto_fix_count}건 — config 메타·키워드 저장됨 (스마트스토어 관리자에 메타 설명 붙여넣기)</p>`;
+            }
 
             [...audit.products, ...audit.blogs].forEach(page => {
                 if (!page.success) {
@@ -1231,7 +1524,7 @@
                     html += `<div style="margin-bottom:14px;"><strong style="font-size:0.85rem;">${page.url}</strong><div class="detail" style="color:var(--accent-red);margin-top:4px;font-size:0.78rem;">${detail}</div></div>`;
                     return;
                 }
-                const partial = page.partial ? ' <span style="color:#fbbf24;font-size:0.72rem;">(config 폴백)</span>' : '';
+                const partial = page.partial ? ' <span style="color:#fbbf24;font-size:0.72rem;">(config 자동 보완)</span>' : '';
                 html += `<div style="margin-bottom:16px;">
                     <div style="font-size:0.85rem;font-weight:600;margin-bottom:8px;">${page.page_type === 'product' ? '🛒' : '📝'} ${page.url} <span style="color:var(--accent-blue);">${page.percent}점 (${page.grade})</span>${partial}</div>`;
                 page.checks.forEach(c => {
@@ -1260,26 +1553,32 @@
         async function updateStatus() {
             try {
                 const res = await fetch('/api/status');
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                const data = await res.json();
-            const badge = document.getElementById('engineStatus');
-            const text = document.getElementById('engineStatusText');
-            const running = !!data.running;
-            const trafficOn = !!(data.traffic_running || data.traffic_loop);
-            const trafficPill = document.getElementById('trafficBgPill');
-            if (trafficPill) trafficPill.dataset.trafficOn = trafficOn ? '1' : '0';
-            if (running) {
-                badge.className = 'status-badge running';
-                const label24 = data.auto_mode === 'cron' ? '24h Cron' : (data.auto_mode === 'daemon' ? '24h 백그라운드' : (data.traffic_loop ? '추적·트래픽' : '추적 중'));
-                text.textContent = hubAuto24h(data) ? label24 : (data.traffic_loop ? '추적·트래픽' : '추적 중');
-                document.getElementById('startBtn').disabled = true;
-                document.getElementById('stopBtn').disabled = false;
-            } else {
-                badge.className = 'status-badge stopped';
-                text.textContent = hubAuto24h(data) ? (data.auto_mode === 'cron' ? 'Cron 꺼짐' : '24h 꺼짐') : '중지됨';
-                document.getElementById('startBtn').disabled = false;
-                document.getElementById('stopBtn').disabled = true;
-            }
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) {
+                    throw new Error(data.error || `HTTP ${res.status}`);
+                }
+                const badge = document.getElementById('engineStatus');
+                const text = document.getElementById('engineStatusText');
+                const running = !!data.running;
+                const trafficOn = !!(data.traffic_running || data.traffic_loop);
+                const trafficPill = document.getElementById('trafficBgPill');
+                if (trafficPill) trafficPill.dataset.trafficOn = trafficOn ? '1' : '0';
+                if (running) {
+                    if (badge) badge.className = 'status-badge running';
+                    const label24 = data.auto_mode === 'cron' ? '24h Cron' : (data.auto_mode === 'daemon' ? '24h 백그라운드' : (data.traffic_loop ? '추적·트래픽' : '추적 중'));
+                    if (text) text.textContent = hubAuto24h(data) ? label24 : (data.traffic_loop ? '추적·트래픽' : '추적 중');
+                    const startBtn = document.getElementById('startBtn');
+                    const stopBtn = document.getElementById('stopBtn');
+                    if (startBtn) startBtn.disabled = true;
+                    if (stopBtn) stopBtn.disabled = false;
+                } else {
+                    if (badge) badge.className = 'status-badge stopped';
+                    if (text) text.textContent = hubAuto24h(data) ? (data.auto_mode === 'cron' ? 'Cron 꺼짐' : '24h 꺼짐') : '중지됨';
+                    const startBtn = document.getElementById('startBtn');
+                    const stopBtn = document.getElementById('stopBtn');
+                    if (startBtn) startBtn.disabled = false;
+                    if (stopBtn) stopBtn.disabled = true;
+                }
             syncCompactTrafficStatus(data, running);
             const cronHint = document.getElementById('cronHint');
             if (cronHint) {
@@ -1305,12 +1604,10 @@
             const cloudBtn = document.getElementById('cloudTrafficBtn');
             if (cloudBtn) cloudBtn.style.display = data.auto_mode === 'cron' ? 'flex' : 'none';
             const rank = data.last_rank;
-            document.getElementById('currentRankVal').textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
-            const rankKw = document.getElementById('currentRankKw');
-            if (rankKw) {
-                rankKw.textContent = data.last_rank_keyword ? `「${data.last_rank_keyword}」` : '';
-                rankKw.title = data.last_rank_keyword || '';
-            }
+            const rankEl = document.getElementById('currentRankVal');
+            if (rankEl) rankEl.textContent = rank == null ? '--' : (rank >= 100 ? '100위 밖' : rank + '위');
+            lastStatusData = data;
+            updateRankProductDisplay(data);
             const trafficHint = document.getElementById('trafficTargetHint');
             if (trafficHint && data.traffic_target_url) {
                 trafficHint.style.display = 'block';
@@ -1319,8 +1616,10 @@
             }
             const config = await loadConfig();
             renderKeywordTrafficPanel(data, config);
-            document.getElementById('totalTracksVal').textContent = data.total_tracks || 0;
-            document.getElementById('keywordCountVal').textContent = data.keyword_count || 0;
+            const tracksEl = document.getElementById('totalTracksVal');
+            const kwCountEl = document.getElementById('keywordCountVal');
+            if (tracksEl) tracksEl.textContent = data.total_tracks || 0;
+            if (kwCountEl) kwCountEl.textContent = data.keyword_count || 0;
             const hint = document.getElementById('kwHint');
             if (hint) {
                 const batch = data.track_batch_count || data.keyword_count || 0;
@@ -1338,7 +1637,7 @@
                 try {
                     const hres = await fetch('/api/history');
                     if (hres.ok) {
-                        const history = await hres.json();
+                        const history = asHistoryList(await hres.json());
                         const fallback = historyToReport(history);
                         if (fallback) {
                             lastReport = fallback;
@@ -1354,8 +1653,10 @@
             }
             updateTrafficBgPill();
             } catch (e) {
+                console.error('updateStatus', e);
                 const text = document.getElementById('engineStatusText');
-                if (text) text.textContent = '서버 오류';
+                const msg = (e && e.message) ? String(e.message) : '서버 오류';
+                if (text) text.textContent = msg.startsWith('HTTP') || msg.includes('Failed') ? '서버 연결 실패' : `오류: ${msg.slice(0, 40)}`;
                 const badge = document.getElementById('engineStatus');
                 if (badge) badge.className = 'status-badge stopped';
             }
@@ -1372,63 +1673,117 @@
         }
 
         async function loadChart() {
-            const res = await fetch('/api/history');
-            const data = await res.json();
             const chartEmpty = document.getElementById('chartEmpty');
-            if (!data || !data.length) {
-                if (chart) chart.destroy();
-                if (chartEmpty) chartEmpty.style.display = 'block';
+            const canvas = document.getElementById('rankingChart');
+            if (!canvas || typeof Chart === 'undefined') {
+                if (chartEmpty) {
+                    chartEmpty.style.display = 'block';
+                    chartEmpty.textContent = '차트 라이브러리를 불러오지 못했습니다. 새로고침 해주세요.';
+                }
                 return;
             }
-            if (chartEmpty) chartEmpty.style.display = 'none';
-            const labels = data.map(r => {
-                const t = (r.날짜 || '').split(' ')[1] || r.날짜 || '';
-                const kw = (r.키워드 || '').slice(0, 8);
-                return kw ? `${t}\n${kw}` : t;
-            });
-            const ranks = data.map(r => {
-                const n = parseInt(r.순위);
-                return Number.isFinite(n) && n > 0 ? Math.min(n, 100) : 100;
-            });
-            const keywords = data.map(r => r.키워드 || '');
-            const ctx = document.getElementById('rankingChart').getContext('2d');
-            if (chart) chart.destroy();
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels,
-                    datasets: [{
-                        label: '순위',
-                        data: ranks,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59,130,246,0.1)',
-                        tension: 0.3,
-                        fill: true,
-                        pointRadius: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: '#e2e8f0', font: { size: 10 } } },
-                        tooltip: {
-                            callbacks: {
-                                title: (items) => {
-                                    const i = items[0]?.dataIndex;
-                                    return keywords[i] ? `키워드: ${keywords[i]}` : '순위';
+            try {
+                await loadConfig();
+                if (!lastStatusData) {
+                    try {
+                        const sres = await fetch('/api/status');
+                        if (sres.ok) lastStatusData = await sres.json();
+                    } catch (_) {}
+                }
+                const res = await fetch('/api/history?limit=800');
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                const payload = await res.json();
+                const allRows = asHistoryList(payload);
+                populateChartKeywordFilter(allRows, lastStatusData);
+                let filterKw = (document.getElementById('chartKeywordFilter')?.value || '').trim();
+                let rows = sliceChartRows(allRows, filterKw, filterKw ? 120 : 80);
+                if (!rows.length && filterKw) {
+                    filterKw = '';
+                    const sel = document.getElementById('chartKeywordFilter');
+                    if (sel) sel.value = '';
+                    rows = sliceChartRows(allRows, '', 80);
+                }
+                updateChartProductLabel(filterKw, lastStatusData);
+                updateRankProductDisplay(lastStatusData, filterKw || undefined);
+                if (!rows.length) {
+                    if (chart) { chart.destroy(); chart = null; }
+                    if (chartEmpty) {
+                        chartEmpty.style.display = 'block';
+                        chartEmpty.innerHTML = '순위 그래프는 「지금 추적」 후 표시됩니다.<br>PC에서는 <code style="color:#93c5fd;">python scripts/rank_daily.py</code>로 전체 키워드 일괄 추적 가능';
+                    }
+                    renderKeywordRankTable(lastReport, allRows);
+                    return;
+                }
+                if (chartEmpty) chartEmpty.style.display = 'none';
+                const labels = rows.map(r => {
+                    const raw = String(r['날짜'] || r.recorded_at || '');
+                    const t = raw.split(' ')[1] || raw;
+                    const kw = String(r['키워드'] || r.keyword || '').slice(0, 8);
+                    return filterKw ? t : (kw ? `${t}\n${kw}` : t);
+                });
+                const ranks = rows.map(r => {
+                    const n = parseInt(r['순위'] || r.rank, 10);
+                    return Number.isFinite(n) && n > 0 ? Math.min(n, 100) : 100;
+                });
+                const keywords = rows.map(r => r['키워드'] || r.keyword || '');
+                const products = rows.map(r => {
+                    const p = productForKeyword(r['키워드'] || r.keyword || '', lastStatusData);
+                    return p?.name || '';
+                });
+                const ctx = canvas.getContext('2d');
+                if (chart) chart.destroy();
+                const chartTitle = filterKw ? formatRankProductLine(filterKw, lastStatusData) : `전체 키워드 (최근 ${rows.length}건)`;
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: chartTitle,
+                            data: ranks,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59,130,246,0.12)',
+                            tension: 0.25,
+                            fill: true,
+                            pointRadius: rows.length > 60 ? 0 : 3,
+                            pointHoverRadius: 4,
+                            borderWidth: 2,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        animation: false,
+                        plugins: {
+                            legend: { labels: { color: '#e2e8f0', font: { size: 10 } } },
+                            tooltip: {
+                                callbacks: {
+                                    title: (items) => {
+                                        const i = items[0]?.dataIndex;
+                                        const kw = keywords[i] || '';
+                                        const prod = products[i];
+                                        if (prod && kw) return `🛒 ${prod}\n키워드: ${kw}`;
+                                        return kw ? `키워드: ${kw}` : '순위';
+                                    },
+                                    label: (item) => `순위: ${item.raw >= 100 ? '100위 밖' : item.raw + '위'}`,
                                 },
-                                label: (item) => `순위: ${item.raw >= 100 ? '100위 밖' : item.raw + '위'}`,
                             },
                         },
-                    },
-                    scales: {
-                        y: { reverse: true, min: 1, max: 100, ticks: { color: '#94a3b8', stepSize: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        x: { ticks: { color: '#94a3b8', maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        scales: {
+                            y: { reverse: true, min: 1, max: 100, ticks: { color: '#94a3b8', stepSize: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            x: { ticks: { color: '#94a3b8', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                        }
                     }
+                });
+                requestAnimationFrame(() => { try { chart?.resize(); } catch (_) {} });
+                renderKeywordRankTable(lastReport, allRows);
+            } catch (e) {
+                console.error('loadChart', e);
+                if (chart) { chart.destroy(); chart = null; }
+                if (chartEmpty) {
+                    chartEmpty.style.display = 'block';
+                    chartEmpty.innerHTML = `그래프 로드 실패: ${e.message || e}<br>새로고침 후 다시 시도하세요.`;
                 }
-            });
-            renderKeywordRankTable(lastReport, data);
+            }
         }
 
         async function loadReport() {
@@ -1503,10 +1858,13 @@
             const defaultTab = currentWorkspace === 'javis' ? 'tab-javis' : 'tab-dashboard';
             const defaultBtn = document.querySelector(`.tab-btn[data-tab="${defaultTab}"]`);
             if (defaultBtn) switchTab(defaultTab, defaultBtn);
-            updateStatus();
+            await updateStatus();
             loadLatestAudit();
             loadConfig();
             loadUserKeywords();
+            if (document.getElementById('tab-chart')?.classList.contains('active')) {
+                setTimeout(() => loadChart(), 0);
+            }
         })();
 
         let deferredPrompt;
