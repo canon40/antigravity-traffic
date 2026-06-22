@@ -908,13 +908,35 @@
             }
         }
 
+        const HUB_STATIC = {
+            '/api/status': '/static/api/status.json',
+            '/api/health': '/static/api/health.json',
+            '/api/config': '/static/api/config.json',
+            '/api/logs': '/static/api/logs.json',
+            '/api/history': '/static/api/history.json'
+        };
+
+        async function fetchHubGet(path, opts) {
+            const ctrl = opts && opts.signal ? null : new AbortController();
+            const signal = (opts && opts.signal) || (ctrl && ctrl.signal);
+            const timer = ctrl ? setTimeout(() => ctrl.abort(), opts && opts.timeoutMs || 20000) : null;
+            try {
+                const res = await fetch(path, { ...opts, signal });
+                if (res.ok) return res;
+            } catch (_) { /* API 실패 → 정적 폴백 */ }
+            finally { if (timer) clearTimeout(timer); }
+            const fb = HUB_STATIC[path.split('?')[0]];
+            if (fb) return fetch(fb, { cache: 'no-store' });
+            throw new Error('HTTP 404');
+        }
+
         async function loadConfig() {
             if (appConfig) {
                 buildProductMaps(appConfig);
                 return appConfig;
             }
             try {
-                const res = await fetch('/api/config');
+                const res = await fetchHubGet('/api/config');
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 appConfig = await res.json();
                 buildProductMaps(appConfig);
@@ -1075,6 +1097,54 @@
             }
         }
 
+        function escHtml(s) {
+            return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function applyJavisHubMeta(data) {
+            javisProgramsCache = data.programs || [];
+            renderSidebarJavis(javisProgramsCache, !!data.cloud_mode);
+            const statusBox = document.getElementById('javisHubStatus');
+            const pills = [];
+            pills.push(`<span class="hub-pill ${data.jarvis_installed ? 'ok' : 'warn'}">JARVIS ${data.jarvis_installed ? '설치됨' : '경로 없음'}</span>`);
+            if (data.jarvis_bundled) pills.push('<span class="hub-pill ok">Git 번들 javis/</span>');
+            pills.push(`<span class="hub-pill ${data.bridge?.ok ? 'ok' : 'warn'}">${escHtml(data.bridge?.detail || '브리지')}</span>`);
+            pills.push(`<span class="hub-pill">${(data.programs || []).filter(p => p.available && (!data.cloud_mode || p.runtime === 'cloud')).length}개 실행 가능</span>`);
+            if (data.cloud_mode) {
+                pills.push(`<span class="hub-pill ok">☁️ 클라우드 ${data.cloud_programs || 0}개</span>`);
+                if (data.hidden_pc_only) {
+                    pills.push(`<span class="hub-pill warn">PC 전용 ${data.hidden_pc_only}개 숨김</span>`);
+                }
+            }
+            if (statusBox) statusBox.innerHTML = pills.join('');
+
+            const eng = document.getElementById('javisEngineStatus');
+            const engText = document.getElementById('javisEngineStatusText');
+            if (eng && engText) {
+                if (data.jarvis_installed) {
+                    eng.className = 'status-badge running';
+                    engText.textContent = '준비됨';
+                } else {
+                    eng.className = 'status-badge stopped';
+                    engText.textContent = '미설치';
+                }
+            }
+            const rootHint = document.getElementById('javisRootHint');
+            if (rootHint) rootHint.textContent = data.jarvis_root || '';
+            const cnt = document.getElementById('javisCatalogCount');
+            if (cnt) cnt.textContent = data.catalog_count || data.javis_count || '0';
+
+            const bridgeBox = document.getElementById('javisBridgeBox');
+            if (bridgeBox) {
+                bridgeBox.innerHTML = `<div style="font-size:0.85rem;line-height:1.6;color:var(--text-sub);">
+                    <p><strong style="color:var(--text-main);">JARVIS 루트</strong><br>${escHtml(data.jarvis_root || '—')}</p>
+                    <p style="margin-top:10px;"><strong style="color:var(--text-main);">원격 저장소</strong><br>
+                    <a href="${escHtml(data.jarvis_remote || '#')}" style="color:#93c5fd;" target="_blank" rel="noopener">FatihMakes/Mark-XXXIX</a></p>
+                    <p style="margin-top:10px;">로컬에 없으면: <code style="color:#93c5fd;">git submodule update --init javis</code></p>
+                </div>`;
+            }
+        }
+
         function renderProgramList(programs, listBox, cloudMode) {
             const visible = cloudMode
                 ? (programs || []).filter(p => p.ui_visible !== false && p.runtime === 'cloud')
@@ -1105,9 +1175,9 @@
                     else if (isLocalOnly) btnLabel = 'PC 전용';
                     const badge = isCloud ? '<span class="hub-pill ok" style="font-size:0.65rem;margin-left:6px;">☁️</span>' : '';
                     html += `<div class="program-card ${p.available ? '' : 'unavailable'}">
-                        <h4><i class="fa-solid ${p.icon || 'fa-play'}"></i> ${p.name}${badge}</h4>
-                        <p>${p.description}</p>
-                        <button class="btn-launch" ${p.available ? '' : 'disabled'} onclick="launchJavisProgram('${p.id}')">
+                        <h4><i class="fa-solid ${escHtml(p.icon || 'fa-play')}"></i> ${escHtml(p.name)}${badge}</h4>
+                        <p>${escHtml(p.description)}</p>
+                        <button class="btn-launch" ${p.available ? '' : 'disabled'} data-program-id="${escHtml(p.id)}" onclick="launchJavisProgram(this.dataset.programId)">
                             <i class="fa-solid fa-rocket"></i> ${btnLabel}
                         </button>
                     </div>`;
@@ -1117,13 +1187,19 @@
             listBox.innerHTML = html || '<div class="empty-state">등록된 프로그램이 없습니다.</div>';
         }
 
-        async function loadProgramHub(workspace) {
+        async function loadProgramHub(workspace, retryAfterHeal = true) {
             const listId = workspace === 'traffic' ? 'trafficProgramList' : 'javisProgramList';
             const listBox = document.getElementById(listId);
             if (!listBox) return;
             try {
-                const res = await fetch('/api/javis/programs?workspace=' + encodeURIComponent(workspace));
-                const data = await res.json();
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 45000);
+                const res = await fetch('/api/javis/programs?workspace=' + encodeURIComponent(workspace), { signal: ctrl.signal });
+                clearTimeout(timer);
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) {
+                    throw new Error(data.error || `HTTP ${res.status}`);
+                }
                 if (workspace === 'traffic') {
                     const hint = document.getElementById('localHubHint');
                     if (hint && data.setup_hint) {
@@ -1133,55 +1209,44 @@
                         const venv = data.venv_ready
                             ? ''
                             : ' · <strong style="color:#fbbf24;">run_install.bat 필요</strong>';
-                        hint.innerHTML = mode + data.setup_hint + venv;
+                        hint.innerHTML = mode + escHtml(data.setup_hint) + venv;
                     }
                 }
                 if (workspace === 'javis') {
-                    javisProgramsCache = data.programs || [];
-                    renderSidebarJavis(javisProgramsCache, !!data.cloud_mode);
-                    const statusBox = document.getElementById('javisHubStatus');
-                    const pills = [];
-                    pills.push(`<span class="hub-pill ${data.jarvis_installed ? 'ok' : 'warn'}">JARVIS ${data.jarvis_installed ? '설치됨' : '경로 없음'}</span>`);
-                    if (data.jarvis_bundled) pills.push('<span class="hub-pill ok">Git 번들 javis/</span>');
-                    pills.push(`<span class="hub-pill ${data.bridge?.ok ? 'ok' : 'warn'}">${data.bridge?.detail || '브리지'}</span>`);
-                    pills.push(`<span class="hub-pill">${(data.programs || []).filter(p => p.available && (!data.cloud_mode || p.runtime === 'cloud')).length}개 실행 가능</span>`);
-                    if (data.cloud_mode) {
-                        pills.push(`<span class="hub-pill ok">☁️ 클라우드 ${data.cloud_programs || 0}개</span>`);
-                        if (data.hidden_pc_only) {
-                            pills.push(`<span class="hub-pill warn">PC 전용 ${data.hidden_pc_only}개 숨김</span>`);
-                        }
-                    }
-                    if (statusBox) statusBox.innerHTML = pills.join('');
-
-                    const eng = document.getElementById('javisEngineStatus');
-                    const engText = document.getElementById('javisEngineStatusText');
-                    if (eng && engText) {
-                        if (data.jarvis_installed) {
-                            eng.className = 'status-badge running';
-                            engText.textContent = '준비됨';
-                        } else {
-                            eng.className = 'status-badge stopped';
-                            engText.textContent = '미설치';
-                        }
-                    }
-                    const rootHint = document.getElementById('javisRootHint');
-                    if (rootHint) rootHint.textContent = data.jarvis_root || '';
-                    const cnt = document.getElementById('javisCatalogCount');
-                    if (cnt) cnt.textContent = data.catalog_count || data.javis_count || '0';
-
-                    const bridgeBox = document.getElementById('javisBridgeBox');
-                    if (bridgeBox) {
-                        bridgeBox.innerHTML = `<div style="font-size:0.85rem;line-height:1.6;color:var(--text-sub);">
-                            <p><strong style="color:var(--text-main);">JARVIS 루트</strong><br>${data.jarvis_root || '—'}</p>
-                            <p style="margin-top:10px;"><strong style="color:var(--text-main);">원격 저장소</strong><br>
-                            <a href="${data.jarvis_remote || '#'}" style="color:#93c5fd;" target="_blank" rel="noopener">FatihMakes/Mark-XXXIX</a></p>
-                            <p style="margin-top:10px;">로컬에 없으면: <code style="color:#93c5fd;">git submodule update --init javis</code></p>
-                        </div>`;
-                    }
+                    applyJavisHubMeta(data);
                 }
                 renderProgramList(data.programs, listBox, !!data.cloud_mode);
             } catch (e) {
-                listBox.innerHTML = '<div class="empty-state">서버 연결을 확인하세요.</div>';
+                console.error('loadProgramHub', workspace, e);
+                if (retryAfterHeal) {
+                    try {
+                        const hres = await fetch('/api/self-heal', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ error: e.message || String(e), endpoint: '/api/javis/programs' }),
+                        });
+                        const hdata = await hres.json();
+                        if (hdata.success && hdata.healed) {
+                            showToast('🩹 셀프힐링 후 JARVIS 목록 재시도…');
+                            return loadProgramHub(workspace, false);
+                        }
+                    } catch (_) {}
+                }
+                const msg = (e && e.message) ? String(e.message) : '연결 실패';
+                const localHint = msg.includes('abort') || msg.includes('Failed') || msg.includes('fetch')
+                    ? '<br><small style="color:#94a3b8;">PC: <code>run.bat</code> 실행 → http://127.0.0.1:5000</small>'
+                    : `<br><small style="color:#94a3b8;">${escHtml(msg.slice(0, 80))}</small>`;
+                listBox.innerHTML = `<div class="empty-state">서버 연결을 확인하세요.${localHint}</div>`;
+                if (workspace === 'javis') {
+                    const eng = document.getElementById('javisEngineStatus');
+                    const engText = document.getElementById('javisEngineStatusText');
+                    if (eng) eng.className = 'status-badge stopped';
+                    if (engText) engText.textContent = '연결 실패';
+                    const statusBox = document.getElementById('javisHubStatus');
+                    if (statusBox) statusBox.innerHTML = '<span class="hub-pill warn">API 연결 실패 — run.bat 확인</span>';
+                    const sidebar = document.getElementById('sidebarJavisPrograms');
+                    if (sidebar) sidebar.innerHTML = '<div class="sidebar-mini">연결 실패 — 서버 실행 후 새로고침</div>';
+                }
             }
         }
 
@@ -1639,19 +1704,30 @@
             syncCompactTrafficStatus(data, running);
         }
 
-        async function updateStatus() {
+        async function updateStatus(retryAfterHeal = true) {
             let data;
             try {
-                const ctrl = new AbortController();
-                const timer = setTimeout(() => ctrl.abort(), 20000);
-                const res = await fetch('/api/status', { signal: ctrl.signal });
-                clearTimeout(timer);
+                const res = await fetchHubGet('/api/status');
                 data = await res.json().catch(() => ({}));
                 if (!res.ok || data.success === false) {
                     throw new Error(data.error || `HTTP ${res.status}`);
                 }
                 applyEngineStatus(data);
             } catch (e) {
+                if (retryAfterHeal) {
+                    try {
+                        const hres = await fetch('/api/self-heal', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ error: e.message || String(e), endpoint: '/api/status' }),
+                        });
+                        const hdata = await hres.json();
+                        if (hdata.success && hdata.healed) {
+                            showToast('🩹 셀프힐링 적용 — 재연결 중…');
+                            return updateStatus(false);
+                        }
+                    } catch (_) {}
+                }
                 showStatusError(e);
                 return;
             }
@@ -1711,7 +1787,7 @@
                 renderKeywordRankTable(data.last_report, null);
             } else {
                 try {
-                    const hres = await fetch('/api/history');
+                    const hres = await fetchHubGet('/api/history');
                     if (hres.ok) {
                         const history = asHistoryList(await hres.json());
                         const fallback = historyToReport(history);
@@ -1734,7 +1810,7 @@
         }
 
         async function updateLogs() {
-            const res = await fetch('/api/logs');
+            const res = await fetchHubGet('/api/logs');
             const data = await res.json();
             const term = document.getElementById('logTerminal');
             if (data.logs && data.logs.length) {
@@ -1930,6 +2006,7 @@
             const defaultBtn = document.querySelector(`.tab-btn[data-tab="${defaultTab}"]`);
             if (defaultBtn) switchTab(defaultTab, defaultBtn);
             await updateStatus();
+            await loadProgramHub(currentWorkspace === 'javis' ? 'javis' : 'traffic');
             loadLatestAudit();
             loadConfig();
             loadUserKeywords();

@@ -60,23 +60,23 @@
     },
     {
       "source": "/api/status",
-      "destination": "/api/hub_status"
+      "destination": "/static/api/status.json"
     },
     {
       "source": "/api/health",
-      "destination": "/api/hub_status"
+      "destination": "/static/api/health.json"
     },
     {
       "source": "/api/config",
-      "destination": "/api/hub_status"
+      "destination": "/static/api/config.json"
     },
     {
       "source": "/api/logs",
-      "destination": "/api/hub_status"
+      "destination": "/static/api/logs.json"
     },
     {
       "source": "/api/history",
-      "destination": "/api/hub_status"
+      "destination": "/static/api/history.json"
     },
     {
       "source": "/api/:path*",
@@ -122,23 +122,23 @@
     },
     {
       "src": "/api/status",
-      "dest": "/api/hub_status"
+      "dest": "/static/api/status.json"
     },
     {
       "src": "/api/health",
-      "dest": "/api/hub_status"
+      "dest": "/static/api/health.json"
     },
     {
       "src": "/api/config",
-      "dest": "/api/hub_status"
+      "dest": "/static/api/config.json"
     },
     {
       "src": "/api/logs",
-      "dest": "/api/hub_status"
+      "dest": "/static/api/logs.json"
     },
     {
       "src": "/api/history",
-      "dest": "/api/hub_status"
+      "dest": "/static/api/history.json"
     },
     {
       "src": "/(.*)",
