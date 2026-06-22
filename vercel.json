@@ -68,7 +68,7 @@
     },
     {
       "source": "/api/config",
-      "destination": "/static/api/config.json"
+      "destination": "/static/api/hub_config.json"
     },
     {
       "source": "/api/logs",
@@ -130,7 +130,7 @@
     },
     {
       "src": "/api/config",
-      "dest": "/static/api/config.json"
+      "dest": "/static/api/hub_config.json"
     },
     {
       "src": "/api/logs",
