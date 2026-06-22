@@ -152,8 +152,8 @@ def _fetch_shopping_page_ids(
         if logger:
             logger(msg)
 
-    on_cloud = is_cloud_hub()
-    if on_cloud and _naver_api_credentials()[0]:
+    cid, _secret = _naver_api_credentials()
+    if cid:
         ids, api_err = _openapi_product_ids(keyword, start=start)
         if ids is not None:
             return ids, None if ids else "empty", "openapi"
@@ -162,11 +162,12 @@ def _fetch_shopping_page_ids(
 
     html, err = _fetch_shopping_html(keyword, start=start, logger=logger)
     if err == "blocked":
-        ids, _api_err = _openapi_product_ids(keyword, start=start)
-        if ids is not None:
-            if ids:
-                log("   ☁️ 공식 검색 API로 대체 조회")
-            return ids, None if ids else "empty", "openapi"
+        if not cid:
+            ids, _api_err = _openapi_product_ids(keyword, start=start)
+            if ids is not None:
+                if ids:
+                    log("   ☁️ 공식 검색 API로 대체 조회")
+                return ids, None if ids else "empty", "openapi"
         return [], "blocked", "html"
     if err:
         return [], err, "html"
@@ -564,9 +565,9 @@ def check_naver_shopping_rank(keyword, store_name, logger=None):
 
 
 def _keywords_for_run(config=None, *, serverless=False):
-    """Vercel 등 서버리스에서는 우선 키워드만 추적."""
+    """클라우드·Cron에서는 우선 키워드만 추적 (403·할당량 방지)."""
     config = config or load_config()
-    if serverless or is_cron_mode():
+    if serverless or is_cron_mode() or is_cloud_hub():
         priority = config.get("priority_keywords") or []
         if priority:
             return priority
@@ -608,7 +609,10 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
     max_pages = int(config.get("serverless_max_pages") or 5) if serverless else 13
 
     results = []
+    blocked_abort = False
     for item in keywords:
+        if blocked_abort:
+            break
         keyword = item.get("keyword", "")
         store_name = item.get("store_name") or config.get("store_name", "")
         if not keyword or not store_name:
@@ -625,7 +629,7 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
                 rank_status = "blocked"
 
         if rank_status == "blocked":
-            detail = "네이버 HTTP 403 — 클라우드 IP 차단 (NAVER_CLIENT_ID 설정 또는 PC 로컬 허브)"
+            detail = "네이버 HTTP 403 — NAVER_CLIENT_ID·SECRET 설정 필요 (developers.naver.com 검색 API)"
             results.append({
                 "keyword": keyword,
                 "store_name": store_name,
@@ -639,6 +643,10 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
             })
             if logger:
                 logger(f"📊 [{keyword}] {detail}")
+                rest = len(keywords) - len(results)
+                if rest > 0:
+                    logger(f"⏭️ 네이버 403 — 나머지 {rest}개 키워드 스킵 (.env 또는 Cloudtype에 API 키 설정)")
+                blocked_abort = True
             continue
 
         if rank_status in ("timeout", "connection", "error"):

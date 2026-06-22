@@ -7,6 +7,8 @@ from urllib.parse import urlparse
 
 import requests
 
+from hub_runtime import is_cloud_hub
+
 CONFIG_PATH = "config.json"
 AUDIT_PATH = "seo_audit_history.json"
 PRODUCT_FETCH_DELAY_SEC = float(os.environ.get("SEO_PRODUCT_DELAY_SEC", "8"))
@@ -165,6 +167,35 @@ def _config_meta_ready(url: str) -> bool:
     return len(title) >= 10 and len(desc) >= 50
 
 
+def _should_audit_product_from_config(url: str) -> bool:
+    """네이버 HTML 생략 — 클라우드·config 메타 보유 시 config 기준 점검."""
+    if is_cloud_hub():
+        return True
+    if os.environ.get("SEO_CONFIG_FIRST", "").strip().lower() in ("1", "true", "yes"):
+        return True
+    return _config_meta_ready(url)
+
+
+def _prefill_product_meta(product_urls: list[str], logger=None) -> None:
+    """점검 전 config 메타·키워드 자동 생성 (차단 시 권장 문구용)."""
+    try:
+        from seo_auto_fix import ensure_product_seo, find_product
+
+        config = load_config()
+        for url in product_urls:
+            hit = find_product(config, url=url)
+            if not hit:
+                continue
+            product, _ = hit
+            pid = str(product.get("id") or "").strip()
+            if not pid:
+                continue
+            ensure_product_seo(config, pid, logger=logger)
+            config = load_config()
+    except Exception:
+        pass
+
+
 def _audit_product_from_config(url: str, target_keywords, *, blocked_error: str = ""):
     """config 저장 메타로 상품 SEO 점검 (네이버 HTTP 생략)."""
     checks = []
@@ -263,6 +294,13 @@ def _audit_product_blocked(url: str, page_type: str, target_keywords, err: str, 
 
 def audit_page(url, page_type="page", target_keywords=None):
     target_keywords = target_keywords or []
+
+    if page_type == "product" and _should_audit_product_from_config(url):
+        note = " (네이버 차단 → config 메타)" if is_cloud_hub() else ""
+        page = _audit_product_from_config(url, target_keywords, blocked_error=note.strip())
+        if page:
+            return page
+
     checks = []
     score = 0
     max_score = 0
@@ -402,6 +440,8 @@ def run_full_audit(logger=None, *, product_limit: int | None = None):
     limit = product_limit if product_limit is not None else PRODUCT_AUDIT_LIMIT
     product_urls = list(config.get("product_urls", []))[: max(1, limit)]
 
+    _prefill_product_meta(product_urls, logger=logger)
+
     results = {"products": [], "blogs": [], "summary": {}}
 
     for i, url in enumerate(product_urls):
@@ -439,6 +479,25 @@ def run_full_audit(logger=None, *, product_limit: int | None = None):
         if fixes:
             results["summary"]["auto_fixes"] = [f for f in fixes if f.get("ok")]
             results["summary"]["auto_fix_count"] = len(results["summary"]["auto_fixes"])
+            fixed_pids = {str(f.get("product_id") or "") for f in fixes if f.get("ok")}
+            if fixed_pids:
+                for i, url in enumerate(product_urls):
+                    try:
+                        from seo_auto_fix import find_product
+
+                        hit = find_product(load_config(), url=url)
+                        if hit and str(hit[0].get("id") or "") in fixed_pids:
+                            results["products"][i] = audit_page(url, "product", keywords)
+                    except Exception:
+                        pass
+                all_pages = results["products"] + results["blogs"]
+                ok_pages = [p for p in all_pages if p.get("success")]
+                results["summary"]["audited_ok"] = len(ok_pages)
+                results["summary"]["failed"] = len([p for p in all_pages if not p.get("success")])
+                results["summary"]["average_score"] = (
+                    int(sum(p.get("percent", 0) for p in ok_pages) / len(ok_pages)) if ok_pages else 0
+                )
+                results["summary"]["recommendations"] = _build_recommendations(all_pages)
     except Exception:
         pass
 
@@ -447,16 +506,41 @@ def run_full_audit(logger=None, *, product_limit: int | None = None):
 
 
 def _build_recommendations(pages):
-    recs = []
+    recs: list[str] = []
+    seen: set[str] = set()
+
     for page in pages:
+        url = page.get("url") or ""
         if not page.get("success"):
-            detail = page.get("error") or "URL 확인 필요"
-            recs.append(f"{page['url']}: {detail}")
+            line = f"{url}: {page.get('error') or 'URL 확인 필요'}"
+            if line not in seen:
+                seen.add(line)
+                recs.append(line)
             continue
-        for check in page.get("checks", []):
-            if not check["passed"]:
-                recs.append(f"[{page['page_type']}] {check['name']}: {check['message']}")
-    return recs[:15]
+
+        failed = [c for c in page.get("checks", []) if not c.get("passed")]
+        apply_meta = page.get("apply_meta") or {}
+
+        if page.get("config_audit") and not failed:
+            if (page.get("partial") or page.get("auto_fixable")) and apply_meta.get("meta_description"):
+                line = (
+                    f"[product] {apply_meta.get('meta_title', '상품')[:36]}… — "
+                    "스마트스토어센터 → SEO설정에 메타 설명 붙여넣기"
+                )
+                if line not in seen:
+                    seen.add(line)
+                    recs.append(line)
+            continue
+
+        for check in failed:
+            line = f"[{page.get('page_type', 'page')}] {check.get('name')}: {check.get('message')}"
+            if line not in seen:
+                seen.add(line)
+                recs.append(line)
+
+    if not recs:
+        recs.append("현재 config 기준 SEO 메타가 준비되었습니다. 스마트스토어 관리자에 반영만 하면 됩니다.")
+    return recs[:12]
 
 
 def _save_audit_history(results):

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Allow: /p/
+Allow: /products
+Sitemap: https://permacoat.shop/sitemap.xml

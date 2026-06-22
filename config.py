@@ -64,6 +64,10 @@ NAVER_ACCOUNTS = [
     {"id": "", "pw": ""},   # 네이버 2
 ]
 
+# Naver Search API (순위 추적 403 우회 — developers.naver.com 앱 등록 후 검색 API 활성화)
+NAVER_CLIENT_ID = os.environ.get("NAVER_CLIENT_ID", "") or os.environ.get("NAVER_SEARCH_CLIENT_ID", "")
+NAVER_CLIENT_SECRET = os.environ.get("NAVER_CLIENT_SECRET", "") or os.environ.get("NAVER_SEARCH_CLIENT_SECRET", "")
+
 # Supabase (스마트스토어 키워드 DB — 선택, JARVIS와 동일 프로젝트 재사용 가능)
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_ANON_KEY = (

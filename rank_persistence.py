@@ -52,6 +52,17 @@ def supabase_enabled() -> bool:
     return bool(_env("SUPABASE_URL") and _supabase_key())
 
 
+def _supabase_active() -> bool:
+    try:
+        from hub_self_heal import supabase_paused
+
+        if supabase_paused():
+            return False
+    except ImportError:
+        pass
+    return supabase_enabled()
+
+
 def persistence_backend() -> str:
     if supabase_enabled():
         return "supabase"
@@ -158,7 +169,7 @@ def default_hub_state() -> dict[str, Any]:
 
 def load_hub_state() -> dict[str, Any]:
     """허브 상태: auto_enabled, last_report, logs, last_cron_at."""
-    if supabase_enabled():
+    if _supabase_active():
         res = _request(
             _STATE_TABLE,
             "GET",
@@ -198,7 +209,7 @@ def save_hub_state(state: dict[str, Any]) -> dict[str, Any]:
         "updated_at": datetime.now().isoformat(timespec="seconds"),
     }
 
-    if supabase_enabled():
+    if _supabase_active():
         res = _request(
             _STATE_TABLE,
             "POST",
@@ -291,14 +302,21 @@ def _save_local_history_rows(rows: list[dict[str, str]]) -> None:
 
 
 def fetch_history(limit: int | None = None) -> list[dict[str, str]]:
-    if supabase_enabled():
+    if _supabase_active():
+        if limit and limit <= 50:
+            q = f"order=recorded_at.desc&limit={max(1, min(limit, 50))}"
+            res = _request(_HISTORY_TABLE, "GET", query=q, timeout=8.0)
+            if res.get("ok"):
+                rows = [_row_to_dict(r) for r in (res.get("rows") or [])]
+                rows.reverse()
+                return rows
         q = "order=recorded_at.asc"
         if limit:
             q += f"&limit={max(1, min(limit, 5000))}"
-        res = _request(_HISTORY_TABLE, "GET", query=q)
+        res = _request(_HISTORY_TABLE, "GET", query=q, timeout=15.0)
         if res.get("ok"):
             rows = [_row_to_dict(r) for r in (res.get("rows") or [])]
-            if limit:
+            if limit and limit <= 50:
                 return rows[-limit:]
             return rows
 
@@ -306,6 +324,25 @@ def fetch_history(limit: int | None = None) -> list[dict[str, str]]:
     if limit:
         return rows[-limit:]
     return rows
+
+
+def fetch_history_status() -> tuple[dict[str, str] | None, int]:
+    """상태 API용 — 마지막 1건 + 전체 건수(로컬·캐시 우선)."""
+    local = _load_local_history_rows()
+    local_count = len(local)
+    if supabase_enabled():
+        res = _request(
+            _HISTORY_TABLE,
+            "GET",
+            query="order=recorded_at.desc&limit=1",
+            timeout=6.0,
+        )
+        if res.get("ok") and res.get("rows"):
+            last = _row_to_dict(res["rows"][0])
+            return last, max(local_count, 1)
+    if local:
+        return local[-1], local_count
+    return None, 0
 
 
 def append_history_row(row: dict[str, Any]) -> dict[str, Any]:
@@ -321,7 +358,7 @@ def append_history_row(row: dict[str, Any]) -> dict[str, Any]:
         "상세": row.get("detail"),
     })
 
-    if supabase_enabled():
+    if _supabase_active():
         res = _request(
             _HISTORY_TABLE,
             "POST",

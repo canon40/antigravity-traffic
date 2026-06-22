@@ -451,13 +451,19 @@
                     <button class="btn" style="background:#10b981;" onclick="runSeoAutoFix()">
                         <i class="fa-solid fa-wand-magic-sparkles"></i> 메타·키워드 자동 보완
                     </button>
+                    <button class="btn" style="background:#ea580c;" onclick="buildGoogleSeo()">
+                        <i class="fa-brands fa-google"></i> 구글 색인 페이지
+                    </button>
+                </div>
+                <div class="btn-grid" style="margin-top:8px;">
                     <button class="btn" style="background:#6366f1;" onclick="loadLatestAudit()">
                         <i class="fa-solid fa-rotate"></i> 새로고침
                     </button>
                 </div>
                 <p id="seoAutoFixHint" style="font-size:0.75rem;color:#94a3b8;margin-top:10px;margin-bottom:0;">
-                    네이버 차단 시 config에 메타·키워드를 자동 저장합니다. 트래픽 루프마다 상품별로 보완·키워드 추가 후 순위 추적이 이어집니다.
+                    네이버는 스마트스토어 메타만 · <strong>구글</strong>은 permacoat.shop/p/상품ID 랜딩 + sitemap 등록(Search Console)으로 색인합니다.
                 </p>
+                <div id="googleSeoBox" style="display:none;margin-top:10px;padding:10px;background:rgba(234,88,12,0.1);border-radius:8px;font-size:0.78rem;color:#fdba74;"></div>
             </div>
             <div class="glass-panel" id="seoAuditBox">
                 <div class="empty-state">SEO 점검 버튼을 눌러 상품·블로그 페이지를 점검하세요.</div>
@@ -1395,6 +1401,26 @@
             }
         }
 
+        async function buildGoogleSeo() {
+            showToast('구글 색인 페이지 생성 중...');
+            try {
+                const res = await fetch('/api/google-seo/build', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+                const data = await res.json();
+                if (!res.ok || data.success === false) throw new Error(data.error || '생성 실패');
+                const box = document.getElementById('googleSeoBox');
+                if (box) {
+                    box.style.display = 'block';
+                    box.innerHTML = `🌐 상품 <strong>${data.pages || 0}</strong>페이지 생성 · `
+                        + `<a href="${data.sitemap_url || '/sitemap.xml'}" target="_blank" rel="noopener" style="color:#fdba74">sitemap</a> · `
+                        + `<a href="${data.products_index || '/products'}" target="_blank" rel="noopener" style="color:#fdba74">상품 목록</a><br>`
+                        + `<span style="color:#94a3b8">${data.search_console_hint || 'Search Console에 sitemap 등록'}</span>`;
+                }
+                showToast(`구글 SEO ${data.pages || 0}페이지 · sitemap 생성`);
+            } catch (e) {
+                showToast('구글 SEO 실패: ' + (e.message || e));
+            }
+        }
+
         async function runSeoAutoFix() {
             showToast('메타·키워드 자동 보완 중...');
             try {
@@ -1526,6 +1552,10 @@
             if (s.auto_fix_count) {
                 html += `<p style="font-size:0.78rem;color:#6ee7b7;margin-bottom:12px;">🔧 자동 보완 ${s.auto_fix_count}건 — config 메타·키워드 저장됨 (스마트스토어 관리자에 메타 설명 붙여넣기)</p>`;
             }
+            if (s.google_seo && s.google_seo.ok) {
+                const g = s.google_seo;
+                html += `<p style="font-size:0.78rem;color:#fdba74;margin-bottom:12px;">🌐 구글: 상품 <strong>${g.pages || 0}</strong>페이지 · <a href="${g.sitemap_url || '/sitemap.xml'}" target="_blank" rel="noopener" style="color:#fdba74">sitemap</a> · Search Console 등록 필요</p>`;
+            }
 
             [...audit.products, ...audit.blogs].forEach(page => {
                 if (!page.success) {
@@ -1559,40 +1589,73 @@
             if (data.audit) renderSeoAudit(data.audit);
         }
 
+        function showStatusError(e) {
+            console.error('updateStatus', e);
+            const text = document.getElementById('engineStatusText');
+            const msg = (e && e.message) ? String(e.message) : '서버 연결 실패';
+            const connFail = !msg || msg.startsWith('HTTP') || msg.includes('Failed') || msg.includes('fetch') || msg.includes('abort') || msg.includes('timeout') || msg.includes('network');
+            if (text) {
+                text.textContent = connFail ? '서버 연결 실패 — run.bat 실행' : `오류: ${msg.slice(0, 36)}`;
+            }
+            const badge = document.getElementById('engineStatus');
+            if (badge) badge.className = 'status-badge stopped';
+            const trafficPill = document.getElementById('trafficBgPill');
+            if (trafficPill) trafficPill.dataset.trafficOn = '0';
+            const compactBadge = document.getElementById('compactEngineStatus');
+            if (compactBadge) compactBadge.className = 'status-badge stopped';
+            updateTrafficBgPill();
+        }
+
+        function applyEngineStatus(data) {
+            const badge = document.getElementById('engineStatus');
+            const text = document.getElementById('engineStatusText');
+            const running = !!data.running;
+            const trafficOn = trafficIsOn(data);
+            const stopTrafficBtn = document.getElementById('stopTrafficBtn');
+            const startTrafficBtn = document.getElementById('startTrafficBtn');
+            if (stopTrafficBtn) stopTrafficBtn.disabled = !trafficOn;
+            if (startTrafficBtn) startTrafficBtn.disabled = trafficOn;
+            const trafficPill = document.getElementById('trafficBgPill');
+            if (trafficPill) trafficPill.dataset.trafficOn = trafficOn ? '1' : '0';
+            if (data.hub_note && text) {
+                text.textContent = 'Vercel · PC run.bat';
+                if (badge) badge.className = 'status-badge stopped';
+            } else if (running) {
+                if (badge) badge.className = 'status-badge running';
+                const label24 = data.auto_mode === 'cron' ? '24h Cron' : (data.auto_mode === 'daemon' ? '24h 백그라운드' : (data.traffic_loop ? '추적·트래픽' : '추적 중'));
+                if (text) text.textContent = hubAuto24h(data) ? label24 : (data.traffic_loop ? '추적·트래픽' : '추적 중');
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                if (startBtn) startBtn.disabled = true;
+                if (stopBtn) stopBtn.disabled = false;
+            } else {
+                if (badge) badge.className = 'status-badge stopped';
+                if (text) text.textContent = hubAuto24h(data) ? (data.auto_mode === 'cron' ? 'Cron 대기' : '24h 꺼짐') : '중지됨';
+                const startBtn = document.getElementById('startBtn');
+                const stopBtn = document.getElementById('stopBtn');
+                if (startBtn) startBtn.disabled = false;
+                if (stopBtn) stopBtn.disabled = true;
+            }
+            syncCompactTrafficStatus(data, running);
+        }
+
         async function updateStatus() {
+            let data;
             try {
-                const res = await fetch('/api/status');
-                const data = await res.json().catch(() => ({}));
+                const ctrl = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 20000);
+                const res = await fetch('/api/status', { signal: ctrl.signal });
+                clearTimeout(timer);
+                data = await res.json().catch(() => ({}));
                 if (!res.ok || data.success === false) {
                     throw new Error(data.error || `HTTP ${res.status}`);
                 }
-                const badge = document.getElementById('engineStatus');
-                const text = document.getElementById('engineStatusText');
-                const running = !!data.running;
-                const trafficOn = trafficIsOn(data);
-                const stopTrafficBtn = document.getElementById('stopTrafficBtn');
-                const startTrafficBtn = document.getElementById('startTrafficBtn');
-                if (stopTrafficBtn) stopTrafficBtn.disabled = !trafficOn;
-                if (startTrafficBtn) startTrafficBtn.disabled = trafficOn;
-                const trafficPill = document.getElementById('trafficBgPill');
-                if (trafficPill) trafficPill.dataset.trafficOn = trafficOn ? '1' : '0';
-                if (running) {
-                    if (badge) badge.className = 'status-badge running';
-                    const label24 = data.auto_mode === 'cron' ? '24h Cron' : (data.auto_mode === 'daemon' ? '24h 백그라운드' : (data.traffic_loop ? '추적·트래픽' : '추적 중'));
-                    if (text) text.textContent = hubAuto24h(data) ? label24 : (data.traffic_loop ? '추적·트래픽' : '추적 중');
-                    const startBtn = document.getElementById('startBtn');
-                    const stopBtn = document.getElementById('stopBtn');
-                    if (startBtn) startBtn.disabled = true;
-                    if (stopBtn) stopBtn.disabled = false;
-                } else {
-                    if (badge) badge.className = 'status-badge stopped';
-                    if (text) text.textContent = hubAuto24h(data) ? (data.auto_mode === 'cron' ? 'Cron 꺼짐' : '24h 꺼짐') : '중지됨';
-                    const startBtn = document.getElementById('startBtn');
-                    const stopBtn = document.getElementById('stopBtn');
-                    if (startBtn) startBtn.disabled = false;
-                    if (stopBtn) stopBtn.disabled = true;
-                }
-            syncCompactTrafficStatus(data, running);
+                applyEngineStatus(data);
+            } catch (e) {
+                showStatusError(e);
+                return;
+            }
+            try {
             const cronHint = document.getElementById('cronHint');
             if (cronHint) {
                 if (data.auto_mode === 'cron') {
@@ -1666,17 +1729,7 @@
             }
             updateTrafficBgPill();
             } catch (e) {
-                console.error('updateStatus', e);
-                const text = document.getElementById('engineStatusText');
-                const msg = (e && e.message) ? String(e.message) : '서버 오류';
-                const connFail = msg.startsWith('HTTP') || msg.includes('Failed') || msg.includes('fetch');
-                if (text) {
-                    text.textContent = connFail
-                        ? '서버 연결 실패 — run.bat 실행'
-                        : `오류: ${msg.slice(0, 40)}`;
-                }
-                const badge = document.getElementById('engineStatus');
-                if (badge) badge.className = 'status-badge stopped';
+                console.warn('updateStatus enrich', e);
             }
         }
 

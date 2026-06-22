@@ -15,6 +15,26 @@
       "destination": "/api/hub_content"
     },
     {
+      "source": "/robots.txt",
+      "destination": "/static/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/static/sitemap.xml"
+    },
+    {
+      "source": "/products",
+      "destination": "/static/products/index.html"
+    },
+    {
+      "source": "/products/",
+      "destination": "/static/products/index.html"
+    },
+    {
+      "source": "/p/:id",
+      "destination": "/static/p/:id.html"
+    },
+    {
       "source": "/static/blog_studio.html",
       "destination": "/static/blog_studio.html"
     },
@@ -37,6 +57,26 @@
     {
       "source": "/",
       "destination": "/static/index.html"
+    },
+    {
+      "source": "/api/status",
+      "destination": "/api/hub_status"
+    },
+    {
+      "source": "/api/health",
+      "destination": "/api/hub_status"
+    },
+    {
+      "source": "/api/config",
+      "destination": "/api/hub_status"
+    },
+    {
+      "source": "/api/logs",
+      "destination": "/api/hub_status"
+    },
+    {
+      "source": "/api/history",
+      "destination": "/api/hub_status"
     },
     {
       "source": "/api/:path*",
@@ -81,6 +121,26 @@
       "dest": "/static/blog_studio.html"
     },
     {
+      "src": "/api/status",
+      "dest": "/api/hub_status"
+    },
+    {
+      "src": "/api/health",
+      "dest": "/api/hub_status"
+    },
+    {
+      "src": "/api/config",
+      "dest": "/api/hub_status"
+    },
+    {
+      "src": "/api/logs",
+      "dest": "/api/hub_status"
+    },
+    {
+      "src": "/api/history",
+      "dest": "/api/hub_status"
+    },
+    {
       "src": "/(.*)",
       "dest": "/static/index.html"
     }
@@ -91,6 +151,9 @@
     },
     "api/javis_hub.py": {
       "maxDuration": 60
+    },
+    "api/hub_status.py": {
+      "maxDuration": 15
     }
   }
 }

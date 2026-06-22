@@ -7,6 +7,8 @@ import locale
 from datetime import datetime
 from pathlib import Path
 
+import config  # noqa: F401 — .env·JARVIS .env 로드 (rank_tracker NAVER 키)
+
 from flask import Flask, abort, jsonify, make_response, render_template, request, send_from_directory
 from werkzeug.exceptions import NotFound
 
@@ -16,12 +18,18 @@ from rank_tracker import (
     load_config,
     save_config,
     track_all_keywords,
+    check_product_rank,
 )
 from seo_checker import get_latest_audit, run_full_audit
 from seo_auto_fix import remediate_after_traffic, remediate_from_audit, ensure_product_seo
+from hub_self_heal import (
+    heal_for_error,
+    register_restart_services,
+    run_proactive_heal,
+    start_self_heal_loop,
+)
 from keyword_analyzer import analyze_keyword, suggest_keywords_for_product, analyze_all_products
 from seo_content_builder import generate_content, list_workflows, save_content
-from rank_tracker import check_product_rank
 from javis_programs import get_catalog, launch_program
 from rank_persistence import load_hub_state, persistence_backend, save_hub_state
 from hub_runtime import cloud_platform, is_cloud_hub, is_cloudtype, is_cron_mode
@@ -78,16 +86,19 @@ rank_stop_event = threading.Event()
 traffic_stop_event = threading.Event()
 last_completion_report = None
 _boot_auto_started = False
+_status_heal_guard = False
 
 
 def _json_error(endpoint: str, exc: Exception, status_code: int = 500):
     """클라이언트 JSON 파싱 실패 방지: 모든 서버 예외를 JSON으로 반환."""
     detail = str(exc) or repr(exc) or exc.__class__.__name__
+    heal = heal_for_error(exc, endpoint, logger=add_log)
     add_log(f"❌ {endpoint} 오류: {detail}")
     return jsonify({
         "success": False,
         "error": detail,
         "endpoint": endpoint,
+        "self_heal": heal if heal.get("healed") else None,
     }), status_code
 
 
@@ -178,7 +189,11 @@ def scheduler_loop():
         interval = max(5, int(config.get("track_interval_minutes", 60)))
 
         add_log(f"🔄 [사이클 {cycle}] 순위 추적 + SEO 점검 시작")
-        results = track_all_keywords(logger=add_log, serverless=is_cloud_hub())
+        try:
+            results = track_all_keywords(logger=add_log, serverless=is_cloud_hub())
+        except Exception as exc:
+            heal_for_error(exc, "/scheduler_loop", logger=add_log)
+            results = []
         report = build_completion_report(results)
         last_completion_report = report
         try:
@@ -304,8 +319,8 @@ def traffic_loop():
                 target_url = _traffic_target_url()
             try:
                 _run_traffic_once(target_url, log_label="자동")
-            except Exception:
-                pass
+            except Exception as exc:
+                heal_for_error(exc, "/traffic_loop", logger=add_log)
 
             state = load_hub_state()
             if not state.get("traffic_enabled", True):
@@ -420,6 +435,68 @@ def blog_studio_page():
     return resp
 
 
+@app.route("/sitemap.xml")
+def sitemap_xml():
+    path = _ROOT / "static" / "sitemap.xml"
+    if not path.is_file():
+        try:
+            from google_seo import build_google_seo
+
+            build_google_seo(logger=add_log)
+        except Exception as exc:
+            return _json_error("/sitemap.xml", exc)
+    return send_from_directory(_ROOT / "static", "sitemap.xml", mimetype="application/xml")
+
+
+@app.route("/robots.txt")
+def robots_txt():
+    path = _ROOT / "static" / "robots.txt"
+    if not path.is_file():
+        try:
+            from google_seo import build_google_seo
+
+            build_google_seo(logger=add_log)
+        except Exception as exc:
+            return _json_error("/robots.txt", exc)
+    return send_from_directory(_ROOT / "static", "robots.txt", mimetype="text/plain")
+
+
+@app.route("/products")
+@app.route("/products/")
+def products_index():
+    path = _ROOT / "static" / "products" / "index.html"
+    if not path.is_file():
+        try:
+            from google_seo import build_google_seo
+
+            build_google_seo(logger=add_log)
+        except Exception as exc:
+            return _json_error("/products", exc)
+    resp = make_response(send_from_directory(_ROOT / "static" / "products", "index.html"))
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return resp
+
+
+@app.route("/p/<product_id>")
+def product_landing(product_id: str):
+    try:
+        from google_seo import find_product_by_id, render_product_html, build_google_seo
+
+        product = find_product_by_id(product_id)
+        if not product:
+            abort(404)
+        static_path = _ROOT / "static" / "p" / f"{product_id}.html"
+        if not static_path.is_file():
+            build_google_seo(logger=add_log)
+        html = static_path.read_text(encoding="utf-8") if static_path.is_file() else render_product_html(product)
+        resp = make_response(html)
+        resp.headers["Content-Type"] = "text/html; charset=utf-8"
+        resp.headers["Cache-Control"] = "public, max-age=3600"
+        return resp
+    except Exception as exc:
+        return _json_error(f"/p/{product_id}", exc)
+
+
 def _all_catalog_programs() -> list[dict]:
     catalog = get_catalog(workspace="all")
     return list(catalog.get("programs") or [])
@@ -501,11 +578,17 @@ def _product_info_for_keyword(config: dict, keyword: str | None) -> dict[str, st
 @app.route("/api/status")
 def api_status():
     try:
-        history = get_history()
+        try:
+            from rank_persistence import fetch_history_status
+
+            last_row, total_tracks = fetch_history_status()
+        except Exception:
+            history = get_history(limit=1)
+            last_row = history[-1] if history else None
+            total_tracks = len(get_history(limit=200))
         last_rank = None
         last_rank_keyword = None
-        if history:
-            last_row = history[-1]
+        if last_row:
             last_rank_keyword = (last_row.get("키워드") or "").strip() or None
             try:
                 last_rank = int(last_row.get("순위", 100))
@@ -578,7 +661,7 @@ def api_status():
             "last_rank_product_name": last_product.get("product_name"),
             "last_rank_product_url": last_product.get("product_url"),
             "products": products_summary,
-            "total_tracks": len(history),
+            "total_tracks": total_tracks,
             "keyword_count": len(keywords),
             "priority_count": len(priority) or min(len(keywords), int(config.get("priority_track_limit") or 10)),
             "track_batch_count": track_count,
@@ -595,6 +678,10 @@ def api_status():
             ),
             "priority_keywords": priority_preview,
             "persistence": persistence_backend(),
+            "naver_api_configured": bool(
+                (os.environ.get("NAVER_CLIENT_ID") or os.environ.get("NAVER_SEARCH_CLIENT_ID", "")).strip()
+                and (os.environ.get("NAVER_CLIENT_SECRET") or os.environ.get("NAVER_SEARCH_CLIENT_SECRET", "")).strip()
+            ),
             "interval_minutes": config.get("track_interval_minutes", 60),
             "cron_schedule": "매시 정각 · 트래픽 20분마다 (0 * * * * / */20 * * * *)" if on_cron else None,
             "daemon_schedule": (
@@ -603,8 +690,18 @@ def api_status():
                 else None
             ),
             "last_report": report,
+            "self_heal_last": state.get("self_heal_last"),
         })
     except Exception as exc:
+        global _status_heal_guard
+        if not _status_heal_guard:
+            _status_heal_guard = True
+            try:
+                heal = heal_for_error(exc, "/api/status", logger=add_log)
+                if heal.get("retry"):
+                    return api_status()
+            finally:
+                _status_heal_guard = False
         add_log(traceback.format_exc())
         return _json_error("/api/status", exc)
 
@@ -684,6 +781,13 @@ def api_seo_audit():
     except (TypeError, ValueError):
         product_limit = None
     audit = run_full_audit(logger=add_log, product_limit=product_limit)
+    try:
+        from google_seo import build_google_seo
+
+        g = build_google_seo(logger=add_log)
+        audit["summary"]["google_seo"] = g
+    except Exception as exc:
+        add_log(f"⚠️ 구글 SEO 페이지 생성 스킵: {exc}")
     total = audit["summary"].get("product_total")
     sampled = audit["summary"].get("product_limit")
     if total and sampled and total > sampled:
@@ -696,6 +800,21 @@ def api_seo_audit():
 def api_seo_audit_latest():
     audit = get_latest_audit()
     return jsonify({"audit": audit})
+
+
+@app.route("/api/google-seo/build", methods=["POST"])
+def api_google_seo_build():
+    """구글 검색용 상품 랜딩·sitemap·robots 생성."""
+    try:
+        from google_seo import build_google_seo
+
+        data = request.get_json(silent=True) or {}
+        base = (data.get("base_url") or "").strip() or None
+        result = build_google_seo(logger=add_log, base_url=base)
+        return jsonify({"success": True, **result})
+    except Exception as exc:
+        add_log(traceback.format_exc())
+        return _json_error("/api/google-seo/build", exc)
 
 
 @app.route("/api/seo-auto-fix", methods=["POST"])
@@ -723,6 +842,31 @@ def api_seo_auto_fix():
     except Exception as exc:
         add_log(traceback.format_exc())
         return _json_error("/api/seo-auto-fix", exc)
+
+
+@app.route("/api/self-heal", methods=["POST", "GET"])
+def api_self_heal():
+    """셀프힐링 — 오류 복구·예방 점검."""
+    data = request.get_json(silent=True) or {}
+    try:
+        if request.method == "GET" or data.get("proactive"):
+            result = run_proactive_heal(logger=add_log)
+        else:
+            err_msg = (data.get("error") or data.get("message") or "manual").strip()
+            endpoint = (data.get("endpoint") or "/api/self-heal").strip()
+            exc = RuntimeError(err_msg)
+            result = heal_for_error(exc, endpoint, logger=add_log)
+        state = load_hub_state()
+        return jsonify({
+            "success": True,
+            "healed": result.get("healed") or result.get("retry"),
+            "result": result,
+            "self_heal_last": state.get("self_heal_last"),
+            "self_heal_log": (state.get("self_heal_log") or [])[-5:],
+        })
+    except Exception as exc:
+        add_log(traceback.format_exc())
+        return _json_error("/api/self-heal", exc)
 
 
 def _parse_scope(body: dict | None, default: str) -> str:
@@ -1105,8 +1249,10 @@ if os.environ.get("AUTO_START_SCHEDULER", "1") != "0":
         sync_accounts_keywords_to_config()
     except Exception:
         pass
+    register_restart_services(lambda: ensure_background_services(log_boot=False))
     ensure_background_services(log_boot=True)
+    start_self_heal_loop(interval_sec=int(os.environ.get("SELF_HEAL_INTERVAL_SEC", "300")), logger=add_log)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port, debug=False)
+    app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
