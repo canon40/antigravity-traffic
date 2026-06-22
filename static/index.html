@@ -918,28 +918,49 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
             '/api/history': '/static/api/history.json'
         };
 
+        function hubInlineResponse(key) {
+            return new Response(JSON.stringify(HUB_INLINE[key]), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+
+        const isLocalHub = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+
+        function bootstrapHubFromInline() {
+            if (isLocalHub || typeof HUB_INLINE === 'undefined') return;
+            const st = HUB_INLINE['/api/status'];
+            if (!st) return;
+            applyEngineStatus(st);
+            lastStatusData = st;
+            const tracksEl = document.getElementById('totalTracksVal');
+            const kwCountEl = document.getElementById('keywordCountVal');
+            if (tracksEl) tracksEl.textContent = st.total_tracks || 0;
+            if (kwCountEl) kwCountEl.textContent = st.keyword_count || 0;
+        }
+
         async function fetchHubGet(path, opts) {
+            const key = path.split('?')[0];
+            if (!isLocalHub && typeof HUB_INLINE !== 'undefined' && HUB_INLINE[key] != null) {
+                return hubInlineResponse(key);
+            }
             const ctrl = opts && opts.signal ? null : new AbortController();
             const signal = (opts && opts.signal) || (ctrl && ctrl.signal);
-            const timer = ctrl ? setTimeout(() => ctrl.abort(), opts && opts.timeoutMs || 20000) : null;
+            const timer = ctrl ? setTimeout(() => ctrl.abort(), opts && opts.timeoutMs || 8000) : null;
             try {
                 const res = await fetch(path, { ...opts, signal });
                 if (res.ok) return res;
-            } catch (_) { /* API 실패 → 정적 폴백 */ }
+            } catch (_) { /* API 실패 → 정적/인라인 폴백 */ }
             finally { if (timer) clearTimeout(timer); }
-            const fb = HUB_STATIC[path.split('?')[0]];
+            const fb = HUB_STATIC[key];
             if (fb) {
                 try {
                     const r2 = await fetch(fb, { cache: 'no-store' });
                     if (r2.ok) return r2;
                 } catch (_) {}
-                const key = path.split('?')[0];
-                if (typeof HUB_INLINE !== 'undefined' && HUB_INLINE[key] != null) {
-                    return new Response(JSON.stringify(HUB_INLINE[key]), {
-                        status: 200,
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                }
+            }
+            if (typeof HUB_INLINE !== 'undefined' && HUB_INLINE[key] != null) {
+                return hubInlineResponse(key);
             }
             throw new Error('HTTP 404');
         }
@@ -1670,6 +1691,10 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
 
         function showStatusError(e) {
             console.error('updateStatus', e);
+            if (!isLocalHub && typeof HUB_INLINE !== 'undefined' && HUB_INLINE['/api/status']) {
+                bootstrapHubFromInline();
+                return;
+            }
             const text = document.getElementById('engineStatusText');
             const msg = (e && e.message) ? String(e.message) : '서버 연결 실패';
             const connFail = !msg || msg.startsWith('HTTP') || msg.includes('Failed') || msg.includes('fetch') || msg.includes('abort') || msg.includes('timeout') || msg.includes('network');
@@ -2015,6 +2040,7 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
         }, 5000);
 
         (async function initHub() {
+            bootstrapHubFromInline();
             setWorkspace(currentWorkspace);
             const defaultTab = currentWorkspace === 'javis' ? 'tab-javis' : 'tab-dashboard';
             const defaultBtn = document.querySelector(`.tab-btn[data-tab="${defaultTab}"]`);

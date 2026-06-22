@@ -3,6 +3,26 @@
   "installCommand": "pip install -r requirements-vercel-proxy.txt",
   "rewrites": [
     {
+      "source": "/api/status",
+      "destination": "/static/api/status.json"
+    },
+    {
+      "source": "/api/health",
+      "destination": "/static/api/health.json"
+    },
+    {
+      "source": "/api/config",
+      "destination": "/static/api/hub_config.json"
+    },
+    {
+      "source": "/api/logs",
+      "destination": "/static/api/logs.json"
+    },
+    {
+      "source": "/api/history",
+      "destination": "/static/api/history.json"
+    },
+    {
       "source": "/api/javis/launch",
       "destination": "/api/javis_hub"
     },
@@ -57,92 +77,6 @@
     {
       "source": "/",
       "destination": "/static/index.html"
-    },
-    {
-      "source": "/api/status",
-      "destination": "/static/api/status.json"
-    },
-    {
-      "source": "/api/health",
-      "destination": "/static/api/health.json"
-    },
-    {
-      "source": "/api/config",
-      "destination": "/static/api/hub_config.json"
-    },
-    {
-      "source": "/api/logs",
-      "destination": "/static/api/logs.json"
-    },
-    {
-      "source": "/api/history",
-      "destination": "/static/api/history.json"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "https://port-0-antigravity-traffic-mqg8473t248a0738.sel3.cloudtype.app/api/:path*"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/javis/launch",
-      "dest": "/api/javis_hub"
-    },
-    {
-      "src": "/api/javis/programs",
-      "dest": "/api/javis_hub"
-    },
-    {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
-      "src": "/manifest.json",
-      "dest": "/static/manifest.json"
-    },
-    {
-      "src": "/sw.js",
-      "dest": "/static/sw.js"
-    },
-    {
-      "src": "/openapi.json",
-      "dest": "/openapi.json"
-    },
-    {
-      "src": "/static/blog_studio.html",
-      "dest": "/static/blog_studio.html"
-    },
-    {
-      "src": "/blog-studio",
-      "dest": "/static/blog_studio.html"
-    },
-    {
-      "src": "/blog-studio/",
-      "dest": "/static/blog_studio.html"
-    },
-    {
-      "src": "/api/status",
-      "dest": "/static/api/status.json"
-    },
-    {
-      "src": "/api/health",
-      "dest": "/static/api/health.json"
-    },
-    {
-      "src": "/api/config",
-      "dest": "/static/api/hub_config.json"
-    },
-    {
-      "src": "/api/logs",
-      "dest": "/static/api/logs.json"
-    },
-    {
-      "src": "/api/history",
-      "dest": "/static/api/history.json"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/static/index.html"
     }
   ],
   "functions": {
@@ -151,9 +85,6 @@
     },
     "api/javis_hub.py": {
       "maxDuration": 60
-    },
-    "api/hub_status.py": {
-      "maxDuration": 15
     }
   }
 }
