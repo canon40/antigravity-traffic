@@ -59,14 +59,39 @@ curl https://YOUR-SERVICE.cloudtype.app/api/health
 
 ## Vercel (permacoat.shop) 연동
 
-프론트(`templates/index.html`)는 Vercel, API·24h 작업은 Cloudtype에서 실행합니다.
+프론트는 **Vercel**, API·24h 순위·트래픽은 **Cloudtype** (`@canon4040/antigravity-traffic`)에서 실행합니다.
 
-1. Cloudtype **접속하기** 버튼의 URL 복사  
-   예: `https://port-0-antigravity-traffic-mqg8473t248a0738.sel3.cloudtype.app`
-2. Vercel `vercel.json`의 `rewrites`에 위 URL이 들어가 있으면 별도 env 없이 동작합니다.
-3. (대안) Vercel **Settings → Environment Variables**  
-   - `CLOUDTYPE_API_BASE` = 위 URL (끝 `/` 없이) — `api/proxy.py` 사용 시
-4. Vercel **Redeploy**
-5. 확인:
-   - `https://permacoat.shop/api/_proxy/health` → `ok: true`
-   - `https://permacoat.shop/api/status` → JSON 응답
+### 1. Cloudtype 재배포
+
+1. [Cloudtype 대시보드](https://app.cloudtype.io/@canon4040/antigravity-traffic:main/antigravity-traffic) → **Redeploy**
+2. **Ingress** 탭 → **접속하기** URL 복사  
+   예: `https://port-0-antigravity-traffic-xxxx.sel3.cloudtype.app`
+3. 터미널에서 확인:
+   ```bash
+   curl https://<접속하기-URL>/api/health
+   ```
+   → `{"status":"healthy",...}` 또는 `ok: true` 가 나와야 합니다.
+
+### 2. Vercel 환경변수
+
+[Vercel Project → Settings → Environment Variables](https://vercel.com)
+
+| 변수 | 값 |
+|------|-----|
+| `CLOUDTYPE_API_BASE` | Cloudtype **접속하기** URL (끝 `/` 없이) |
+| `SUPABASE_URL` | (권장) 순위 히스토리 |
+| `SUPABASE_SERVICE_KEY` | (권장) |
+
+저장 후 **Redeploy** (Deployments → ⋯ → Redeploy).
+
+### 3. 확인
+
+```bash
+curl https://permacoat.shop/api/_proxy/health
+curl https://permacoat.shop/api/status
+```
+
+- `_proxy/health` → `ok: true` 이면 Vercel→Cloudtype 연결 성공
+- Cloudtype 다운 시에도 `/api/status`는 정적 폴백으로 대시보드 표시 (읽기 전용)
+
+> `vercel.json`은 `/api/*`를 `api/hub_proxy.py`로 보냅니다. URL은 **반드시** `CLOUDTYPE_API_BASE`에 Ingress 주소를 넣으세요.

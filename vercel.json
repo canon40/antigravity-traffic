@@ -3,26 +3,6 @@
   "installCommand": "pip install -r requirements-vercel-proxy.txt",
   "rewrites": [
     {
-      "source": "/api/status",
-      "destination": "/static/api/status.json"
-    },
-    {
-      "source": "/api/health",
-      "destination": "/static/api/health.json"
-    },
-    {
-      "source": "/api/config",
-      "destination": "/static/api/hub_config.json"
-    },
-    {
-      "source": "/api/logs",
-      "destination": "/static/api/logs.json"
-    },
-    {
-      "source": "/api/history",
-      "destination": "/static/api/history.json"
-    },
-    {
       "source": "/api/javis/launch",
       "destination": "/api/javis_hub"
     },
@@ -33,6 +13,14 @@
     {
       "source": "/api/content/:path*",
       "destination": "/api/hub_content"
+    },
+    {
+      "source": "/api/_proxy/:path*",
+      "destination": "/api/hub_proxy"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/hub_proxy"
     },
     {
       "source": "/robots.txt",
@@ -85,6 +73,9 @@
     },
     "api/javis_hub.py": {
       "maxDuration": 60
+    },
+    "api/hub_proxy.py": {
+      "maxDuration": 30
     }
   }
 }

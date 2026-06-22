@@ -941,16 +941,13 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
 
         async function fetchHubGet(path, opts) {
             const key = path.split('?')[0];
-            if (!isLocalHub && typeof HUB_INLINE !== 'undefined' && HUB_INLINE[key] != null) {
-                return hubInlineResponse(key);
-            }
             const ctrl = opts && opts.signal ? null : new AbortController();
             const signal = (opts && opts.signal) || (ctrl && ctrl.signal);
-            const timer = ctrl ? setTimeout(() => ctrl.abort(), opts && opts.timeoutMs || 8000) : null;
+            const timer = ctrl ? setTimeout(() => ctrl.abort(), opts && opts.timeoutMs || 12000) : null;
             try {
                 const res = await fetch(path, { ...opts, signal });
                 if (res.ok) return res;
-            } catch (_) { /* API 실패 → 정적/인라인 폴백 */ }
+            } catch (_) { /* Vercel→Cloudtype 실패 → 정적/인라인 */ }
             finally { if (timer) clearTimeout(timer); }
             const fb = HUB_STATIC[key];
             if (fb) {
