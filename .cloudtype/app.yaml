@@ -13,7 +13,7 @@ options:
       value: "8000"
   ports: 8000
   install: pip install -r requirements-cloudtype.txt
-  start: gunicorn app:app -b 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --access-logfile -
+  start: gunicorn app:app -b 0.0.0.0:8000 --timeout 120 --workers 1 --access-logfile -
 context:
   git:
     url: https://github.com/canon40/antigravity-traffic.git
