@@ -5,6 +5,8 @@
   "serverless_max_pages": 5,
   "cron_batch_size": 4,
   "priority_track_limit": 10,
+  "traffic_rank_threshold": 100,
+  "seo_auto_apply": true,
   "priority_keywords": [
     {
       "keyword": "광택",

@@ -15,6 +15,8 @@ from werkzeug.exceptions import NotFound
 from rank_tracker import (
     build_completion_report,
     get_history,
+    get_keyword_rank_summary,
+    is_ranked,
     load_config,
     save_config,
     track_all_keywords,
@@ -210,11 +212,12 @@ def scheduler_loop():
 
         add_log(f"✅ {report['summary']}")
 
-        if cycle == 1 or cycle % 6 == 0:
-            add_log("🔎 정기 SEO 체크리스트 점검 실행...")
+        if cycle == 1 or cycle % 3 == 0:
+            add_log("🔎 정기 SEO 점검 + 자동 보완...")
             audit = run_full_audit(logger=add_log)
             avg = audit["summary"].get("average_score", 0)
-            add_log(f"📋 SEO 평균 점수: {avg}점 (점검 {audit['summary']['audited_ok']}페이지)")
+            fixed = audit["summary"].get("auto_fix_count", 0)
+            add_log(f"📋 SEO 평균 {avg}점 · 자동 보완 {fixed}건 (점검 {audit['summary']['audited_ok']}페이지)")
 
         add_log(f"😴 다음 추적까지 {interval}분 대기")
         for _ in range(interval * 6):
@@ -248,13 +251,18 @@ def _stop_traffic_loop(*, wait_sec: float = 12.0) -> None:
     traffic_thread = None
 
 
-def _run_traffic_once(target_url: str, *, log_label: str = "자동") -> dict | None:
+def _run_traffic_once(
+    target_url: str,
+    *,
+    log_label: str = "자동",
+    referer_url: str | None = None,
+) -> dict | None:
     """1회 트래픽 방문 + 429 백오프 상태 저장."""
     if run_traffic_session is None:
         return None
     add_log(f"🚗 {log_label} 트래픽: {target_url}")
     try:
-        result = run_traffic_session(target_url, timeout_sec=8.0)
+        result = run_traffic_session(target_url, timeout_sec=8.0, referer_url=referer_url)
     except Exception as exc:
         add_log(f"❌ 트래픽 실패: {exc}")
         raise
@@ -315,10 +323,19 @@ def traffic_loop():
                 config = load_config()
                 target_url, state = pick_traffic_url(config, state, advance=True)
                 save_hub_state(state)
+                referer = state.get("traffic_referer_url")
+                mode = state.get("last_traffic_mode", "boost")
+                kw = state.get("last_traffic_keyword") or ""
+                rank_txt = "미진입" if mode == "boost" else "유지"
+                add_log(
+                    f"   [{mode}] {kw or '기본 URL'} ({rank_txt}) · "
+                    f"미진입 {state.get('traffic_unranked_count', 0)} / 유지 {state.get('traffic_ranked_count', 0)}"
+                )
             else:
                 target_url = _traffic_target_url()
+                referer = None
             try:
-                _run_traffic_once(target_url, log_label="자동")
+                _run_traffic_once(target_url, log_label="자동", referer_url=referer)
             except Exception as exc:
                 heal_for_error(exc, "/traffic_loop", logger=add_log)
 
@@ -389,32 +406,61 @@ def ensure_background_services(*, log_boot: bool = False) -> None:
 
 
 def generate_daily_report():
-    history = get_history()
-    if not history:
-        return "아직 순위 기록이 없습니다. '지금 추적' 버튼을 눌러 첫 기록을 만드세요."
+    config = load_config()
+    summary = get_keyword_rank_summary(config)
+    unranked = [s for s in summary if s.get("bucket") == "unranked"]
+    ranked = [s for s in summary if s.get("bucket") == "ranked"]
 
-    recent = history[-10:]
-    lines = ["### 📊 일일 순위 리포트", f"- 생성: {datetime.now().strftime('%Y-%m-%d %H:%M')}", ""]
-    for row in recent:
-        kw = row.get("키워드", "")
-        rank = row.get("순위", "-")
-        change = row.get("변동", "-")
-        task = row.get("작업유형", "")
-        detail = row.get("상세", "")
-        lines.append(f"- **{kw}**: {detail} (변동: {change}, 작업: {task})")
+    lines = [
+        "### 📊 일일 순위 리포트",
+        f"- 생성: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+        "",
+    ]
+
+    if unranked:
+        lines.append("### 🎯 순위 진입 필요 (트래픽 집중)")
+        for item in unranked:
+            product = item.get("product_name") or item.get("product_id") or ""
+            lines.append(
+                f"- **{item['keyword']}** ({product}): {item.get('status_label', '미진입')} → 진입 우선"
+            )
+        lines.append("")
+
+    if ranked:
+        lines.append("### ✅ 순위 유지")
+        for item in ranked:
+            product = item.get("product_name") or ""
+            lines.append(f"- **{item['keyword']}** ({product}): {item.get('status_label', '')}")
+        lines.append("")
+
+    history = get_history()
+    if history:
+        lines.append("### 📋 최근 추적 기록")
+        for row in history[-8:]:
+            kw = row.get("키워드", "")
+            detail = row.get("상세", "")
+            change = row.get("변동", "-")
+            task = row.get("작업유형", "")
+            lines.append(f"- **{kw}**: {detail} (변동: {change}, 작업: {task})")
+        lines.append("")
+
+    if not summary and not history:
+        return "아직 순위 기록이 없습니다. '지금 추적' 버튼을 눌러 첫 기록을 만드세요."
 
     audit = get_latest_audit()
     if audit:
+        s = audit.get("summary") or {}
         lines.extend([
-            "",
             "### 🔎 최근 SEO 점검",
-            f"- 평균 점수: {audit['summary'].get('average_score', 0)}점",
-            f"- 점검 페이지: {audit['summary'].get('audited_ok', 0)}개",
+            f"- 평균 점수: {s.get('average_score', 0)}점",
+            f"- 점검 페이지: {s.get('audited_ok', 0)}개",
+            f"- 자동 보완: {s.get('auto_fix_count', 0)}건",
         ])
-        recs = audit["summary"].get("recommendations", [])[:5]
-        if recs:
-            lines.append("- 개선 권장:")
-            for r in recs:
+        recs = s.get("recommendations", [])[:5]
+        pending = [r for r in recs if "✅" not in r and "붙여넣기" not in r]
+        if pending:
+            lines.append("- 추가 조치:")
+            for r in pending:
                 lines.append(f"  - {r}")
 
     return "\n".join(lines)
@@ -621,7 +667,16 @@ def api_status():
 
         report = last_completion_report or state.get("last_report")
         auto_mode = "cron" if on_cron else ("daemon" if is_cloudtype() else "local")
-        traffic_url = _traffic_target_url()
+        peek = _peek_traffic_pick()
+        traffic_url = peek.get("url") or _traffic_target_url()
+        mode = peek.get("mode")
+        kw = peek.get("keyword") or ""
+        if mode == "boost":
+            traffic_mode_label = f"진입 집중 · {kw}" if kw else "진입 집중 (미진입 키워드)"
+        elif mode == "maintain":
+            traffic_mode_label = f"순위 유지 · {kw}" if kw else "순위 유지"
+        else:
+            traffic_mode_label = "기본 URL"
         priority_preview = []
         for p in priority:
             kw = (p.get("keyword") or "").strip()
@@ -671,11 +726,11 @@ def api_status():
             "last_cron_at": state.get("last_cron_at"),
             "last_traffic_at": state.get("last_traffic_at"),
             "traffic_target_url": traffic_url,
-            "traffic_mode": (
-                "클라우드 HTTP 방문 (키워드 검색 아님 · 상품 URL 1개)"
-                if on_cron or on_cloud
-                else "로컬 HTTP 방문 (run_traffic_focus.bat — 상품 URL 1회)"
-            ),
+            "traffic_mode": traffic_mode_label,
+            "last_traffic_keyword": state.get("last_traffic_keyword") or kw,
+            "traffic_unranked_count": peek.get("unranked_count"),
+            "traffic_ranked_count": peek.get("ranked_count"),
+            "keyword_rank_summary": get_keyword_rank_summary(config),
             "priority_keywords": priority_preview,
             "persistence": persistence_backend(),
             "naver_api_configured": bool(
@@ -1072,14 +1127,16 @@ def _webhook_authorized() -> bool:
     return request.headers.get("X-Webhook-Secret") == secret
 
 
-def _traffic_target_url() -> str:
+def _traffic_target_url(*, advance: bool = False) -> str:
     explicit = os.environ.get("TRAFFIC_TARGET_URL", "").strip()
     if explicit:
         return explicit
     state = load_hub_state()
     config = load_config()
     if pick_traffic_url is not None:
-        url, _ = pick_traffic_url(config, dict(state), advance=False)
+        url, new_state = pick_traffic_url(config, state, advance=advance)
+        if advance:
+            save_hub_state(new_state)
         return url
     products = config.get("products") or []
     for product in products:
@@ -1094,6 +1151,22 @@ def _traffic_target_url() -> str:
             return item["url"]
     store = (config.get("store_name") or "nanumlab").replace(" ", "")
     return f"https://smartstore.naver.com/{store}"
+
+
+def _peek_traffic_pick() -> dict:
+    """다음 트래픽 대상 미리보기 (인덱스 변경 없음)."""
+    state = load_hub_state()
+    config = load_config()
+    if pick_traffic_url is None:
+        return {"url": _traffic_target_url(), "mode": "fallback"}
+    _, peek = pick_traffic_url(config, dict(state), advance=False)
+    return {
+        "url": peek.get("last_traffic_product_url") or _traffic_target_url(),
+        "mode": peek.get("last_traffic_mode"),
+        "keyword": peek.get("last_traffic_keyword"),
+        "unranked_count": peek.get("traffic_unranked_count"),
+        "ranked_count": peek.get("traffic_ranked_count"),
+    }
 
 
 @app.route("/api/health", methods=["GET"])
@@ -1124,12 +1197,26 @@ def api_traffic():
         return jsonify({"success": False, "error": "traffic_session 미설치"}), 500
 
     data = request.get_json(silent=True) or {}
-    target_url = (data.get("target_url") or _traffic_target_url()).strip()
+    state = load_hub_state()
+    config = load_config()
+    referer = None
+    if data.get("target_url"):
+        target_url = data["target_url"].strip()
+    elif pick_traffic_url is not None:
+        target_url, state = pick_traffic_url(config, state, advance=True)
+        save_hub_state(state)
+        referer = state.get("traffic_referer_url")
+        add_log(
+            f"🚗 클라우드 트래픽 [{state.get('last_traffic_mode', 'boost')}] "
+            f"{state.get('last_traffic_keyword') or '기본 URL'}"
+        )
+    else:
+        target_url = _traffic_target_url(advance=True)
     timeout_sec = min(float(data.get("timeout_sec") or 8), 9.0)
 
-    add_log(f"🚗 클라우드 트래픽: {target_url}")
+    add_log(f"   → {target_url}")
     try:
-        result = _run_traffic_once(target_url, log_label="클라우드")
+        result = _run_traffic_once(target_url, log_label="클라우드", referer_url=referer)
     except ValueError as exc:
         return jsonify({"success": False, "error": str(exc)}), 400
     except Exception as exc:
@@ -1161,9 +1248,22 @@ def api_cron_traffic():
     if run_traffic_session is None:
         return jsonify({"success": False, "error": "traffic_session 미설치"}), 500
 
-    target_url = _traffic_target_url()
+    state = load_hub_state()
+    config = load_config()
+    referer = None
+    if pick_traffic_url is not None:
+        target_url, state = pick_traffic_url(config, state, advance=True)
+        save_hub_state(state)
+        referer = state.get("traffic_referer_url")
+        add_log(
+            f"⏰ Cron 트래픽 [{state.get('last_traffic_mode', 'boost')}] "
+            f"{state.get('last_traffic_keyword') or '기본 URL'} → {target_url}"
+        )
+    else:
+        target_url = _traffic_target_url(advance=True)
+        add_log(f"⏰ Cron 트래픽: {target_url}")
     try:
-        result = _run_traffic_once(target_url, log_label="Cron")
+        result = _run_traffic_once(target_url, log_label="Cron", referer_url=referer)
     except Exception as exc:
         add_log(f"❌ Cron 트래픽 실패: {exc}")
         return jsonify({"success": False, "error": str(exc)}), 500

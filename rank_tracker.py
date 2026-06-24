@@ -353,6 +353,187 @@ def get_last_rank(keyword, store_name):
     return None
 
 
+def is_ranked(rank, threshold: int = 100) -> bool:
+    """1~threshold위만 '순위 진입'으로 간주."""
+    if rank is None:
+        return False
+    try:
+        value = int(rank)
+    except (TypeError, ValueError):
+        return False
+    return 1 <= value <= threshold
+
+
+def _keyword_entries(config: dict | None = None) -> list[dict]:
+    """priority_keywords + keywords 중복 제거 목록."""
+    config = config or load_config()
+    default_store = config.get("store_name", "")
+    seen: set[tuple[str, str, str]] = set()
+    entries: list[dict] = []
+
+    for source in (config.get("priority_keywords") or [], config.get("keywords") or []):
+        for item in source:
+            if not isinstance(item, dict):
+                continue
+            keyword = (item.get("keyword") or "").strip()
+            if not keyword:
+                continue
+            store_name = (item.get("store_name") or default_store).strip()
+            product_id = str(item.get("product_id") or "").strip()
+            key = (keyword, store_name, product_id)
+            if key in seen:
+                continue
+            seen.add(key)
+            entries.append({"keyword": keyword, "store_name": store_name, "product_id": product_id})
+    return entries
+
+
+def _product_name_for(config: dict, product_id: str) -> str:
+    if not product_id:
+        return ""
+    for product in config.get("products") or []:
+        if str(product.get("id")) == str(product_id):
+            return (product.get("name") or "").strip()
+    return ""
+
+
+def split_keywords_by_rank(
+    config: dict | None = None,
+    threshold: int | None = None,
+) -> tuple[list[dict], list[dict]]:
+    """(미진입 키워드, 순위 유지 키워드) 분리."""
+    config = config or load_config()
+    limit = int(threshold or config.get("traffic_rank_threshold") or 100)
+    unranked: list[dict] = []
+    ranked: list[dict] = []
+
+    for entry in _keyword_entries(config):
+        rank = get_last_rank(entry["keyword"], entry["store_name"])
+        row = {
+            **entry,
+            "last_rank": rank,
+            "product_name": _product_name_for(config, entry.get("product_id", "")),
+        }
+        if is_ranked(rank, limit):
+            ranked.append(row)
+        else:
+            unranked.append(row)
+    return unranked, ranked
+
+
+def _last_history_row(keyword: str, store_name: str) -> dict | None:
+    for row in reversed(get_history()):
+        if row.get("키워드") == keyword and row.get("스토어명") == store_name:
+            return row
+    return None
+
+
+def _rank_status_label(rank, threshold: int, row: dict | None) -> str:
+    if is_ranked(rank, threshold):
+        change = str((row or {}).get("변동") or "")
+        if "상승" in change or (change.startswith("+") and change != "0"):
+            return f"{rank}위 상승"
+        if "하락" in change or (change.startswith("-") and change != "-"):
+            return f"{rank}위 하락"
+        return f"{rank}위 유지"
+    if rank is None and not row:
+        return "미발견 신규기록"
+    return "미발견"
+
+
+def get_keyword_rank_summary(config: dict | None = None) -> list[dict]:
+    """대시보드용 — 키워드별 최근 순위 (미진입 우선 정렬)."""
+    config = config or load_config()
+    threshold = int(config.get("traffic_rank_threshold") or 100)
+    unranked, ranked = split_keywords_by_rank(config, threshold)
+    summary: list[dict] = []
+
+    for row in unranked + ranked:
+        rank = row.get("last_rank")
+        hist = _last_history_row(row["keyword"], row["store_name"])
+        bucket = "ranked" if is_ranked(rank, threshold) else "unranked"
+        summary.append(
+            {
+                "keyword": row["keyword"],
+                "product_id": row.get("product_id"),
+                "product_name": row.get("product_name") or row.get("product_id") or "",
+                "last_rank": rank,
+                "status_label": _rank_status_label(rank, threshold, hist),
+                "bucket": bucket,
+            }
+        )
+    return summary
+
+
+def _product_url_for(config: dict, product_id: str) -> str:
+    store = (config.get("store_name") or "nanumlab").replace(" ", "")
+    if product_id:
+        for product in config.get("products") or []:
+            if str(product.get("id")) == str(product_id):
+                url = (product.get("url") or "").strip()
+                if url:
+                    return url
+        return f"https://smartstore.naver.com/{store}/products/{product_id}"
+
+    for product in config.get("products") or []:
+        url = (product or {}).get("url", "")
+        if url:
+            return url
+    urls = config.get("product_urls") or []
+    for item in urls:
+        if isinstance(item, str) and item:
+            return item
+        if isinstance(item, dict) and item.get("url"):
+            return item["url"]
+    return f"https://smartstore.naver.com/{store}"
+
+
+def pick_traffic_target(config: dict | None = None, hub_state: dict | None = None) -> dict:
+    """미진입 키워드 우선 트래픽, 모두 진입 후 유지 모드."""
+    config = config or load_config()
+    hub_state = hub_state or {}
+    unranked, ranked = split_keywords_by_rank(config)
+
+    if unranked:
+        pool, mode = unranked, "boost"
+    elif ranked:
+        pool, mode = ranked, "maintain"
+    else:
+        return {
+            "url": _product_url_for(config, ""),
+            "keyword": "",
+            "product_id": "",
+            "mode": "fallback",
+            "last_rank": None,
+            "next_index": int(hub_state.get("traffic_target_index") or 0),
+            "unranked_count": 0,
+            "ranked_count": 0,
+            "referer_url": "https://m.naver.com/",
+        }
+
+    idx = int(hub_state.get("traffic_target_index") or 0)
+    picked = pool[idx % len(pool)]
+    next_index = (idx + 1) % len(pool)
+    keyword = picked["keyword"]
+
+    return {
+        "url": _product_url_for(config, picked.get("product_id", "")),
+        "keyword": keyword,
+        "product_id": picked.get("product_id", ""),
+        "product_name": picked.get("product_name") or _product_name_for(config, picked.get("product_id", "")),
+        "mode": mode,
+        "last_rank": picked.get("last_rank"),
+        "next_index": next_index,
+        "unranked_count": len(unranked),
+        "ranked_count": len(ranked),
+        "referer_url": (
+            f"https://search.shopping.naver.com/search/all?query={quote(keyword)}"
+            if mode == "boost" and keyword
+            else "https://m.naver.com/"
+        ),
+    }
+
+
 def append_history(keyword, store_name, rank, prev_rank, task_type, detail):
     if prev_rank is None:
         change = "-"
@@ -565,15 +746,26 @@ def check_naver_shopping_rank(keyword, store_name, logger=None):
 
 
 def _keywords_for_run(config=None, *, serverless=False):
-    """클라우드·Cron에서는 우선 키워드만 추적 (403·할당량 방지)."""
+    """클라우드·Cron: 미진입 키워드 우선 추적."""
     config = config or load_config()
+    threshold = int(config.get("traffic_rank_threshold") or 100)
+    default_store = config.get("store_name", "")
+
+    def sort_key(item: dict) -> tuple[int, int]:
+        rank = get_last_rank(item.get("keyword", ""), item.get("store_name") or default_store)
+        if is_ranked(rank, threshold):
+            return (1, rank or 9999)
+        return (0, rank if rank is not None else 9999)
+
     if serverless or is_cron_mode() or is_cloud_hub():
         priority = config.get("priority_keywords") or []
         if priority:
-            return priority
-        limit = int(config.get("priority_track_limit") or 10)
-        return (config.get("keywords") or [])[:limit]
-    return config.get("keywords") or []
+            keywords = list(priority)
+        else:
+            limit = int(config.get("priority_track_limit") or 10)
+            keywords = (config.get("keywords") or [])[:limit]
+        return sorted(keywords, key=sort_key)
+    return sorted(config.get("keywords") or [], key=sort_key)
 
 
 def _rotate_keywords(keywords, offset: int, batch_size: int):

@@ -24,7 +24,11 @@ def _extract_title(html: str) -> str:
     return re.sub(r"\s+", " ", match.group(1)).strip()[:200]
 
 
-def run_traffic_session(target_url: str, timeout_sec: float = DEFAULT_TIMEOUT_SEC) -> dict[str, Any]:
+def run_traffic_session(
+    target_url: str,
+    timeout_sec: float = DEFAULT_TIMEOUT_SEC,
+    referer_url: str | None = None,
+) -> dict[str, Any]:
     """
     대상 URL에 모바일 브라우저처럼 짧게 1회 방문합니다.
     Vercel 무료 플랜(최대 10초) 안에 끝나도록 HTTP 기반으로만 동작합니다.
@@ -37,7 +41,7 @@ def run_traffic_session(target_url: str, timeout_sec: float = DEFAULT_TIMEOUT_SE
         "User-Agent": MOBILE_USER_AGENT,
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Referer": "https://m.naver.com/",
+        "Referer": referer_url or "https://m.naver.com/",
         "Cache-Control": "no-cache",
     }
 

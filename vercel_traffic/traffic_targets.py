@@ -1,12 +1,12 @@
-"""트래픽 방문 URL 풀 — 상품·우선 키워드 product_id 기준 순환."""
+"""트래픽 방문 URL — 미진입 키워드 우선, 순위 진입 키워드 유지."""
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from typing import Any
 
 
 def collect_traffic_urls(config: dict[str, Any]) -> list[str]:
-    """중복 제거된 방문 URL 목록 (우선순위: priority_keywords 상품 → products → product_urls)."""
+    """중복 제거된 방문 URL 목록 (폴백용)."""
     seen: set[str] = set()
     urls: list[str] = []
 
@@ -67,15 +67,33 @@ def pick_traffic_url(
     *,
     advance: bool = True,
 ) -> tuple[str, dict[str, Any]]:
-    """상태의 traffic_url_offset으로 URL 선택. advance=True면 다음 인덱스 저장."""
+    """순위 기반 트래픽 대상 선택 (미진입 boost → 유지 maintain)."""
+    try:
+        from rank_tracker import pick_traffic_target
+
+        picked = pick_traffic_target(config, state)
+        url = picked["url"]
+        state["last_traffic_product_url"] = url
+        state["last_traffic_keyword"] = picked.get("keyword")
+        state["last_traffic_mode"] = picked.get("mode")
+        state["traffic_referer_url"] = picked.get("referer_url") or "https://m.naver.com/"
+        state["traffic_unranked_count"] = picked.get("unranked_count", 0)
+        state["traffic_ranked_count"] = picked.get("ranked_count", 0)
+        if advance:
+            state["traffic_target_index"] = picked.get("next_index", 0)
+        return url, state
+    except Exception:
+        pass
+
     candidates = collect_traffic_urls(config)
     n = len(candidates)
-    offset = int(state.get("traffic_url_offset") or 0) % n
+    offset = int(state.get("traffic_url_offset") or 0) % max(1, n)
     url = candidates[offset]
     if advance and n > 1:
         state["traffic_url_offset"] = (offset + 1) % n
     state["last_traffic_product_url"] = url
     state["traffic_pool_size"] = n
+    state["traffic_referer_url"] = "https://m.naver.com/"
     return url, state
 
 
@@ -83,6 +101,22 @@ def traffic_pool_summary(
     config: dict[str, Any],
     state: dict[str, Any],
 ) -> dict[str, Any]:
+    try:
+        from rank_tracker import pick_traffic_target
+
+        picked = pick_traffic_target(config, state)
+        return {
+            "traffic_pool_size": picked.get("unranked_count", 0) + picked.get("ranked_count", 0),
+            "traffic_unranked_count": picked.get("unranked_count", 0),
+            "traffic_ranked_count": picked.get("ranked_count", 0),
+            "traffic_next_url": picked.get("url"),
+            "traffic_next_label": picked.get("keyword") or picked.get("product_name") or "",
+            "traffic_mode": picked.get("mode"),
+            "referer_url": picked.get("referer_url"),
+        }
+    except Exception:
+        pass
+
     candidates = collect_traffic_urls(config)
     n = len(candidates)
     offset = int(state.get("traffic_url_offset") or 0) % max(1, n)

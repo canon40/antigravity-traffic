@@ -108,6 +108,16 @@
         .result-card.down { border-left-color: var(--accent-red); }
         .result-card .kw { font-weight: 700; font-size: 0.95rem; }
         .result-card .detail { font-size: 0.82rem; color: var(--text-sub); margin-top: 4px; }
+        .kw-rank-row {
+            display: flex; justify-content: space-between; align-items: center; gap: 12px;
+            padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06); margin-bottom: 6px;
+        }
+        .kw-rank-row.unranked { border-left: 3px solid #fbbf24; }
+        .kw-rank-row.ranked { border-left: 3px solid #34d399; }
+        .kw-rank-row .kw-status.boost { color: #fbbf24; font-weight: 600; font-size: 0.82rem; }
+        .kw-rank-row .kw-status.maintain { color: #34d399; font-weight: 600; font-size: 0.82rem; }
+        .traffic-priority-hint { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 8px; line-height: 1.45; }
         .kw-chip { display: inline-block; font-size: 0.72rem; padding: 4px 8px; margin: 3px 4px 3px 0; border-radius: 999px; background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
         .kw-chip small { color: #64748b; margin-left: 4px; }
         .product-pill {
@@ -421,6 +431,7 @@
             </div>
             <div class="glass-panel" style="margin-bottom:16px;">
                 <h3 style="font-size:0.95rem;margin-bottom:8px;"><i class="fa-solid fa-list"></i> 키워드별 최근 순위</h3>
+                <div id="trafficPriorityHint" class="traffic-priority-hint">미진입 키워드 우선 트래픽 · 순위 진입 키워드는 유지 모드</div>
                 <div id="keywordRankTable" class="sidebar-mini">「지금 추적」 후 표시됩니다.</div>
             </div>
             <div class="glass-panel">
@@ -821,24 +832,50 @@
             }
 
             const trafficUrl = data.traffic_target_url || '—';
-            html += '<div style="margin-bottom:6px;"><strong style="color:#e2e8f0;font-size:0.82rem;">트래픽 대상 (클라우드)</strong></div>';
+            const unranked = data.traffic_unranked_count;
+            const ranked = data.traffic_ranked_count;
+            html += '<div style="margin-bottom:6px;"><strong style="color:#e2e8f0;font-size:0.82rem;">다음 트래픽 대상</strong></div>';
             html += `<div style="font-size:0.75rem;color:#93c5fd;word-break:break-all;margin-bottom:6px;">${trafficUrl}</div>`;
             html += `<div style="font-size:0.72rem;color:#94a3b8;">${data.traffic_mode || '상품 URL 방문'}</div>`;
+            if (unranked != null) {
+                html += `<div style="font-size:0.72rem;color:#fbbf24;margin-top:6px;">미진입 ${unranked}개 우선 · 유지 ${ranked || 0}개</div>`;
+            }
             html += '<div style="font-size:0.72rem;color:#94a3b8;margin-top:8px;">PC 1회 방문: <code style="color:#93c5fd;">run_traffic_focus.bat</code> 또는 <code style="color:#93c5fd;">traffic_once.bat</code></div>';
             box.innerHTML = html;
         }
 
-        function renderKeywordRankTable(report, history) {
+        function renderKeywordRankTable(report, history, summary, statusData) {
             const box = document.getElementById('keywordRankTable');
+            const hint = document.getElementById('trafficPriorityHint');
             if (!box) return;
-            const items = (report && report.items) ? report.items.filter(i => i.status !== '실패') : [];
+
+            const items = Array.isArray(summary) ? summary : [];
+            if (items.length) {
+                const unranked = items.filter(i => i.bucket === 'unranked').length;
+                const ranked = items.filter(i => i.bucket === 'ranked').length;
+                if (hint) {
+                    const mode = statusData && statusData.traffic_mode;
+                    hint.textContent = unranked
+                        ? `트래픽 우선: 미진입 ${unranked}개 (진입 집중) · 유지 ${ranked}개 대기${mode ? ' · ' + mode : ''}`
+                        : (ranked ? `미진입 없음 · 순위 유지 ${ranked}개${mode ? ' · ' + mode : ''}` : '등록된 키워드가 없습니다');
+                }
+                box.innerHTML = items.map(item => {
+                    const cls = item.bucket === 'ranked' ? 'ranked' : 'unranked';
+                    const statusCls = item.bucket === 'ranked' ? 'maintain' : 'boost';
+                    const prod = item.product_name ? `<div style="font-size:0.72rem;color:#6ee7b7;margin-top:3px;">🛒 ${item.product_name}</div>` : '';
+                    return `<div class="kw-rank-row ${cls}"><div><strong style="color:#e2e8f0;">${item.keyword}</strong>${prod}</div><div class="kw-status ${statusCls}">${item.status_label || '—'}</div></div>`;
+                }).join('');
+                return;
+            }
+
+            const reportItems = (report && report.items) ? report.items.filter(i => i.status !== '실패') : [];
             const rowHtml = (kw, rankText, status, prodName) => {
                 const prodTag = prodName ? `<span class="product-tag">🛒 ${prodName}</span>` : '';
                 const statusHtml = status ? ` <span style="color:#94a3b8;">${status}</span>` : '';
                 return `<div class="rank-row"><span><strong style="color:#e2e8f0;">${kw}</strong>${prodTag}</span><span><strong>${rankText}</strong>${statusHtml}</span></div>`;
             };
-            if (items.length) {
-                box.innerHTML = items.map(item => {
+            if (reportItems.length) {
+                box.innerHTML = reportItems.map(item => {
                     const prod = productForKeyword(item.keyword, lastStatusData);
                     return rowHtml(item.keyword, item.rank_text || '—', item.status || '', prod?.name);
                 }).join('');
@@ -1800,7 +1837,8 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
             if (trafficHint && data.traffic_target_url) {
                 trafficHint.style.display = 'block';
                 const short = data.traffic_target_url.replace('https://', '');
-                trafficHint.innerHTML = `<i class="fa-solid fa-road"></i> 트래픽: <span style="color:#93c5fd;">${short}</span><br><span style="opacity:0.85;">키워드 검색 아님 · URL 방문만</span>`;
+                const mode = data.traffic_mode || 'URL 방문';
+                trafficHint.innerHTML = `<i class="fa-solid fa-road"></i> 트래픽: <span style="color:#93c5fd;">${short}</span><br><span style="opacity:0.85;">${mode}</span>`;
             }
             const config = await loadConfig();
             renderKeywordTrafficPanel(data, config);
@@ -1820,8 +1858,9 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
             if (data.last_report) {
                 lastReport = data.last_report;
                 renderRecentResults(data.last_report);
-                renderKeywordRankTable(data.last_report, null);
-            } else {
+            }
+            renderKeywordRankTable(data.last_report, null, data.keyword_rank_summary, data);
+            if (!data.keyword_rank_summary && !data.last_report) {
                 try {
                     const hres = await fetchHubGet('/api/history');
                     if (hres.ok) {
@@ -1831,12 +1870,12 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
                             lastReport = fallback;
                             renderRecentResults(fallback);
                         }
-                        renderKeywordRankTable(null, history);
+                        renderKeywordRankTable(null, history, null, data);
                     } else {
-                        renderKeywordRankTable(null, null);
+                        renderKeywordRankTable(null, null, null, data);
                     }
                 } catch (_) {
-                    renderKeywordRankTable(null, null);
+                    renderKeywordRankTable(null, null, null, data);
                 }
             }
             updateTrafficBgPill();
