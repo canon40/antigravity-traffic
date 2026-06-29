@@ -2,7 +2,7 @@
   "store_name": "나눔랩",
   "brand": "나눔랩",
   "track_interval_minutes": 60,
-  "serverless_max_pages": 5,
+  "serverless_max_pages": 25,
   "cron_batch_size": 4,
   "priority_track_limit": 10,
   "traffic_rank_threshold": 100,

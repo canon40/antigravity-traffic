@@ -1112,11 +1112,11 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
     if logger and serverless:
         logger(f"📌 서버리스 우선 추적: {len(keywords)}개 키워드")
 
-    max_pages = (
-        int(config.get("serverless_max_pages") or 10)
-        if serverless
-        else rank_scan_max_pages(config)
-    )
+    max_pages = rank_scan_max_pages(config)
+    if serverless:
+        batch_cap = int(config.get("serverless_max_pages") or 0)
+        if batch_cap > 0:
+            max_pages = min(max_pages, batch_cap)
     depth_limit = rank_depth_limit(max_pages, config)
 
     results = []

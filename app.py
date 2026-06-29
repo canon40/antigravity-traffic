@@ -108,9 +108,21 @@ def _json_error(endpoint: str, exc: Exception, status_code: int = 500):
 
 @app.errorhandler(NotFound)
 def _handle_not_found(exc):
+    if request.path in ("/favicon.ico", "/favicon.png"):
+        return "", 404
     detail = f"404 Not Found: {request.path}"
     add_log(f"❌ {detail}")
     return jsonify({"success": False, "error": detail, "endpoint": request.path}), 404
+
+
+@app.route("/favicon.ico")
+@app.route("/favicon.png")
+def favicon():
+    static_dir = _ROOT / "static"
+    svg = static_dir / "favicon.svg"
+    if svg.is_file():
+        return send_from_directory(static_dir, "favicon.svg", mimetype="image/svg+xml")
+    return "", 204
 
 
 @app.errorhandler(Exception)
@@ -194,7 +206,7 @@ def scheduler_loop():
 
         add_log(f"🔄 [사이클 {cycle}] 순위 추적 + SEO 점검 시작")
         try:
-            results = track_all_keywords(logger=add_log, serverless=is_cloud_hub())
+            results = track_all_keywords(logger=add_log, serverless=False)
         except Exception as exc:
             heal_for_error(exc, "/scheduler_loop", logger=add_log)
             results = []
