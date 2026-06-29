@@ -254,7 +254,7 @@ def _action_blog_pipeline(entry: dict[str, Any], logger: Callable[[str], None]) 
 
 
 def _action_content_generate(entry: dict[str, Any], logger: Callable[[str], None]) -> dict[str, Any]:
-    from seo_content_builder import generate_content, list_workflows, save_content
+    from seo_content_builder import generate_content, list_workflows, save_blog_draft_files
 
     workflows = list_workflows()
     workflow = "blog_review"
@@ -266,12 +266,16 @@ def _action_content_generate(entry: dict[str, Any], logger: Callable[[str], None
         workflow = "product_detail"
 
     keywords, priority = _load_config_keywords()
-    keyword = _first_blog_keyword()
+    keyword = (entry.get("keyword") or os.environ.get("BLOG_OVERRIDE_KEYWORD") or _first_blog_keyword()).strip()
+    listing_pid = (entry.get("product_id") or os.environ.get("BLOG_PRODUCT_ID") or "").strip() or None
     logger(f"☁️ 콘텐츠 생성 ({workflow}): {keyword}")
-    result = generate_content(workflow, keyword, product_name=keyword)
+    result = generate_content(workflow, keyword, product_name=keyword, product_id=listing_pid)
     if result.get("success"):
         try:
-            result["saved_path"] = save_content(result)
+            paths = save_blog_draft_files(result, product_id=result.get("product_id"))
+            result["saved_path"] = paths.get("json")
+            result["blog_txt_path"] = paths.get("txt")
+            result["store_url"] = result.get("store_url")
         except OSError as exc:
             result["save_warning"] = str(exc)
     return {"action": "content_generate", "workflow": workflow, "result": result}

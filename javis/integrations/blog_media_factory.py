@@ -137,9 +137,13 @@ def download_pexels_photo(keyword: str, save_path: Path) -> dict[str, Any]:
 
 
 def generate_blog_media(
-    article: dict[str, Any], *, keyword: str = "", with_video: bool = False
+    article: dict[str, Any],
+    *,
+    keyword: str = "",
+    with_video: bool = False,
+    video_path_override: str = "",
 ) -> dict[str, Any]:
-    """이미지 3장(Gemini) + 선택 시에만 숏폼 MP4."""
+    """이미지 3장(Gemini) + AI Factory 숏폼 또는 선택 시 영상 생성."""
     kw = keyword or article.get("keyword") or "blog"
     out = _out_base(kw)
     prompts = article.get("image_prompts") or [kw, kw, kw]
@@ -161,21 +165,38 @@ def generate_blog_media(
         images.append(r)
 
     video_r: dict[str, Any] = {"ok": False, "skipped": True}
-    try:
-        cfg = json.loads((_ROOT / "config" / "blog_automation.json").read_text(encoding="utf-8"))
-    except Exception:
-        cfg = {}
-    video_on = with_video and cfg.get("media", {}).get("video_enabled", False)
-    if video_on:
-        topic = article.get("video_title") or article.get("title") or kw
-        try:
-            from agent.shorts_video_factory import run_shorts_video_factory
+    video_path = (video_path_override or "").strip()
 
-            mp4 = out / "clip.mp4"
-            video_r = run_shorts_video_factory(topic, output_path=str(mp4))
-            video_r["path"] = str(mp4) if mp4.is_file() else video_r.get("video_path", "")
-        except Exception as e:
-            video_r = {"ok": False, "error": str(e)}
+    if video_path and Path(video_path).is_file():
+        video_r = {"ok": True, "path": str(Path(video_path).resolve()), "source": "ai_factory"}
+    else:
+        try:
+            cfg = json.loads((_ROOT / "config" / "blog_automation.json").read_text(encoding="utf-8"))
+        except Exception:
+            cfg = {}
+        video_on = with_video and cfg.get("media", {}).get("video_enabled", True)
+        if not video_on and with_video:
+            video_on = True
+        if video_on:
+            topic = article.get("video_title") or article.get("title") or kw
+            try:
+                from integrations.shorts_resolver import ensure_shorts_mp4, find_shorts_mp4
+
+                found = find_shorts_mp4(kw)
+                if found:
+                    video_r = {"ok": True, "path": str(found), "source": "ai_factory"}
+                elif cfg.get("media", {}).get("auto_create_shorts", True):
+                    created = ensure_shorts_mp4(kw, create_if_missing=True, on_status=print)
+                    if created:
+                        video_r = {"ok": True, "path": str(created), "source": "ai_factory_created"}
+                if not video_r.get("ok"):
+                    from agent.shorts_video_factory import run_shorts_video_factory
+
+                    mp4 = out / "clip.mp4"
+                    video_r = run_shorts_video_factory(topic, output_path=str(mp4))
+                    video_r["path"] = str(mp4) if mp4.is_file() else video_r.get("video_path", "")
+            except Exception as e:
+                video_r = {"ok": False, "error": str(e)}
 
     (out / "package.json").write_text(
         json.dumps({"keyword": kw, "title": article.get("title"), "images": images, "video": video_r}, ensure_ascii=False, indent=2),

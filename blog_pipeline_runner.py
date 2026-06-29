@@ -102,8 +102,31 @@ def run_jarvis_pipeline(
             except OSError:
                 pass
 
+    with_video = bool(payload.get("with_video")) and not skip_media
+    video_path = (payload.get("video_path") or payload.get("video") or "").strip()
+    youtube_url = (payload.get("youtube_url") or "").strip()
+    store_url = (payload.get("store_url") or "").strip()
+    use_content_pipeline = bool(payload.get("shorts_youtube_pipeline") or payload.get("full_publish"))
+
     log = on_status or (lambda _m: None)
     try:
+        if use_content_pipeline:
+            import integrations.content_publish_pipeline as cpp
+
+            cpp = importlib.reload(cpp)
+            log(f"숏폼·YouTube·블로그·트래픽 파이프라인: {kw[:80]}")
+            return cpp.run_content_publish_pipeline(
+                kw,
+                create_video=not payload.get("no_create_video"),
+                upload_youtube=not payload.get("no_youtube"),
+                publish_blog=publish,
+                trigger_traffic=not payload.get("no_traffic"),
+                platforms=_platforms_from_payload(payload),
+                video_path=video_path,
+                youtube_url=youtube_url,
+                on_status=log,
+            )
+
         import integrations.blog_auto_pipeline as blog_auto_pipeline
 
         # Streamlit 패널과 동일 — 장시간 실행 중에도 D:\@code\javis 수정분 반영.
@@ -118,6 +141,9 @@ def run_jarvis_pipeline(
             publish=publish,
             skip_media=bool(skip_media),
             with_video=with_video,
+            video_path_override=video_path,
+            youtube_url=youtube_url,
+            store_url=store_url,
             guideline=guideline,
             on_status=log,
         )

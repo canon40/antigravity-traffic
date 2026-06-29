@@ -267,6 +267,9 @@ def run_blog_auto(
     publish: bool = True,
     skip_media: bool = False,
     with_video: bool = False,
+    video_path_override: str = "",
+    youtube_url: str = "",
+    store_url: str = "",
     naver_write_url_override: str = "",
     guideline: str = "",
     on_status: Callable[[str], None] | None = None,
@@ -337,19 +340,53 @@ def run_blog_auto(
     article = art_r.get("article") or {}
     title = article.get("title") or kw
     body = article.get("body_html") or article.get("body_plain") or ""
+
+    if youtube_url:
+        embed = f'\n\n<p>🎬 <strong>숏폼 영상 (YouTube)</strong><br><a href="{youtube_url}">{youtube_url}</a></p>\n'
+        body = body + embed
+        article["body_html"] = body
+        article["body_plain"] = body
+        emit(f"[블로그] YouTube 링크 본문 삽입: {youtube_url[:60]}...")
+
+    if store_url and store_url not in body:
+        footer = f'\n\n<p>👇 공식 스마트스토어<br><a href="{store_url}">{store_url}</a></p>\n'
+        body = body + footer
+        article["body_html"] = body
+        article["body_plain"] = body
+
     emit(f"[블로그] 글 생성 완료 — 제목: {title[:50]}")
     tags = article.get("tags") or []
     from integrations.blog_tag_factory import expand_naver_tags
 
     naver_tags = expand_naver_tags(kw, tags, title=title)
 
-    if skip_media:
-        media = {"ok": True, "images": [], "video": "", "skipped": True}
-    else:
-        emit("[블로그] Gemini 이미지 생성 (영상은 기본 생략)...")
-        from integrations.blog_media_factory import generate_blog_media
+    video_override = (video_path_override or "").strip()
+    use_video = with_video or bool(video_override)
 
-        media = generate_blog_media(article, keyword=kw, with_video=with_video)
+    if skip_media:
+        media = {"ok": True, "images": [], "video": video_override, "skipped": True}
+    else:
+        if not use_video:
+            try:
+                from integrations.shorts_resolver import find_shorts_mp4
+
+                if find_shorts_mp4(kw):
+                    use_video = True
+                    emit("[블로그] AI Factory 숏폼 발견 — 영상 첨부 활성화")
+            except Exception:
+                pass
+        if video_override:
+            emit(f"[블로그] AI Factory 영상 사용: {Path(video_override).name}")
+            from integrations.blog_media_factory import generate_blog_media
+
+            media = generate_blog_media(
+                article, keyword=kw, with_video=False, video_path_override=video_override
+            )
+        else:
+            emit("[블로그] Gemini 이미지 + 숏폼(있으면) 생성...")
+            from integrations.blog_media_factory import generate_blog_media
+
+            media = generate_blog_media(article, keyword=kw, with_video=use_video)
     report["steps"]["media"] = media
     if media.get("ok"):
         emit(f"[블로그] 미디어 완료 — 이미지 {len(media.get('images') or [])}장")
@@ -370,7 +407,7 @@ def run_blog_auto(
                 "body_html": body,
                 "tags": plat_tags,
                 "image_paths": media.get("images") or [],
-                "video_path": (media.get("video") or "") if with_video else "",
+                "video_path": video_override or (media.get("video") or ""),
                 "on_status": emit,
             }
             if plat == "tistory":

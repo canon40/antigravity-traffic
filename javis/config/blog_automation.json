@@ -16,13 +16,22 @@
   },
   "media": {
     "images_per_post": 1,
-    "video_enabled": false,
+    "video_enabled": true,
+    "auto_create_shorts": true,
+    "ai_factory_root": "D:\\@code\\ai factory",
     "video_max_seconds": 45,
     "naver_tag_count": 30,
     "image_source": "pillow",
     "image_aspect_ratio": "16:9",
-    "image_note_ko": "API 절약: Pillow 로컬 이미지. 영상은 --with-video 시에만(기본 생략)."
+    "image_note_ko": "AI Factory 숏폼 우선 → 블로그·YouTube 자동 연동 (run_shorts_blog_youtube.bat)"
   },
+  "youtube": {
+    "enabled": true,
+    "privacy": "public",
+    "category_id": "22",
+    "default_tags": ["퍼마코트", "숏츠", "Shorts", "나눔랩"]
+  },
+  "traffic_after_publish": true,
   "platforms": {
     "tistory": {
       "enabled": true,

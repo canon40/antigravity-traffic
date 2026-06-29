@@ -97,14 +97,17 @@ def _meta_tags(keyword, product_name, brand):
     }
 
 
-def generate_content(workflow_type, keyword, product_name=None, brand=None):
+def generate_content(workflow_type, keyword, product_name=None, brand=None, product_id=None):
     keyword = (keyword or "").strip()
     if not keyword:
         return {"success": False, "error": "키워드를 입력하세요."}
 
+    from store_link_builder import append_store_footer_to_content, resolve_listing
+
     config = load_config()
     brand = brand or config.get("store_name", "나눔랩")
     product_name = product_name or config.get("default_product_name", "퍼마코트")
+    listing = resolve_listing(keyword, product_id)
 
     builders = {
         "product_detail": lambda: _abcd_product_detail(keyword, product_name, brand),
@@ -178,6 +181,8 @@ def generate_content(workflow_type, keyword, product_name=None, brand=None):
         content = _abcd_product_detail(keyword, product_name, brand)
         content["workflow"] = workflow_type
 
+    content = append_store_footer_to_content(content, keyword, listing)
+
     result = {
         "success": True,
         "workflow": workflow_type,
@@ -185,21 +190,39 @@ def generate_content(workflow_type, keyword, product_name=None, brand=None):
         "keyword": keyword,
         "product_name": product_name,
         "brand": brand,
+        "product_id": listing.get("seller_id"),
+        "store_url": listing.get("url"),
+        "listing_title": listing.get("title"),
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "content": content,
     }
     return result
 
 
-def save_content(result, product_id=None):
+def save_blog_draft_files(result, product_id=None):
+    """JSON + 블로그 붙여넣기용 TXT 저장."""
+    from store_link_builder import format_blog_copy_paste
+
     out = _output_dir()
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     wf = result.get("workflow", "content")
-    pid = product_id or "general"
-    path = os.path.join(out, f"{pid}_{wf}_{ts}.json")
-    with open(path, "w", encoding="utf-8") as f:
+    pid = product_id or result.get("product_id") or "general"
+    json_path = os.path.join(out, f"{pid}_{wf}_{ts}.json")
+    txt_path = os.path.join(out, f"{pid}_{wf}_{ts}_blog.txt")
+
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
-    return path
+
+    paste = format_blog_copy_paste(result)
+    with open(txt_path, "w", encoding="utf-8") as f:
+        f.write(paste)
+
+    return {"json": json_path, "txt": txt_path}
+
+
+def save_content(result, product_id=None):
+    paths = save_blog_draft_files(result, product_id=product_id)
+    return paths.get("json")
 
 
 def list_workflows():
