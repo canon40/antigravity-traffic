@@ -21,6 +21,8 @@
 | `TRAFFIC_INTERVAL_SEC` | 선택 | 트래픽 간격(초), 기본 1200 |
 | `NAVER_CLIENT_ID` | 클라우드 권장 | [네이버 검색 API](https://developers.naver.com/docs/serviceapi/search/shopping/shopping.md) — 순위 403 우회 |
 | `NAVER_CLIENT_SECRET` | 클라우드 권장 | 검색 API 시크릿 |
+| `GEMINI_API_KEY` | 권장 | 블로그 SEO·키워드 분석·JARVIS LLM ([aistudio.google.com/apikey](https://aistudio.google.com/apikey)) |
+| `GEMINI_MODEL` | 선택 | 기본 `gemini-2.5-flash` |
 | `JARVIS_ROOT` | 선택 | JARVIS 로컬 경로 (PC 연동 시) |
 
 ## Vercel과 차이

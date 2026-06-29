@@ -38,6 +38,10 @@ def collect_traffic_urls(config: dict[str, Any]) -> list[str]:
         if isinstance(product, dict):
             add(str(product.get("url") or ""))
 
+    for row in config.get("product_listings") or []:
+        if isinstance(row, dict):
+            add(str(row.get("url") or ""))
+
     for item in config.get("product_urls") or []:
         if isinstance(item, str):
             add(item)

@@ -1,6 +1,8 @@
 # Secrets & local config
 accounts.json
 .env
+data/smartstore_profile/
+data/smartstore_debug/
 config.json
 security_vault/
 client_secrets.json

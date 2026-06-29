@@ -18,6 +18,7 @@ from rank_tracker import (
     get_keyword_rank_summary,
     is_ranked,
     load_config,
+    load_rank_overview,
     save_config,
     track_all_keywords,
     check_product_rank,
@@ -703,6 +704,45 @@ def api_status():
             for pid, info in catalog.items()
         ]
 
+        rank_overview = load_rank_overview()
+        kw_summary = get_keyword_rank_summary(config)
+        ranked_n = sum(1 for s in kw_summary if s.get("bucket") == "ranked")
+        unranked_n = len(kw_summary) - ranked_n
+        if not rank_overview:
+            rank_overview = {
+                "total": len(kw_summary),
+                "ranked_top100": ranked_n,
+                "unranked": unranked_n,
+                "progress_pct": round(100 * ranked_n / len(kw_summary), 1) if kw_summary else 0,
+                "scanned_at": None,
+                "source": "history",
+            }
+        else:
+            rank_overview = {
+                k: rank_overview.get(k)
+                for k in (
+                    "total",
+                    "scanned",
+                    "ranked_top100",
+                    "ranked_top50",
+                    "ranked_top10",
+                    "outside_top100",
+                    "not_found",
+                    "api_errors",
+                    "unranked",
+                    "progress_pct",
+                    "scanned_at",
+                    "top100_keywords",
+                    "work_queue",
+                    "report_txt",
+                    "report_csv",
+                )
+                if k in rank_overview
+            }
+            rank_overview["source"] = "full_scan"
+            if rank_overview.get("_stale"):
+                rank_overview["stale"] = True
+
         return jsonify({
             "running": running,
             "traffic_running": traffic_running,
@@ -728,9 +768,10 @@ def api_status():
             "traffic_target_url": traffic_url,
             "traffic_mode": traffic_mode_label,
             "last_traffic_keyword": state.get("last_traffic_keyword") or kw,
-            "traffic_unranked_count": peek.get("unranked_count"),
-            "traffic_ranked_count": peek.get("ranked_count"),
-            "keyword_rank_summary": get_keyword_rank_summary(config),
+            "traffic_unranked_count": peek.get("unranked_count") if peek.get("unranked_count") is not None else unranked_n,
+            "traffic_ranked_count": peek.get("ranked_count") if peek.get("ranked_count") is not None else ranked_n,
+            "rank_overview": rank_overview,
+            "keyword_rank_summary": kw_summary,
             "priority_keywords": priority_preview,
             "persistence": persistence_backend(),
             "naver_api_configured": bool(
@@ -870,6 +911,30 @@ def api_google_seo_build():
     except Exception as exc:
         add_log(traceback.format_exc())
         return _json_error("/api/google-seo/build", exc)
+
+
+@app.route("/api/smartstore-apply-seo", methods=["POST"])
+def api_smartstore_apply_seo():
+    """로컬 PC — 판매자센터 검색설정 자동 반영 (Playwright)."""
+    if is_cloud_hub() or is_cron_mode():
+        return jsonify({
+            "success": False,
+            "error": "cloud_unsupported",
+            "hint": "로컬에서 run_smartstore_seo.bat 실행",
+        }), 400
+    data = request.get_json(silent=True) or {}
+    try:
+        from smartstore_seller import apply_smartstore_seo
+
+        result = apply_smartstore_seo(
+            unranked_only=not data.get("all"),
+            headless=bool(data.get("headless")),
+            logger=add_log,
+        )
+        return jsonify({"success": result.get("ok", False), "result": result})
+    except Exception as exc:
+        add_log(traceback.format_exc())
+        return _json_error("/api/smartstore-apply-seo", exc)
 
 
 @app.route("/api/seo-auto-fix", methods=["POST"])
@@ -1077,6 +1142,7 @@ def api_content_generate():
         data.get("keyword", ""),
         data.get("product_name"),
         data.get("brand"),
+        product_id=data.get("product_id"),
     )
     if result.get("success"):
         try:

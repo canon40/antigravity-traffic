@@ -364,6 +364,158 @@ def is_ranked(rank, threshold: int = 100) -> bool:
     return 1 <= value <= threshold
 
 
+def _rank_overview_path() -> str:
+    return os.path.join(get_storage_dir(), "data", "rank_latest_summary.json")
+
+
+def build_rank_overview(results: list[dict], *, threshold: int = 100) -> dict:
+    """전체 순위 스캔 집계 — 대시보드·리포트용."""
+    total = len(results)
+    scanned = sum(1 for r in results if r.get("rank") is not None)
+    ranked_top100 = [r for r in results if r.get("in_top100")]
+    ranked_top50 = [r for r in results if is_ranked(r.get("rank"), 50)]
+    ranked_top10 = [r for r in results if is_ranked(r.get("rank"), 10)]
+    api_errors = sum(
+        1
+        for r in results
+        if r.get("status") in ("error", "timeout", "connection", "api_error", "blocked")
+        or (r.get("rank") is None and r.get("status") not in ("not_found", "ok", "no_product_id"))
+    )
+    outside_100 = [
+        r
+        for r in results
+        if r.get("rank") is not None and not r.get("in_top100") and int(r.get("rank") or 999) < 999
+    ]
+    not_found = [r for r in results if int(r.get("rank") or 0) >= 999]
+
+    pct = round(100 * len(ranked_top100) / total, 1) if total else 0.0
+    return {
+        "total": total,
+        "scanned": scanned,
+        "ranked_top100": len(ranked_top100),
+        "ranked_top50": len(ranked_top50),
+        "ranked_top10": len(ranked_top10),
+        "outside_top100": len(outside_100),
+        "not_found": len(not_found),
+        "api_errors": api_errors,
+        "unranked": total - len(ranked_top100),
+        "progress_pct": pct,
+        "threshold": threshold,
+        "scanned_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "top100_keywords": [
+            {
+                "keyword": r["keyword"],
+                "rank": r.get("rank"),
+                "product_name": r.get("product_name") or "",
+                "product_id": r.get("product_id") or "",
+            }
+            for r in sorted(ranked_top100, key=lambda x: x.get("rank") or 9999)
+        ],
+        "work_queue": [
+            {
+                "keyword": r["keyword"],
+                "rank": r.get("rank"),
+                "rank_label": r.get("rank_label") or "미진입",
+                "product_name": r.get("product_name") or "",
+                "bucket": "boost",
+            }
+            for r in sorted(
+                [x for x in results if not x.get("in_top100")],
+                key=lambda x: (x.get("rank") is None, x.get("rank") or 9999),
+            )[:40]
+        ],
+    }
+
+
+def save_rank_overview(results: list[dict], *, threshold: int = 100, report_paths: dict | None = None) -> dict:
+    """최신 전체 스캔 요약을 data/rank_latest_summary.json 에 저장."""
+    overview = build_rank_overview(results, threshold=threshold)
+    overview["keywords"] = {
+        f"{r['keyword']}\0{r.get('store_name', '')}": {
+            "rank": r.get("rank"),
+            "in_top100": bool(r.get("in_top100")),
+            "rank_label": r.get("rank_label"),
+            "status": r.get("status"),
+            "product_id": r.get("product_id"),
+            "product_name": r.get("product_name"),
+        }
+        for r in results
+    }
+    if report_paths:
+        overview["report_csv"] = str(report_paths.get("csv") or "")
+        overview["report_txt"] = str(report_paths.get("txt") or "")
+
+    path = _rank_overview_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(overview, f, ensure_ascii=False, indent=2)
+
+    try:
+        from rank_persistence import load_hub_state, save_hub_state
+
+        state = load_hub_state()
+        state["last_full_scan_at"] = overview["scanned_at"]
+        state["rank_overview"] = {
+            k: overview[k]
+            for k in (
+                "total",
+                "ranked_top100",
+                "ranked_top50",
+                "ranked_top10",
+                "outside_top100",
+                "not_found",
+                "api_errors",
+                "progress_pct",
+                "scanned_at",
+            )
+        }
+        save_hub_state(state)
+    except Exception:
+        pass
+
+    return overview
+
+
+def load_rank_overview(*, max_age_hours: int = 168) -> dict | None:
+    """최근 전체 스캔 요약 (기본 7일 이내)."""
+    path = _rank_overview_path()
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return None
+    scanned_at = data.get("scanned_at") or ""
+    if scanned_at and max_age_hours > 0:
+        try:
+            ts = datetime.strptime(scanned_at, "%Y-%m-%d %H:%M:%S")
+            age_h = (datetime.now() - ts).total_seconds() / 3600
+            if age_h > max_age_hours:
+                data["_stale"] = True
+        except ValueError:
+            pass
+    return data
+
+
+def _rank_from_overview(overview: dict | None, keyword: str, store_name: str) -> int | None:
+    if not overview:
+        return None
+    keywords = overview.get("keywords") or {}
+    row = keywords.get(f"{keyword}\0{store_name}")
+    if not row:
+        row = keywords.get(f"{keyword}\0") or keywords.get(keyword)
+    if not row:
+        return None
+    rank = row.get("rank")
+    if rank is None:
+        return None
+    try:
+        return int(rank)
+    except (TypeError, ValueError):
+        return None
+
+
 def _keyword_entries(config: dict | None = None) -> list[dict]:
     """priority_keywords + keywords 중복 제거 목록."""
     config = config or load_config()
@@ -404,11 +556,19 @@ def split_keywords_by_rank(
     """(미진입 키워드, 순위 유지 키워드) 분리."""
     config = config or load_config()
     limit = int(threshold or config.get("traffic_rank_threshold") or 100)
+    overview = load_rank_overview()
+    use_overview = bool(overview and not overview.get("_stale") and overview.get("keywords"))
     unranked: list[dict] = []
     ranked: list[dict] = []
 
     for entry in _keyword_entries(config):
-        rank = get_last_rank(entry["keyword"], entry["store_name"])
+        kw = entry["keyword"]
+        store = entry["store_name"]
+        rank = get_last_rank(kw, store)
+        if use_overview:
+            ov_rank = _rank_from_overview(overview, kw, store)
+            if ov_rank is not None:
+                rank = ov_rank
         row = {
             **entry,
             "last_rank": rank,
@@ -438,6 +598,16 @@ def _rank_status_label(rank, threshold: int, row: dict | None) -> str:
         return f"{rank}위 유지"
     if rank is None and not row:
         return "미발견 신규기록"
+    try:
+        value = int(rank) if rank is not None else None
+    except (TypeError, ValueError):
+        value = None
+    if value is not None and value >= 999:
+        return "520위 밖 (미노출)"
+    if value is not None and value > threshold:
+        return f"{value}위 (100위 밖)"
+    if rank is None:
+        return "미조회"
     return "미발견"
 
 
@@ -445,9 +615,30 @@ def get_keyword_rank_summary(config: dict | None = None) -> list[dict]:
     """대시보드용 — 키워드별 최근 순위 (미진입 우선 정렬)."""
     config = config or load_config()
     threshold = int(config.get("traffic_rank_threshold") or 100)
-    unranked, ranked = split_keywords_by_rank(config, threshold)
-    summary: list[dict] = []
+    overview = load_rank_overview()
+    use_overview = bool(overview and not overview.get("_stale") and overview.get("keywords"))
 
+    unranked: list[dict] = []
+    ranked: list[dict] = []
+    for entry in _keyword_entries(config):
+        kw = entry["keyword"]
+        store = entry["store_name"]
+        rank = get_last_rank(kw, store)
+        if use_overview:
+            ov_rank = _rank_from_overview(overview, kw, store)
+            if ov_rank is not None:
+                rank = ov_rank
+        row = {
+            **entry,
+            "last_rank": rank,
+            "product_name": _product_name_for(config, entry.get("product_id", "")),
+        }
+        if is_ranked(rank, threshold):
+            ranked.append(row)
+        else:
+            unranked.append(row)
+
+    summary: list[dict] = []
     for row in unranked + ranked:
         rank = row.get("last_rank")
         hist = _last_history_row(row["keyword"], row["store_name"])
@@ -465,14 +656,41 @@ def get_keyword_rank_summary(config: dict | None = None) -> list[dict]:
     return summary
 
 
-def _product_url_for(config: dict, product_id: str) -> str:
+def _listing_urls_for(config: dict, product_id: str) -> list[str]:
+    """동일 storefront_id 에 매핑된 판매자 리스팅 URL (SEO 다중 상품)."""
+    pid = str(product_id or "").strip()
+    if not pid:
+        return []
+    urls: list[str] = []
+    seen: set[str] = set()
+    for row in config.get("product_listings") or []:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("storefront_id") or "").strip() != pid:
+            continue
+        url = (row.get("url") or "").strip()
+        if url.startswith(("http://", "https://")) and url not in seen:
+            seen.add(url)
+            urls.append(url)
+    return urls
+
+
+def _product_url_for(config: dict, product_id: str, hub_state: dict | None = None) -> str:
     store = (config.get("store_name") or "nanumlab").replace(" ", "")
+    listings = _listing_urls_for(config, product_id)
+    if listings and hub_state is not None:
+        li = int(hub_state.get("listing_url_index") or 0)
+        hub_state["listing_url_index"] = (li + 1) % len(listings)
+        return listings[li % len(listings)]
+
     if product_id:
         for product in config.get("products") or []:
             if str(product.get("id")) == str(product_id):
                 url = (product.get("url") or "").strip()
                 if url:
                     return url
+        if listings:
+            return listings[0]
         return f"https://smartstore.naver.com/{store}/products/{product_id}"
 
     for product in config.get("products") or []:
@@ -517,7 +735,7 @@ def pick_traffic_target(config: dict | None = None, hub_state: dict | None = Non
     keyword = picked["keyword"]
 
     return {
-        "url": _product_url_for(config, picked.get("product_id", "")),
+        "url": _product_url_for(config, picked.get("product_id", ""), hub_state),
         "keyword": keyword,
         "product_id": picked.get("product_id", ""),
         "product_name": picked.get("product_name") or _product_name_for(config, picked.get("product_id", "")),
@@ -935,8 +1153,11 @@ def build_completion_report(results):
             continue
 
         prev = r.get("prev_rank")
-        rank = r["rank"]
-        if prev is None:
+        rank = r.get("rank")
+        if r.get("not_found") or rank is None:
+            status = "미발견"
+            unchanged += 1
+        elif prev is None:
             status = "신규기록"
             unchanged += 1
         elif rank < prev:

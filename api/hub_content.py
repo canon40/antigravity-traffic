@@ -31,6 +31,7 @@ async def api_generate(request: Request):
         (data.get("keyword") or "").strip(),
         data.get("product_name"),
         data.get("brand"),
+        product_id=data.get("product_id"),
     )
     if result.get("success"):
         try:

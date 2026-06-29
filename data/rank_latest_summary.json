@@ -1,0 +1,1716 @@
+{
+  "total": 180,
+  "scanned": 180,
+  "ranked_top100": 21,
+  "ranked_top50": 18,
+  "ranked_top10": 10,
+  "outside_top100": 4,
+  "not_found": 155,
+  "api_errors": 0,
+  "unranked": 159,
+  "progress_pct": 11.7,
+  "threshold": 100,
+  "scanned_at": "2026-06-29 18:01:39",
+  "top100_keywords": [
+    {
+      "keyword": "듀라코트 리빙코트",
+      "rank": 1,
+      "product_name": "듀라코트 리빙코트",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "퍼마코트 자동차",
+      "rank": 1,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "퍼마코트 퀵",
+      "rank": 1,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "퍼마코트 바이크",
+      "rank": 1,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "바이크 초발수",
+      "rank": 1,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "퍼마코트 퀵 바이크",
+      "rank": 1,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "퍼마코트 자동차 코팅제",
+      "rank": 4,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "워터스팟방지",
+      "rank": 7,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "리빙코트 처음 사용법",
+      "rank": 8,
+      "product_name": "듀라코트 리빙코트",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "리빙코트",
+      "rank": 10,
+      "product_name": "듀라코트 리빙코트",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "퍼마코트 가격 비교",
+      "rank": 21,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "주방욕실코팅",
+      "rank": 29,
+      "product_name": "듀라코트 리빙코트",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "싱크대코팅",
+      "rank": 38,
+      "product_name": "듀라코트 리빙코트",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "9H 바이크코팅",
+      "rank": 39,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "9H바이크코팅",
+      "rank": 39,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "바이크 코팅제",
+      "rank": 40,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "욕실코팅제",
+      "rank": 46,
+      "product_name": "듀라코트 리빙코트",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "욕실나노코팅",
+      "rank": 50,
+      "product_name": "듀라코트 리빙코트",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "주방코팅",
+      "rank": 54,
+      "product_name": "듀라코트 리빙코트",
+      "product_id": "10713170202"
+    },
+    {
+      "keyword": "비딩코팅",
+      "rank": 60,
+      "product_name": "퍼마코트 자동차 코팅제",
+      "product_id": "12639296730"
+    },
+    {
+      "keyword": "욕실코팅",
+      "rank": 78,
+      "product_name": "듀라코트 리빙코트",
+      "product_id": "10713170202"
+    }
+  ],
+  "work_queue": [
+    {
+      "keyword": "나노코팅",
+      "rank": 118,
+      "rank_label": "118위 (100위 밖)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "셀프코팅",
+      "rank": 152,
+      "rank_label": "152위 (100위 밖)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "초발수코팅",
+      "rank": 199,
+      "rank_label": "199위 (100위 밖)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "차량 초발수",
+      "rank": 442,
+      "rank_label": "442위 (100위 밖)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "가구코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "타일코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "곰팡이억제",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "인조대리석",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "아일랜드식탁",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "샤워부스코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "세면대코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "물때방지",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "입주청소코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "포세린타일",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "나노코팅패키지",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "코팅패키지",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "김치국물얼룩",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "기름때제거",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "식탁얼룩방지",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "주방청소",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "연말청소",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "엔지니어드스톤",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "천연대리석코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "가죽소파코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "식탁상판코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "듀라코트 리빙코트",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "차량용 유리막코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "자동차 디테일링",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "딥글로스",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "시즌오프",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "자동차 티탄레진",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "건식코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "셀프 유리막 코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "퀵디테일러",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "자동차 유리발수",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "차량 발수코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "물왁스",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "자동차 광택제",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "자동차 초발수",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "쉬팅코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    },
+    {
+      "keyword": "자동차 티탄코팅",
+      "rank": 999,
+      "rank_label": "520위 밖 (미노출)",
+      "product_name": "퍼마코트 자동차 코팅제",
+      "bucket": "boost"
+    }
+  ],
+  "keywords": {
+    "듀라코트 리빙코트\u0000나눔랩": {
+      "rank": 1,
+      "in_top100": true,
+      "rank_label": "1위",
+      "status": "ok",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "가구코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "욕실코팅\u0000나눔랩": {
+      "rank": 78,
+      "in_top100": true,
+      "rank_label": "78위",
+      "status": "ok",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "타일코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "곰팡이억제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "싱크대코팅\u0000나눔랩": {
+      "rank": 38,
+      "in_top100": true,
+      "rank_label": "38위",
+      "status": "ok",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "인조대리석\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "주방코팅\u0000나눔랩": {
+      "rank": 54,
+      "in_top100": true,
+      "rank_label": "54위",
+      "status": "ok",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "아일랜드식탁\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "나노코팅\u0000나눔랩": {
+      "rank": 118,
+      "in_top100": false,
+      "rank_label": "118위 (100위 밖)",
+      "status": "ok",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "욕실나노코팅\u0000나눔랩": {
+      "rank": 50,
+      "in_top100": true,
+      "rank_label": "50위",
+      "status": "ok",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "샤워부스코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "세면대코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "물때방지\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "욕실코팅제\u0000나눔랩": {
+      "rank": 46,
+      "in_top100": true,
+      "rank_label": "46위",
+      "status": "ok",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "입주청소코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "포세린타일\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "주방욕실코팅\u0000나눔랩": {
+      "rank": 29,
+      "in_top100": true,
+      "rank_label": "29위",
+      "status": "ok",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "나노코팅패키지\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "코팅패키지\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "김치국물얼룩\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "기름때제거\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "식탁얼룩방지\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "주방청소\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "연말청소\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "엔지니어드스톤\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "천연대리석코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "가죽소파코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "식탁상판코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "퍼마코트 자동차\u0000나눔랩": {
+      "rank": 1,
+      "in_top100": true,
+      "rank_label": "1위",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "차량용 유리막코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "자동차 디테일링\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "딥글로스\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "시즌오프\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "퍼마코트 퀵\u0000나눔랩": {
+      "rank": 1,
+      "in_top100": true,
+      "rank_label": "1위",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "자동차 티탄레진\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "건식코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "차량 초발수\u0000나눔랩": {
+      "rank": 442,
+      "in_top100": false,
+      "rank_label": "442위 (100위 밖)",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "셀프 유리막 코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "퀵디테일러\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "자동차 유리발수\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "차량 발수코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "물왁스\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "자동차 광택제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "자동차 초발수\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "비딩코팅\u0000나눔랩": {
+      "rank": 60,
+      "in_top100": true,
+      "rank_label": "60위",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "쉬팅코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "워터스팟방지\u0000나눔랩": {
+      "rank": 7,
+      "in_top100": true,
+      "rank_label": "7위",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "자동차 티탄코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "9H유리막\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "경도보호막\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "차량 유리막코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "폴리실라잔\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "자동차 9H코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "도장면보호\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "차량 광택\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "고함량 유리막\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "퍼마코트 바이크\u0000나눔랩": {
+      "rank": 1,
+      "in_top100": true,
+      "rank_label": "1위",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "바이크 코팅제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "오토바이 전용 코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "헬멧광택\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "바이크 디테일링\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "바이크 초발수\u0000나눔랩": {
+      "rank": 1,
+      "in_top100": true,
+      "rank_label": "1위",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "퍼마코트 퀵 바이크\u0000나눔랩": {
+      "rank": 1,
+      "in_top100": true,
+      "rank_label": "1위",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "오토바이 셀프세차\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "바이크 티탄\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "9H 바이크코팅\u0000나눔랩": {
+      "rank": 39,
+      "in_top100": true,
+      "rank_label": "39위",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "거울광택\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "바이크 유리막\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "오토바이 도장보호\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "바이크 레진\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "세라믹코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "플라스틱코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "백화방지\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "무광코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "나눔랩 관련 상품 E\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639326305",
+      "product_name": "나눔랩 관련 상품 E"
+    },
+    "키워드2\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "키워드1\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "리빙코팅패키지\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "셀프 세차\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "티탄레진\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "초발수코팅\u0000나눔랩": {
+      "rank": 199,
+      "in_top100": false,
+      "rank_label": "199위 (100위 밖)",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "유리발수\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "발수코팅제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "티탄코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "자동차 유리막코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12809532969",
+      "product_name": "나눔랩 코팅제 C"
+    },
+    "고함량코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "자동차광택\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "9H코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "오토바이 코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "Permacoat 바이크\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "9H바이크코팅\u0000나눔랩": {
+      "rank": 39,
+      "in_top100": true,
+      "rank_label": "39위",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "광택\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "차량관리\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "자동차코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "유리막\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "셀프코팅\u0000나눔랩": {
+      "rank": 152,
+      "in_top100": false,
+      "rank_label": "152위 (100위 밖)",
+      "status": "ok",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "나눔랩\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "발수코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "가구 코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "바이크 발수\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "배기 열 코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "머플러 크롬 코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "오토바이 유리막 코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "셀프 차량 코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "차량 광택 유지\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "전용 건식 관리제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "발수 복원\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "자동차 유리막 코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "Permacoat 레진\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "Permacoat 티탄\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "Permacoat 퀵\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "퍼마코트 자동차 코팅제\u0000나눔랩": {
+      "rank": 4,
+      "in_top100": true,
+      "rank_label": "4위",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "퍼마코트 사용 후기\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "가구코팅 추천\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "나눔랩 코팅제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "유리막코팅제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12809519826",
+      "product_name": "나눔랩 코팅제 B"
+    },
+    "나눔랩 세정제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12808787263",
+      "product_name": "나눔랩 세정·관리제"
+    },
+    "자동차코팅제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "리빙코트\u0000나눔랩": {
+      "rank": 10,
+      "in_top100": true,
+      "rank_label": "10위",
+      "status": "ok",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "세차 관리제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12808787263",
+      "product_name": "나눔랩 세정·관리제"
+    },
+    "셀프 유리막코팅제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12809541448",
+      "product_name": "나눔랩 코팅제 D"
+    },
+    "리빙코트 처음 사용법\u0000나눔랩": {
+      "rank": 8,
+      "in_top100": true,
+      "rank_label": "8위",
+      "status": "ok",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "리빙코트 원목\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "나무 가구 실내코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "가구 리빙코트 방법\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "가구코팅 가성비\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "원목 리빙코트\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "가구코팅 광택\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "실내코팅 비추천 이유\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "가구코팅 DIY\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "가구코팅 주방\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "가구코팅 가격 비교\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "욕실 가구코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "실내코팅 원목\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "가구코팅 욕실\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "10713170202",
+      "product_name": "듀라코트 리빙코트"
+    },
+    "셀프 퍼마코트 순서\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "신차 자동차코팅제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "유리막코팅 지속 기간\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "퍼마코트 가격 비교\u0000나눔랩": {
+      "rank": 21,
+      "in_top100": true,
+      "rank_label": "21위",
+      "status": "ok",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "퍼마코트 직접 해봤어요\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "자동차코팅제 직접\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "중고차 퍼마코트\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "쉬운 자동차코팅제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "쉬운 자동차 코팅제 추천\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "유리막코팅 가격 비교\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "효과 자동차 코팅제 추천\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "자동차코팅제 직접 해봤어요\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "유리막코팅 가성비\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "자동차코팅제 가성비\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12639296730",
+      "product_name": "퍼마코트 자동차 코팅제"
+    },
+    "중고차 차량코팅제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "셀프 차 코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "쉬운 차량코팅제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "유리막코팅제 가격 비교\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "차량코팅제 직접\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "신차 차 코팅\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "후기 유리막코팅제\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "차량코팅제 어떤게 좋아요\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "유리막코팅제 브랜드 비교\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "자동차코팅제 효과 좋은\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    },
+    "유리막코팅제 장마철\u0000나눔랩": {
+      "rank": 999,
+      "in_top100": false,
+      "rank_label": "520위 밖 (미노출)",
+      "status": "not_found",
+      "product_id": "12634187514",
+      "product_name": "나눔랩 코팅 상품"
+    }
+  },
+  "report_csv": "D:\\@code\\anty traffic\\generated_content\\rank_report_20260629_180139.csv",
+  "report_txt": "D:\\@code\\anty traffic\\generated_content\\rank_report_20260629_180139.txt"
+}

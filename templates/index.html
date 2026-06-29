@@ -250,7 +250,24 @@
             border-color: rgba(16,185,129,0.25);
             background: rgba(16,185,129,0.06);
         }
-        .traffic-compact .rank-big { font-size: 1.1rem !important; }
+        .rank-overview-bar {
+            height: 8px; border-radius: 4px; background: rgba(255,255,255,0.08);
+            overflow: hidden; margin: 8px 0 4px;
+        }
+        .rank-overview-bar > span {
+            display: block; height: 100%;
+            background: linear-gradient(90deg, #34d399, #60a5fa);
+            border-radius: 4px;
+        }
+        .rank-overview-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px;
+        }
+        .rank-overview-grid .mini-stat {
+            text-align: center; padding: 8px 4px; border-radius: 8px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+        }
+        .rank-overview-grid .mini-stat .n { font-size: 1.1rem; font-weight: 700; color: #60a5fa; }
+        .rank-overview-grid .mini-stat .l { font-size: 0.65rem; color: #94a3b8; margin-top: 2px; }
     </style>
 </head>
 <body class="ws-traffic">
@@ -410,14 +427,28 @@
                     </div>
                 </div>
             </div>
+            <div class="glass-panel" id="rankOverviewPanel" style="margin-bottom:16px;padding:14px;">
+                <h3 style="font-size:0.95rem;margin-bottom:8px;"><i class="fa-solid fa-bullseye"></i> 순위 진입 현황</h3>
+                <div id="rankOverviewContent" style="font-size:0.82rem;color:#cbd5e1;">
+                    전체 스캔 후 표시됩니다. PC에서 <code style="color:#93c5fd;">run_rank_report.bat</code>
+                </div>
+            </div>
             <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="value" id="rankedTop100Val">0</div>
+                    <div class="label">100위 이내</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" id="unrankedKwVal">0</div>
+                    <div class="label">미진입 (작업 대상)</div>
+                </div>
                 <div class="stat-card">
                     <div class="value" id="totalTracksVal">0</div>
                     <div class="label">총 추적 횟수</div>
                 </div>
                 <div class="stat-card">
                     <div class="value" id="keywordCountVal">0</div>
-                    <div class="label">추적 키워드</div>
+                    <div class="label">등록 키워드</div>
                 </div>
             </div>
         </div>
@@ -841,6 +872,46 @@
                 html += `<div style="font-size:0.72rem;color:#fbbf24;margin-top:6px;">미진입 ${unranked}개 우선 · 유지 ${ranked || 0}개</div>`;
             }
             html += '<div style="font-size:0.72rem;color:#94a3b8;margin-top:8px;">PC 1회 방문: <code style="color:#93c5fd;">run_traffic_focus.bat</code> 또는 <code style="color:#93c5fd;">traffic_once.bat</code></div>';
+            box.innerHTML = html;
+        }
+
+        function renderRankOverview(data) {
+            const box = document.getElementById('rankOverviewContent');
+            const rankedEl = document.getElementById('rankedTop100Val');
+            const unrankedEl = document.getElementById('unrankedKwVal');
+            if (!box) return;
+            const ov = data && data.rank_overview;
+            const total = (ov && ov.total) || data.keyword_count || 0;
+            const ranked = (ov && ov.ranked_top100 != null)
+                ? ov.ranked_top100
+                : (data.traffic_ranked_count || 0);
+            const unranked = (ov && ov.unranked != null)
+                ? ov.unranked
+                : (data.traffic_unranked_count || Math.max(0, total - ranked));
+            const pct = (ov && ov.progress_pct != null)
+                ? ov.progress_pct
+                : (total ? Math.round(100 * ranked / total * 10) / 10 : 0);
+            if (rankedEl) rankedEl.textContent = ranked;
+            if (unrankedEl) unrankedEl.textContent = unranked;
+            const scannedAt = ov && ov.scanned_at ? ov.scanned_at : '히스토리 기준';
+            const stale = ov && ov.stale ? ' <span style="color:#fbbf24;">(재스캔 권장)</span>' : '';
+            const top10 = ov && ov.ranked_top10 != null ? ov.ranked_top10 : '—';
+            const top50 = ov && ov.ranked_top50 != null ? ov.ranked_top50 : '—';
+            let html = `<div><strong style="color:#e2e8f0;">100위 이내 ${ranked} / ${total}</strong> (${pct}%)${stale}</div>`;
+            html += `<div class="rank-overview-bar"><span style="width:${Math.min(100, pct)}%;"></span></div>`;
+            html += `<div style="font-size:0.72rem;color:#94a3b8;">마지막 전체 조회: ${scannedAt}</div>`;
+            html += `<div class="rank-overview-grid">`;
+            html += `<div class="mini-stat"><div class="n">${top10}</div><div class="l">TOP 10</div></div>`;
+            html += `<div class="mini-stat"><div class="n">${top50}</div><div class="l">TOP 50</div></div>`;
+            html += `<div class="mini-stat"><div class="n">${ranked}</div><div class="l">TOP 100</div></div>`;
+            html += `<div class="mini-stat"><div class="n" style="color:#fbbf24;">${unranked}</div><div class="l">미진입</div></div>`;
+            html += `</div>`;
+            if (ov && ov.top100_keywords && ov.top100_keywords.length) {
+                html += `<div style="margin-top:10px;font-size:0.72rem;color:#6ee7b7;">진입 키워드: `;
+                html += ov.top100_keywords.slice(0, 8).map(k => `${k.keyword} ${k.rank}위`).join(' · ');
+                if (ov.top100_keywords.length > 8) html += ` · 외 ${ov.top100_keywords.length - 8}개`;
+                html += `</div>`;
+            }
             box.innerHTML = html;
         }
 
@@ -1846,6 +1917,7 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
             const kwCountEl = document.getElementById('keywordCountVal');
             if (tracksEl) tracksEl.textContent = data.total_tracks || 0;
             if (kwCountEl) kwCountEl.textContent = data.keyword_count || 0;
+            renderRankOverview(data);
             const hint = document.getElementById('kwHint');
             if (hint) {
                 const batch = data.track_batch_count || data.keyword_count || 0;
