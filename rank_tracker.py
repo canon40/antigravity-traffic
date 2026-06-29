@@ -368,6 +368,24 @@ def _rank_overview_path() -> str:
     return os.path.join(get_storage_dir(), "data", "rank_latest_summary.json")
 
 
+def _bundled_rank_overview_path() -> str:
+    """배포 이미지에 포함된 순위 요약 (Cloudtype /tmp 비어 있을 때 사용)."""
+    for base in (os.getcwd(), os.path.dirname(os.path.abspath(__file__))):
+        path = os.path.join(base, "data", "rank_latest_summary.json")
+        if os.path.isfile(path):
+            return path
+    return os.path.join(os.getcwd(), "data", "rank_latest_summary.json")
+
+
+def _rank_overview_read_paths() -> list[str]:
+    """클라우드: 번들 우선 → /tmp. 로컬: 쓰기 경로 우선."""
+    runtime = _rank_overview_path()
+    bundled = _bundled_rank_overview_path()
+    if uses_ephemeral_disk():
+        return [p for p in (bundled, runtime) if p]
+    return [p for p in (runtime, bundled) if p]
+
+
 def build_rank_overview(results: list[dict], *, threshold: int = 100) -> dict:
     """전체 순위 스캔 집계 — 대시보드·리포트용."""
     total = len(results)
@@ -445,10 +463,17 @@ def save_rank_overview(results: list[dict], *, threshold: int = 100, report_path
         overview["report_csv"] = str(report_paths.get("csv") or "")
         overview["report_txt"] = str(report_paths.get("txt") or "")
 
-    path = _rank_overview_path()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(overview, f, ensure_ascii=False, indent=2)
+    written: set[str] = set()
+    for path in _rank_overview_read_paths():
+        if path in written:
+            continue
+        try:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(overview, f, ensure_ascii=False, indent=2)
+            written.add(path)
+        except OSError:
+            continue
 
     try:
         from rank_persistence import load_hub_state, save_hub_state
@@ -478,13 +503,17 @@ def save_rank_overview(results: list[dict], *, threshold: int = 100, report_path
 
 def load_rank_overview(*, max_age_hours: int = 168) -> dict | None:
     """최근 전체 스캔 요약 (기본 7일 이내)."""
-    path = _rank_overview_path()
-    if not os.path.isfile(path):
-        return None
-    try:
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
-    except Exception:
+    data = None
+    for path in _rank_overview_read_paths():
+        if not os.path.isfile(path):
+            continue
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+            break
+        except Exception:
+            continue
+    if not data:
         return None
     scanned_at = data.get("scanned_at") or ""
     if scanned_at and max_age_hours > 0:
