@@ -6,6 +6,7 @@
   "cron_batch_size": 4,
   "priority_track_limit": 10,
   "traffic_rank_threshold": 100,
+  "rank_scan_max_pages": 25,
   "priority_keywords": [
     { "keyword": "퍼마코트 자동차 코팅제", "store_name": "나눔랩", "product_id": "12639296730" },
     { "keyword": "셀프 유리막 코팅", "store_name": "나눔랩", "product_id": "12639296730" },

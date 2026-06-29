@@ -117,6 +117,30 @@
         .kw-rank-row.ranked { border-left: 3px solid #34d399; }
         .kw-rank-row .kw-status.boost { color: #fbbf24; font-weight: 600; font-size: 0.82rem; }
         .kw-rank-row .kw-status.maintain { color: #34d399; font-weight: 600; font-size: 0.82rem; }
+        .workflow-panel { margin-bottom: 16px; }
+        .workflow-steps { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .workflow-step {
+            display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: start;
+            padding: 10px 12px; border-radius: 10px; background: rgba(15,23,42,0.55);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .workflow-step .step-num {
+            width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 0.72rem; font-weight: 700; background: rgba(59,130,246,0.2); color: #93c5fd;
+        }
+        .workflow-step.done .step-num { background: rgba(16,185,129,0.2); color: #6ee7b7; }
+        .workflow-step.active .step-num { background: rgba(251,191,36,0.25); color: #fbbf24; }
+        .workflow-step .step-title { font-size: 0.82rem; font-weight: 600; color: #e2e8f0; }
+        .workflow-step .step-detail { font-size: 0.72rem; color: #94a3b8; margin-top: 2px; line-height: 1.4; }
+        .workflow-step .step-badge { font-size: 0.68rem; padding: 3px 8px; border-radius: 6px; color: #94a3b8; border: 1px solid rgba(255,255,255,0.08); }
+        .workflow-step.active .step-badge { color: #fbbf24; border-color: rgba(251,191,36,0.35); }
+        .workflow-step.done .step-badge { color: #6ee7b7; border-color: rgba(16,185,129,0.35); }
+        .wireframe-grid { display: grid; grid-template-columns: 220px 1fr; gap: 8px; margin-top: 12px; font-size: 0.68rem; }
+        .wire-box {
+            border: 1px dashed rgba(148,163,184,0.45); border-radius: 8px; padding: 8px;
+            color: #94a3b8; background: rgba(15,23,42,0.35); min-height: 48px;
+        }
+        .wire-box strong { display: block; color: #cbd5e1; font-size: 0.72rem; margin-bottom: 4px; }
         .traffic-priority-hint { font-size: 0.75rem; color: var(--text-sub); margin-bottom: 8px; line-height: 1.45; }
         .kw-chip { display: inline-block; font-size: 0.72rem; padding: 4px 8px; margin: 3px 4px 3px 0; border-radius: 999px; background: rgba(59,130,246,0.15); color: #93c5fd; border: 1px solid rgba(59,130,246,0.25); }
         .kw-chip small { color: #64748b; margin-left: 4px; }
@@ -432,6 +456,20 @@
                 <div id="rankOverviewContent" style="font-size:0.82rem;color:#cbd5e1;">
                     전체 스캔 후 표시됩니다. PC에서 <code style="color:#93c5fd;">run_rank_report.bat</code>
                 </div>
+            </div>
+            <div class="glass-panel workflow-panel" id="workflowPanel" style="margin-bottom:16px;padding:14px;">
+                <h3 style="font-size:0.95rem;margin-bottom:4px;"><i class="fa-solid fa-diagram-project"></i> 작업 플로우</h3>
+                <p style="font-size:0.72rem;color:#94a3b8;margin:0 0 4px;">순위 조회 → 분류 → 미진입 boost 트래픽 → 진입 maintain · 최대 <span id="workflowScanDepth">1000</span>위 탐색</p>
+                <div id="workflowSteps" class="workflow-steps"></div>
+                <details style="margin-top:12px;">
+                    <summary style="font-size:0.75rem;color:#93c5fd;cursor:pointer;">화면 구성 (와이어프레임)</summary>
+                    <div class="wireframe-grid">
+                        <div class="wire-box"><strong>사이드바</strong>24h 시작·순위/트래픽·최근 순위·백그라운드</div>
+                        <div class="wire-box"><strong>대시보드 탭</strong>최근 작업 · 진입 현황 · 플로우 · 통계</div>
+                        <div class="wire-box"><strong>순위 그래프</strong>키워드별 순위 · boost/maintain · 변동 차트</div>
+                        <div class="wire-box"><strong>SEO / 블로그</strong>메타 보완 · 구글 색인 · JARVIS 스튜디오</div>
+                    </div>
+                </details>
             </div>
             <div class="stats-grid">
                 <div class="stat-card">
@@ -875,6 +913,37 @@
             box.innerHTML = html;
         }
 
+        function formatRankLabel(rank, scanDepth) {
+            const depth = scanDepth || 1000;
+            const num = parseInt(rank, 10);
+            if (!Number.isFinite(num) || num >= 999) {
+                return `${depth}위까지 탐색·미노출`;
+            }
+            if (num >= 1 && num <= 100) return `${num}위`;
+            return `${num}위 (100위 밖)`;
+        }
+
+        function renderWorkflow(data) {
+            const box = document.getElementById('workflowSteps');
+            const depthEl = document.getElementById('workflowScanDepth');
+            const wf = data && data.workflow;
+            if (!box || !wf) return;
+            if (depthEl) depthEl.textContent = wf.scan_depth || 1000;
+            const badge = (s) => (
+                s === 'done' ? '완료' : (s === 'active' ? '진행중' : (s === 'idle' ? '대기' : '예정'))
+            );
+            box.innerHTML = (wf.steps || []).map((step, i) => `
+                <div class="workflow-step ${step.status || ''}">
+                    <div class="step-num">${i + 1}</div>
+                    <div>
+                        <div class="step-title">${step.title}</div>
+                        <div class="step-detail">${step.detail || ''}</div>
+                    </div>
+                    <div class="step-badge">${badge(step.status)}</div>
+                </div>
+            `).join('');
+        }
+
         function renderRankOverview(data) {
             const box = document.getElementById('rankOverviewContent');
             const rankedEl = document.getElementById('rankedTop100Val');
@@ -912,6 +981,9 @@
                 if (ov.top100_keywords.length > 8) html += ` · 외 ${ov.top100_keywords.length - 8}개`;
                 html += `</div>`;
             }
+            if (ov && ov.scan_depth) {
+                html += `<div style="font-size:0.72rem;color:#64748b;margin-top:6px;">탐색 깊이: 최대 ${ov.scan_depth}위 (네이버 API 상한)</div>`;
+            }
             box.innerHTML = html;
         }
 
@@ -934,7 +1006,9 @@
                     const cls = item.bucket === 'ranked' ? 'ranked' : 'unranked';
                     const statusCls = item.bucket === 'ranked' ? 'maintain' : 'boost';
                     const prod = item.product_name ? `<div style="font-size:0.72rem;color:#6ee7b7;margin-top:3px;">🛒 ${item.product_name}</div>` : '';
-                    return `<div class="kw-rank-row ${cls}"><div><strong style="color:#e2e8f0;">${item.keyword}</strong>${prod}</div><div class="kw-status ${statusCls}">${item.status_label || '—'}</div></div>`;
+                    const label = item.rank_display || item.status_label || '—';
+                    const mode = item.traffic_mode === 'maintain' ? '유지' : '집중';
+                    return `<div class="kw-rank-row ${cls}"><div><strong style="color:#e2e8f0;">${item.keyword}</strong>${prod}</div><div class="kw-status ${statusCls}">${label} · ${mode}</div></div>`;
                 }).join('');
                 return;
             }
@@ -1649,6 +1723,9 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
 
         function historyToReport(history) {
             if (!history || !history.length) return null;
+            const scanDepth = (lastStatusData && lastStatusData.workflow && lastStatusData.workflow.scan_depth)
+                || (lastStatusData && lastStatusData.rank_overview && lastStatusData.rank_overview.scan_depth)
+                || 1000;
             const seen = new Set();
             const items = [];
             for (let i = history.length - 1; i >= 0; i--) {
@@ -1656,16 +1733,19 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
                 const kw = r['키워드'] || r.keyword;
                 if (!kw || seen.has(kw)) continue;
                 seen.add(kw);
-                const rank = parseInt(r['순위'] || r.rank) || 100;
-                const prev = parseInt(r['이전순위'] || r.prev_rank);
+                const rank = parseInt(r['순위'] || r.rank, 10);
+                const prev = parseInt(r['이전순위'] || r.prev_rank, 10);
                 const change = r['변동'] || r.change || '유지';
                 let status = '유지';
-                if (change === '상승' || (Number.isFinite(prev) && rank < prev)) status = '상승';
-                else if (change === '하락' || (Number.isFinite(prev) && rank > prev)) status = '하락';
+                const rankReal = Number.isFinite(rank) && rank < 999 ? rank : null;
+                const prevReal = Number.isFinite(prev) && prev < 999 ? prev : null;
+                if (change === '상승' || (prevReal != null && rankReal != null && rankReal < prevReal)) status = '상승';
+                else if (change === '하락' || (prevReal != null && rankReal != null && rankReal > prevReal)) status = '하락';
+                else if (rankReal == null) status = '미발견';
                 items.push({
                     keyword: kw,
-                    rank_text: rank >= 100 ? '100위 밖' : `${rank}위`,
-                    prev_text: Number.isFinite(prev) && prev < 100 ? `${prev}위` : (prev >= 100 ? '100위 밖' : '—'),
+                    rank_text: formatRankLabel(rank, scanDepth),
+                    prev_text: Number.isFinite(prev) ? formatRankLabel(prev, scanDepth) : '—',
                     status,
                     tasks: [(r['작업유형'] || r.task_type || '순위 추적')],
                 });
@@ -1918,6 +1998,7 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
             if (tracksEl) tracksEl.textContent = data.total_tracks || 0;
             if (kwCountEl) kwCountEl.textContent = data.keyword_count || 0;
             renderRankOverview(data);
+            renderWorkflow(data);
             const hint = document.getElementById('kwHint');
             if (hint) {
                 const batch = data.track_batch_count || data.keyword_count || 0;

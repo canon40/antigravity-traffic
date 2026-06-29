@@ -12,6 +12,11 @@ from hub_runtime import is_cloud_hub, is_cron_mode, uses_ephemeral_disk
 
 HISTORY_HEADERS = ["날짜", "키워드", "스토어명", "순위", "이전순위", "변동", "작업유형", "상세"]
 
+RANKS_PER_PAGE = 40
+NAVER_API_MAX_START = 1000
+DEFAULT_MAX_PAGES = 25  # 25페이지 × 40 = 1000위 (네이버 API 상한)
+NOT_FOUND_RANK = 10001  # 실제 순위가 아닌 '탐색 범위 내 미노출' 저장값
+
 _BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 _DEFAULT_CONFIG_PATH = os.path.join(_BUNDLE_DIR, "config.defaults.json")
 
@@ -23,6 +28,50 @@ MOBILE_UA = (
 
 _NAVER_OPENAPI_URL = "https://openapi.naver.com/v1/search/shop.json"
 _SHOPPING_SESSION: requests.Session | None = None
+
+
+def rank_scan_max_pages(config: dict | None = None) -> int:
+    config = config or {}
+    env = (os.environ.get("RANK_SCAN_MAX_PAGES") or "").strip()
+    if env.isdigit():
+        return max(1, int(env))
+    return int(config.get("rank_scan_max_pages") or DEFAULT_MAX_PAGES)
+
+
+def rank_depth_limit(max_pages: int | None = None, config: dict | None = None) -> int:
+    mp = max_pages if max_pages is not None else rank_scan_max_pages(config)
+    return min(mp * RANKS_PER_PAGE, NAVER_API_MAX_START)
+
+
+def normalize_rank(rank) -> int | None:
+    """999/10001 등 미노출 저장값은 None, 그 외는 실제 순위."""
+    if rank is None:
+        return None
+    try:
+        value = int(rank)
+    except (TypeError, ValueError):
+        return None
+    if value >= 999:
+        return None
+    return value
+
+
+def is_not_found_rank(rank) -> bool:
+    return normalize_rank(rank) is None and rank is not None
+
+
+def format_rank_label(rank, *, threshold: int = 100, scan_depth: int | None = None) -> str:
+    real = normalize_rank(rank)
+    if real is not None:
+        if 1 <= real <= threshold:
+            return f"{real}위"
+        return f"{real}위 (100위 밖)"
+    depth = scan_depth or rank_depth_limit()
+    return f"{depth}위까지 탐색·미노출"
+
+
+def _page_start(page: int) -> int:
+    return (page - 1) * RANKS_PER_PAGE + 1
 
 
 def _naver_api_credentials() -> tuple[str | None, str | None]:
@@ -70,7 +119,7 @@ def _openapi_product_ids(keyword: str, start: int = 1, display: int = 40) -> tup
     params = {
         "query": keyword.strip(),
         "display": min(max(display, 1), 100),
-        "start": max(start, 1),
+        "start": min(max(start, 1), NAVER_API_MAX_START),
         "sort": "sim",
     }
     headers = {
@@ -347,9 +396,12 @@ def get_last_rank(keyword, store_name):
     for row in reversed(get_history()):
         if row.get("키워드") == keyword and row.get("스토어명") == store_name:
             try:
-                return int(row.get("순위", 100))
+                value = int(row.get("순위", 100))
             except (TypeError, ValueError):
-                return 100
+                return None
+            if value >= 999:
+                return NOT_FOUND_RANK
+            return value
     return None
 
 
@@ -402,9 +454,10 @@ def build_rank_overview(results: list[dict], *, threshold: int = 100) -> dict:
     outside_100 = [
         r
         for r in results
-        if r.get("rank") is not None and not r.get("in_top100") and int(r.get("rank") or 999) < 999
+        if normalize_rank(r.get("rank")) is not None and not r.get("in_top100")
     ]
-    not_found = [r for r in results if int(r.get("rank") or 0) >= 999]
+    not_found = [r for r in results if is_not_found_rank(r.get("rank")) or r.get("rank") is None]
+    scan_depth = rank_depth_limit()
 
     pct = round(100 * len(ranked_top100) / total, 1) if total else 0.0
     return {
@@ -419,6 +472,7 @@ def build_rank_overview(results: list[dict], *, threshold: int = 100) -> dict:
         "unranked": total - len(ranked_top100),
         "progress_pct": pct,
         "threshold": threshold,
+        "scan_depth": scan_depth,
         "scanned_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "top100_keywords": [
             {
@@ -617,27 +671,26 @@ def _last_history_row(keyword: str, store_name: str) -> dict | None:
     return None
 
 
-def _rank_status_label(rank, threshold: int, row: dict | None) -> str:
-    if is_ranked(rank, threshold):
+def _rank_status_label(rank, threshold: int, row: dict | None, *, scan_depth: int | None = None) -> str:
+    depth = scan_depth or rank_depth_limit()
+    real = normalize_rank(rank)
+    if real is not None and is_ranked(real, threshold):
         change = str((row or {}).get("변동") or "")
-        if "상승" in change or (change.startswith("+") and change != "0"):
-            return f"{rank}위 상승"
-        if "하락" in change or (change.startswith("-") and change != "-"):
-            return f"{rank}위 하락"
-        return f"{rank}위 유지"
+        if "상승" in change or (change.startswith("+") and change not in ("0", "+0")):
+            return f"{real}위 상승"
+        if "하락" in change or (change.startswith("-") and change not in ("-", "-0")):
+            return f"{real}위 하락"
+        return f"{real}위 유지"
+    if real is not None:
+        change = str((row or {}).get("변동") or "")
+        if "상승" in change or (change.startswith("+") and change not in ("0", "+0")):
+            return f"{real}위 상승 (100위 밖)"
+        if "하락" in change or (change.startswith("-") and change not in ("-", "-0")):
+            return f"{real}위 하락 (100위 밖)"
+        return f"{real}위 (100위 밖)"
     if rank is None and not row:
-        return "미발견 신규기록"
-    try:
-        value = int(rank) if rank is not None else None
-    except (TypeError, ValueError):
-        value = None
-    if value is not None and value >= 999:
-        return "520위 밖 (미노출)"
-    if value is not None and value > threshold:
-        return f"{value}위 (100위 밖)"
-    if rank is None:
         return "미조회"
-    return "미발견"
+    return format_rank_label(None, scan_depth=depth)
 
 
 def get_keyword_rank_summary(config: dict | None = None) -> list[dict]:
@@ -646,6 +699,7 @@ def get_keyword_rank_summary(config: dict | None = None) -> list[dict]:
     threshold = int(config.get("traffic_rank_threshold") or 100)
     overview = load_rank_overview()
     use_overview = bool(overview and not overview.get("_stale") and overview.get("keywords"))
+    scan_depth = int((overview or {}).get("scan_depth") or 0) or rank_depth_limit(config=config)
 
     unranked: list[dict] = []
     ranked: list[dict] = []
@@ -667,19 +721,27 @@ def get_keyword_rank_summary(config: dict | None = None) -> list[dict]:
         else:
             unranked.append(row)
 
+    def _bucket_for(rank_val) -> str:
+        real = normalize_rank(rank_val)
+        if real is not None and is_ranked(real, threshold):
+            return "ranked"
+        return "unranked"
+
     summary: list[dict] = []
     for row in unranked + ranked:
         rank = row.get("last_rank")
         hist = _last_history_row(row["keyword"], row["store_name"])
-        bucket = "ranked" if is_ranked(rank, threshold) else "unranked"
+        bucket = _bucket_for(rank)
         summary.append(
             {
                 "keyword": row["keyword"],
                 "product_id": row.get("product_id"),
                 "product_name": row.get("product_name") or row.get("product_id") or "",
                 "last_rank": rank,
-                "status_label": _rank_status_label(rank, threshold, hist),
+                "rank_display": format_rank_label(rank, threshold=threshold, scan_depth=scan_depth),
+                "status_label": _rank_status_label(rank, threshold, hist, scan_depth=scan_depth),
                 "bucket": bucket,
+                "traffic_mode": "maintain" if bucket == "ranked" else "boost",
             }
         )
     return summary
@@ -903,7 +965,7 @@ def get_all_product_rankings(keyword, product_map, logger=None, max_pages=13):
         return results, str(e)
 
 
-def check_product_rank(keyword, product_id, logger=None, max_pages=13):
+def check_product_rank(keyword, product_id, logger=None, max_pages=None, config=None):
     """
     특정 스마트스토어 상품 ID의 쇼핑 검색 노출 순위.
     반환: (순위 또는 None, 상태) — 상태는 None|blocked|not_found|error
@@ -912,14 +974,19 @@ def check_product_rank(keyword, product_id, logger=None, max_pages=13):
         if logger:
             logger(msg)
 
+    if max_pages is None:
+        max_pages = rank_scan_max_pages(config)
+    depth_limit = rank_depth_limit(max_pages, config)
     product_id = str(product_id).strip()
-    log(f"🔍 '{keyword}' 검색 결과에서 상품 {product_id} 순위 조회 (최대 {max_pages}페이지)...")
+    log(f"🔍 '{keyword}' 검색 결과에서 상품 {product_id} 순위 조회 (최대 {depth_limit}위까지)...")
 
     cumulative_rank = 0
 
     try:
         for page in range(1, max_pages + 1):
-            start = (page - 1) * 40 + 1
+            start = _page_start(page)
+            if start > NAVER_API_MAX_START:
+                break
             log(f"   📄 {page}페이지 조회 중... (start={start})")
 
             page_ids, err, _source = _fetch_shopping_page_ids(keyword, start=start, logger=logger)
@@ -942,7 +1009,7 @@ def check_product_rank(keyword, product_id, logger=None, max_pages=13):
             import time
             time.sleep(1.0 if is_cloud_hub() else 0.5)
 
-        log(f"⚠️ 상품 {product_id} {cumulative_rank}위 이후에도 미발견")
+        log(f"⚠️ 상품 {product_id} {depth_limit}위까지 탐색·미노출 (실제 {cumulative_rank}개 상품 조회)")
         return None, "not_found"
     except Exception as e:
         log(f"❌ 상품 순위 조회 실패: {e}")
@@ -1045,7 +1112,12 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
     if logger and serverless:
         logger(f"📌 서버리스 우선 추적: {len(keywords)}개 키워드")
 
-    max_pages = int(config.get("serverless_max_pages") or 5) if serverless else 13
+    max_pages = (
+        int(config.get("serverless_max_pages") or 10)
+        if serverless
+        else rank_scan_max_pages(config)
+    )
+    depth_limit = rank_depth_limit(max_pages, config)
 
     results = []
     blocked_abort = False
@@ -1105,11 +1177,10 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
             continue
 
         if rank is None:
-            # 탐색 범위 초과 — 미발견으로 기록
-            detail = f"미발견 (520위 초과)" if prev is None else (
-                f"{prev}위 → 미발견 (520위 초과)"
-            )
-            append_history(keyword, store_name, 999, prev, "순위추적", detail)
+            detail = format_rank_label(None, scan_depth=depth_limit)
+            if normalize_rank(prev) is not None:
+                detail = f"{format_rank_label(prev)} → {detail}"
+            append_history(keyword, store_name, NOT_FOUND_RANK, prev, "순위추적", detail)
             results.append({
                 "keyword": keyword,
                 "store_name": store_name,
@@ -1120,6 +1191,7 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
                 "detail": detail,
                 "success": True,
                 "not_found": True,
+                "scan_depth": depth_limit,
             })
             if logger:
                 logger(f"📊 [{keyword}] {detail}")
@@ -1183,24 +1255,31 @@ def build_completion_report(results):
 
         prev = r.get("prev_rank")
         rank = r.get("rank")
-        if r.get("not_found") or rank is None:
+        prev_real = normalize_rank(prev)
+        rank_real = normalize_rank(rank)
+        if r.get("not_found") or rank_real is None:
             status = "미발견"
             unchanged += 1
-        elif prev is None:
+        elif prev_real is None:
             status = "신규기록"
             unchanged += 1
-        elif rank < prev:
+        elif rank_real < prev_real:
             status = "상승"
             improved += 1
-        elif rank > prev:
+        elif rank_real > prev_real:
             status = "하락"
             declined += 1
         else:
             status = "유지"
             unchanged += 1
 
-        rank_text = f"{rank}위" if rank is not None else "미발견"
-        prev_text = f"{prev}위" if prev else "기록 없음"
+        rank_text = (
+            format_rank_label(rank, scan_depth=r.get("scan_depth") or rank_depth_limit())
+            if r.get("not_found") or rank is None
+            else format_rank_label(rank)
+        )
+        prev_real = normalize_rank(prev)
+        prev_text = format_rank_label(prev) if prev_real is not None else "기록 없음"
 
         items.append({
             "keyword": r["keyword"],
@@ -1234,4 +1313,85 @@ def build_completion_report(results):
         "declined": declined,
         "unchanged": unchanged,
         "completed_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+    }
+
+
+def build_workflow_status(
+    config: dict | None = None,
+    *,
+    hub_state: dict | None = None,
+    kw_summary: list[dict] | None = None,
+    rank_overview: dict | None = None,
+) -> dict:
+    """대시보드 플로우차트용 — 단계별 작업·순위 진행."""
+    config = config or load_config()
+    hub_state = hub_state or {}
+    kw_summary = kw_summary or get_keyword_rank_summary(config)
+    overview = rank_overview or load_rank_overview() or {}
+    scan_depth = int(overview.get("scan_depth") or 0) or rank_depth_limit(config=config)
+
+    unranked = [s for s in kw_summary if s.get("bucket") == "unranked"]
+    ranked = [s for s in kw_summary if s.get("bucket") == "ranked"]
+    boost_targets = unranked[:8]
+
+    steps = [
+        {
+            "id": "scan",
+            "title": "1. 순위 조회",
+            "status": "done" if overview.get("scanned_at") else "pending",
+            "detail": (
+                f"NAVER API · 최대 {scan_depth}위 탐색 · "
+                f"{overview.get('scanned_at') or '미실행'}"
+            ),
+        },
+        {
+            "id": "classify",
+            "title": "2. 진입/미진입 분류",
+            "status": "done" if kw_summary else "pending",
+            "detail": f"100위 이내 {len(ranked)} · 미진입 {len(unranked)}",
+        },
+        {
+            "id": "boost",
+            "title": "3. 미진입 트래픽 (boost)",
+            "status": "active" if hub_state.get("traffic_enabled") and unranked else "idle",
+            "detail": (
+                f"다음: {boost_targets[0]['keyword']}"
+                if boost_targets
+                else "대상 없음"
+            ),
+        },
+        {
+            "id": "maintain",
+            "title": "4. 순위 유지 (maintain)",
+            "status": "active" if ranked and hub_state.get("traffic_enabled") else "idle",
+            "detail": f"유지 {len(ranked)}개 키워드",
+        },
+        {
+            "id": "seo",
+            "title": "5. SEO·블로그",
+            "status": "idle",
+            "detail": "스마트스토어 메타 · Gemini 블로그 · 구글 색인",
+        },
+    ]
+
+    return {
+        "scan_depth": scan_depth,
+        "ranked_count": len(ranked),
+        "unranked_count": len(unranked),
+        "boost_queue": [
+            {
+                "keyword": x["keyword"],
+                "rank_display": x.get("rank_display") or x.get("status_label"),
+                "product_name": x.get("product_name"),
+            }
+            for x in boost_targets
+        ],
+        "ranked_highlights": [
+            {
+                "keyword": x["keyword"],
+                "rank_display": x.get("rank_display") or format_rank_label(x.get("last_rank")),
+            }
+            for x in sorted(ranked, key=lambda r: normalize_rank(r.get("last_rank")) or 9999)[:6]
+        ],
+        "steps": steps,
     }

@@ -14,6 +14,7 @@ from werkzeug.exceptions import NotFound
 
 from rank_tracker import (
     build_completion_report,
+    build_workflow_status,
     get_history,
     get_keyword_rank_summary,
     is_ranked,
@@ -772,6 +773,7 @@ def api_status():
             "traffic_ranked_count": peek.get("ranked_count") if peek.get("ranked_count") is not None else ranked_n,
             "rank_overview": rank_overview,
             "keyword_rank_summary": kw_summary,
+            "workflow": build_workflow_status(config, hub_state=state, kw_summary=kw_summary, rank_overview=rank_overview),
             "priority_keywords": priority_preview,
             "persistence": persistence_backend(),
             "naver_api_configured": bool(

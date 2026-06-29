@@ -25,6 +25,7 @@ from dotenv import load_dotenv
 load_dotenv(ROOT / ".env", override=True)
 
 from rank_tracker import (
+    NOT_FOUND_RANK,
     _keyword_entries,
     _naver_api_credentials,
     _product_name_for,
@@ -32,9 +33,12 @@ from rank_tracker import (
     build_completion_report,
     build_rank_overview,
     check_product_rank,
+    format_rank_label,
     get_last_rank,
     is_ranked,
     load_config,
+    rank_depth_limit,
+    rank_scan_max_pages,
     save_rank_overview,
 )
 
@@ -46,18 +50,14 @@ def _log(msg: str) -> None:
         print(msg.encode("cp949", errors="replace").decode("cp949"), flush=True)
 
 
-def _rank_label(rank: int | None, threshold: int = 100, status: str = "") -> str:
+def _rank_label(rank: int | None, threshold: int = 100, status: str = "", *, scan_depth: int | None = None) -> str:
     if rank is None:
         if status == "no_product_id":
             return "상품ID 없음"
         if status in ("error", "timeout", "connection", "api_error"):
             return "조회 실패"
         return "미조회"
-    if rank >= 999:
-        return "520위 밖 (미노출)"
-    if is_ranked(rank, threshold):
-        return f"{rank}위"
-    return f"{rank}위 (100위 밖)"
+    return format_rank_label(rank, threshold=threshold, scan_depth=scan_depth)
 
 
 def _check_with_retry(keyword: str, product_id: str, *, max_pages: int, retries: int = 3) -> tuple[int | None, str]:
@@ -77,18 +77,21 @@ def _check_with_retry(keyword: str, product_id: str, *, max_pages: int, retries:
     return rank, last_status or "api_error"
 
 
-def run_full_rank_scan(*, max_pages: int = 13, delay_sec: float = 0.8) -> list[dict]:
+def run_full_rank_scan(*, max_pages: int | None = None, delay_sec: float = 0.8) -> list[dict]:
     cid, secret = _naver_api_credentials()
     if not cid or not secret:
         _log("[FAIL] .env 에 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 이 필요합니다.")
         return []
 
     config = load_config()
+    if max_pages is None:
+        max_pages = rank_scan_max_pages(config)
+    depth = rank_depth_limit(max_pages, config)
     entries = _keyword_entries(config)
     threshold = int(config.get("traffic_rank_threshold") or 100)
     results: list[dict] = []
 
-    _log(f"전체 {len(entries)}개 키워드 순위 조회 시작 (최대 {max_pages}페이지/키워드)...")
+    _log(f"전체 {len(entries)}개 키워드 순위 조회 (최대 {depth}위까지)...")
 
     for i, entry in enumerate(entries, 1):
         kw = entry["keyword"]
@@ -107,9 +110,9 @@ def run_full_rank_scan(*, max_pages: int = 13, delay_sec: float = 0.8) -> list[d
             break
 
         if rank is None and status == "not_found":
-            rank = 999
+            rank = NOT_FOUND_RANK
         elif rank is None and status in ("error", "timeout", "connection", "api_error"):
-            rank = 999
+            rank = NOT_FOUND_RANK
             status = status or "api_error"
 
         row = {
@@ -120,8 +123,9 @@ def run_full_rank_scan(*, max_pages: int = 13, delay_sec: float = 0.8) -> list[d
             "rank": rank,
             "prev_rank": prev,
             "status": status or "ok",
-            "rank_label": _rank_label(rank, threshold, status or ""),
-            "in_top100": is_ranked(rank, threshold),
+            "rank_label": _rank_label(rank, threshold, status or "", scan_depth=depth),
+            "in_top100": is_ranked(rank, threshold) if rank != NOT_FOUND_RANK else False,
+            "scan_depth": depth,
         }
         results.append(row)
 
@@ -190,7 +194,7 @@ def save_report(results: list[dict], out_dir: Path) -> dict[str, Path]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="전체 키워드 순위 리포트")
-    parser.add_argument("--max-pages", type=int, default=13, help="키워드당 검색 페이지 (13=약 520위)")
+    parser.add_argument("--max-pages", type=int, default=25, help="키워드당 검색 페이지 (25=약 1000위)")
     parser.add_argument("--delay", type=float, default=0.8, help="키워드 간 대기(초)")
     args = parser.parse_args()
 
