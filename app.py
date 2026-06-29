@@ -20,6 +20,7 @@ from rank_tracker import (
     is_ranked,
     load_config,
     load_rank_overview,
+    rank_scan_limits,
     save_config,
     track_all_keywords,
     check_product_rank,
@@ -207,7 +208,7 @@ def scheduler_loop():
 
         add_log(f"🔄 [사이클 {cycle}] 순위 추적 + SEO 점검 시작")
         try:
-            results = track_all_keywords(logger=add_log, serverless=False)
+            results = track_all_keywords(logger=add_log, serverless=is_cloud_hub())
         except Exception as exc:
             heal_for_error(exc, "/scheduler_loop", logger=add_log)
             results = []
@@ -788,6 +789,7 @@ def api_status():
             "rank_overview": rank_overview,
             "keyword_rank_summary": kw_summary,
             "keyword_progress": keyword_progress,
+            "rank_limits": rank_scan_limits(config),
             "workflow": build_workflow_status(config, hub_state=state, kw_summary=kw_summary, rank_overview=rank_overview),
             "priority_keywords": priority_preview,
             "persistence": persistence_backend(),

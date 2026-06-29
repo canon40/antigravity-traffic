@@ -488,8 +488,9 @@
                 <h3 style="font-size:0.95rem;margin-bottom:4px;">
                     <span class="live-pulse"></span><i class="fa-solid fa-signal"></i> 키워드 순위 실시간
                 </h3>
-                <p style="font-size:0.72rem;color:#94a3b8;margin:0 0 10px;">
-                    10000위까지 조사 · 미진입 집중 트래픽 · TOP100/50/10 도달 예상
+                <p id="rankLimitsHint" style="font-size:0.72rem;color:#94a3b8;margin:0 0 10px;line-height:1.45;">
+                    Cloudtype: API 최대 <strong>1000위</strong> · 1000위 밖은 PC <code>run_rank_report.bat --deep</code> (Playwright)<br>
+                    미진입 boost: <strong>24h 시작</strong> 또는 PC <code>run_rank_boost.bat</code>
                 </p>
                 <div id="keywordLiveBoard" class="kw-progress-board">
                     <div class="empty-state" style="padding:16px;">순위 조회 후 키워드별 진행이 표시됩니다.</div>
@@ -497,7 +498,7 @@
             </div>
             <div class="glass-panel workflow-panel" id="workflowPanel" style="margin-bottom:16px;padding:14px;">
                 <h3 style="font-size:0.95rem;margin-bottom:4px;"><i class="fa-solid fa-diagram-project"></i> 작업 플로우</h3>
-                <p style="font-size:0.72rem;color:#94a3b8;margin:0 0 4px;">순위 조회 → 분류 → 미진입 boost 트래픽 → 진입 maintain · 최대 <span id="workflowScanDepth">10000</span>위 탐색</p>
+                <p style="font-size:0.72rem;color:#94a3b8;margin:0 0 4px;">순위 조회(API 1000위) → 분류 → 미진입 boost → 진입 maintain · <span id="workflowScanDepth">1000</span>위(API)</p>
                 <div id="workflowSteps" class="workflow-steps"></div>
                 <details style="margin-top:12px;">
                     <summary style="font-size:0.75rem;color:#93c5fd;cursor:pointer;">화면 구성 (와이어프레임)</summary>
@@ -954,11 +955,34 @@
         function formatRankLabel(rank, scanDepth) {
             const depth = scanDepth || 1000;
             const num = parseInt(rank, 10);
-            if (!Number.isFinite(num) || num >= 999) {
-                return `${depth}위까지 탐색·미노출`;
+            if (!Number.isFinite(num) || num >= 10001 || num === 999) {
+                return depth >= 10000
+                    ? `${depth}위까지 탐색·미노출`
+                    : `${depth}위까지 탐색·미노출 (API 한계)`;
             }
             if (num >= 1 && num <= 100) return `${num}위`;
             return `${num}위 (100위 밖)`;
+        }
+
+        function renderRankLimitsHint(data) {
+            const el = document.getElementById('rankLimitsHint');
+            if (!el) return;
+            const lim = (data && data.rank_limits) || (data && data.workflow && data.workflow.rank_limits) || {};
+            const apiMax = lim.api_max_rank || 1000;
+            const deepMax = lim.deep_max_rank || 10000;
+            const onCloud = lim.on_cloud !== false && (data.auto_mode === 'cron' || data.auto_mode === 'daemon');
+            const deepOk = lim.deep_available;
+            let html = `Cloudtype/Cron: 네이버 API 최대 <strong>${apiMax}위</strong>`;
+            if (deepOk) {
+                html += ` · 로컬 딥스캔 최대 <strong>${deepMax}위</strong> (Playwright)`;
+            } else {
+                html += ` · 1000위 밖: PC <code>run_rank_report.bat --deep</code>`;
+            }
+            html += `<br>미진입 boost: <strong>24h 시작</strong> (Cloudtype) 또는 PC <code>run_rank_boost.bat</code>`;
+            if (data.workflow && data.workflow.boost_hint) {
+                html += `<br><span style="color:#fbbf24;">${data.workflow.boost_hint}</span>`;
+            }
+            el.innerHTML = html;
         }
 
         function renderWorkflow(data) {
@@ -1019,8 +1043,13 @@
                 if (ov.top100_keywords.length > 8) html += ` · 외 ${ov.top100_keywords.length - 8}개`;
                 html += `</div>`;
             }
+            const lim = (data && data.rank_limits) || {};
+            const apiDepth = lim.api_depth || (ov && ov.scan_depth) || 1000;
             if (ov && ov.scan_depth) {
-                html += `<div style="font-size:0.72rem;color:#64748b;margin-top:6px;">탐색 깊이: 최대 ${ov.scan_depth}위 (10000위까지 조사)</div>`;
+                html += `<div style="font-size:0.72rem;color:#64748b;margin-top:6px;">탐색: API 최대 ${apiDepth}위 · 1000위 밖은 PC 딥스캔</div>`;
+            }
+            if (unranked > 0) {
+                html += `<div style="font-size:0.72rem;color:#fbbf24;margin-top:6px;">미진입 ${unranked}개 → 24h 시작 또는 run_rank_boost.bat</div>`;
             }
             box.innerHTML = html;
         }
@@ -1047,12 +1076,15 @@
                 if (br == null) return 1;
                 return ar - br;
             });
+            const lim = (progress && progress.rank_limits) || {};
+            const scaleMax = lim.deep_max_rank || lim.api_max_rank || 1000;
+            const apiMax = lim.api_max_rank || 1000;
             const top = sorted.slice(0, 20);
-            const updated = progress.updated_at ? `<div style="font-size:0.68rem;color:#64748b;margin-bottom:8px;">갱신 ${progress.updated_at} · 상위 ${top.length}개 표시</div>` : '';
+            const updated = progress.updated_at ? `<div style="font-size:0.68rem;color:#64748b;margin-bottom:8px;">갱신 ${progress.updated_at} · API ${apiMax}위 · 상위 ${top.length}개</div>` : '';
             box.innerHTML = updated + top.map(item => {
                 const gp = item.goal_progress || {};
                 const real = gp.current;
-                const rankTxt = item.rank_display || item.status_label || (real ? `${real}위` : '10000위 밖');
+                const rankTxt = item.rank_display || item.status_label || (real ? `${real}위` : `${apiMax}위 밖`);
                 const cls = item.bucket === 'ranked' ? 'in-top10' : 'boost-focus';
                 const trend = item.rank_trend === 'up' ? '<span class="trend-up">▲ 상승</span>'
                     : (item.rank_trend === 'down' ? '<span class="trend-down">▼ 하락</span>' : '');
@@ -1077,7 +1109,7 @@
                         <div class="rank-now">${rankTxt}</div>
                     </div>
                     ${bars}
-                    <div class="goal-markers"><span>10000위</span><span>100위</span><span>50위</span><span>10위</span></div>
+                    <div class="goal-markers"><span>${scaleMax}위</span><span>100위</span><span>50위</span><span>10위</span></div>
                     <div class="eta-row">${etas}${top10}</div>
                 </div>`;
             }).join('');
@@ -2110,6 +2142,7 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
             if (tracksEl) tracksEl.textContent = data.total_tracks || 0;
             if (kwCountEl) kwCountEl.textContent = data.keyword_count || 0;
             renderRankOverview(data);
+            renderRankLimitsHint(data);
             renderKeywordLiveBoard(data.keyword_progress);
             renderWorkflow(data);
             const hint = document.getElementById('kwHint');

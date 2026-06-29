@@ -15,10 +15,11 @@ HISTORY_HEADERS = ["날짜", "키워드", "스토어명", "순위", "이전순�
 RANKS_PER_PAGE = 40
 NAVER_API_MAX_START = 1000
 NAVER_API_MAX_PAGES = NAVER_API_MAX_START // RANKS_PER_PAGE  # 25
-MAX_SCAN_DEPTH = 10000  # 최대 탐색 깊이 (10000위)
+API_DEFAULT_MAX_PAGES = NAVER_API_MAX_PAGES
+MAX_SCAN_DEPTH = 10000
 DEEP_MAX_PAGES = MAX_SCAN_DEPTH // RANKS_PER_PAGE  # 250
-DEFAULT_MAX_PAGES = DEEP_MAX_PAGES  # 기본: 10000위까지 탐색
-NOT_FOUND_RANK = 10001  # 10000위 밖·미노출 저장값
+DEFAULT_MAX_PAGES = API_DEFAULT_MAX_PAGES
+NOT_FOUND_RANK = 10001
 LEGACY_NOT_FOUND = 999
 
 _BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,18 +35,77 @@ _NAVER_OPENAPI_URL = "https://openapi.naver.com/v1/search/shop.json"
 _SHOPPING_SESSION: requests.Session | None = None
 
 
-def rank_scan_max_pages(config: dict | None = None) -> int:
+def rank_scan_max_pages(config: dict | None = None, *, deep: bool = False) -> int:
+    """deep=False: 네이버 API 상한(1000위). deep=True: 로컬 Playwright 최대 페이지."""
     config = config or {}
-    for env_key in ("RANK_SCAN_MAX_PAGES", "DEEP_SCAN_MAX_PAGES"):
-        env = (os.environ.get(env_key) or "").strip()
-        if env.isdigit():
-            return max(1, min(int(env), DEEP_MAX_PAGES))
-    raw = config.get("deep_scan_max_pages") or config.get("rank_scan_max_pages") or DEFAULT_MAX_PAGES
+    if deep:
+        return deep_scan_max_pages(config)
+    if is_cloud_hub() or is_cron_mode():
+        cap = int(config.get("serverless_max_pages") or API_DEFAULT_MAX_PAGES)
+        return max(1, min(cap, NAVER_API_MAX_PAGES))
+    env = (os.environ.get("RANK_SCAN_MAX_PAGES") or "").strip()
+    if env.isdigit():
+        return max(1, min(int(env), NAVER_API_MAX_PAGES))
+    raw = config.get("rank_scan_max_pages") or API_DEFAULT_MAX_PAGES
+    return max(1, min(int(raw), NAVER_API_MAX_PAGES))
+
+
+def deep_scan_max_pages(config: dict | None = None) -> int:
+    config = config or {}
+    env = (os.environ.get("DEEP_SCAN_MAX_PAGES") or "").strip()
+    if env.isdigit():
+        return max(1, min(int(env), DEEP_MAX_PAGES))
+    raw = config.get("deep_scan_max_pages") or DEEP_MAX_PAGES
     return max(1, min(int(raw), DEEP_MAX_PAGES))
 
 
-def rank_depth_limit(max_pages: int | None = None, config: dict | None = None) -> int:
-    mp = max_pages if max_pages is not None else rank_scan_max_pages(config)
+def deep_scan_available(config: dict | None = None) -> bool:
+    """Cloudtype/Cron에서는 Playwright 딥스캔 불가."""
+    if is_cloud_hub() or is_cron_mode():
+        return False
+    config = config or {}
+    if config.get("deep_scan_enabled") is False:
+        return False
+    try:
+        from rank_scan_deep import playwright_available
+
+        return playwright_available()
+    except Exception:
+        return False
+
+
+def rank_scan_limits(config: dict | None = None) -> dict:
+    config = config or load_config()
+    on_cloud = is_cloud_hub() or is_cron_mode()
+    api_depth = rank_depth_limit(api_scan_max_pages(config), api_only=True)
+    deep_depth = rank_depth_limit(deep_scan_max_pages(config), api_only=False)
+    return {
+        "api_max_rank": NAVER_API_MAX_START,
+        "api_max_pages": api_scan_max_pages(config),
+        "api_depth": api_depth,
+        "deep_max_rank": MAX_SCAN_DEPTH,
+        "deep_max_pages": deep_scan_max_pages(config),
+        "deep_depth": deep_depth,
+        "deep_available": deep_scan_available(config),
+        "on_cloud": on_cloud,
+        "not_found_rank": NOT_FOUND_RANK,
+        "boost_cloud": "Cloudtype 대시보드 「24h 시작」",
+        "boost_local": "run_rank_boost.bat",
+        "deep_local": "run_rank_report.bat --deep (Playwright)",
+        "api_note": "네이버 검색 API는 1000위까지만 조회 가능합니다.",
+        "deep_note": "1000위 밖은 로컬 PC Playwright 딥스캔이 필요합니다.",
+    }
+
+
+def api_scan_max_pages(config: dict | None = None) -> int:
+    return rank_scan_max_pages(config, deep=False)
+
+
+def rank_depth_limit(max_pages: int | None = None, config: dict | None = None, *, api_only: bool = False) -> int:
+    if api_only:
+        mp = max_pages if max_pages is not None else api_scan_max_pages(config)
+        return min(mp * RANKS_PER_PAGE, NAVER_API_MAX_START)
+    mp = max_pages if max_pages is not None else deep_scan_max_pages(config)
     return min(mp * RANKS_PER_PAGE, MAX_SCAN_DEPTH)
 
 
@@ -74,7 +134,9 @@ def format_rank_label(rank, *, threshold: int = 100, scan_depth: int | None = No
         if 1 <= real <= threshold:
             return f"{real}위"
         return f"{real}위 (100위 밖)"
-    depth = scan_depth or rank_depth_limit()
+    depth = scan_depth or rank_depth_limit(api_only=True)
+    if depth >= NAVER_API_MAX_START and depth < MAX_SCAN_DEPTH:
+        return f"{NAVER_API_MAX_START}위까지 탐색·미노출 (API 한계)"
     if depth >= MAX_SCAN_DEPTH:
         return f"{MAX_SCAN_DEPTH}위까지 탐색·미노출 (10000위 밖)"
     return f"{depth}위까지 탐색·미노출"
@@ -467,7 +529,7 @@ def build_rank_overview(results: list[dict], *, threshold: int = 100) -> dict:
         if normalize_rank(r.get("rank")) is not None and not r.get("in_top100")
     ]
     not_found = [r for r in results if is_not_found_rank(r.get("rank")) or r.get("rank") is None]
-    scan_depth = rank_depth_limit()
+    scan_depth = rank_depth_limit(api_only=True)
 
     pct = round(100 * len(ranked_top100) / total, 1) if total else 0.0
     return {
@@ -682,7 +744,7 @@ def _last_history_row(keyword: str, store_name: str) -> dict | None:
 
 
 def _rank_status_label(rank, threshold: int, row: dict | None, *, scan_depth: int | None = None) -> str:
-    depth = scan_depth or rank_depth_limit()
+    depth = scan_depth or rank_depth_limit(api_only=True)
     real = normalize_rank(rank)
     if real is not None and is_ranked(real, threshold):
         change = str((row or {}).get("변동") or "")
@@ -709,7 +771,7 @@ def get_keyword_rank_summary(config: dict | None = None) -> list[dict]:
     threshold = int(config.get("traffic_rank_threshold") or 100)
     overview = load_rank_overview()
     use_overview = bool(overview and not overview.get("_stale") and overview.get("keywords"))
-    scan_depth = int((overview or {}).get("scan_depth") or 0) or rank_depth_limit(config=config)
+    scan_depth = int((overview or {}).get("scan_depth") or 0) or rank_depth_limit(api_only=True, config=config)
 
     unranked: list[dict] = []
     ranked: list[dict] = []
@@ -986,40 +1048,35 @@ def get_all_product_rankings(keyword, product_map, logger=None, max_pages=13):
         return results, str(e)
 
 
-def check_product_rank(keyword, product_id, logger=None, max_pages=None, config=None):
+def check_product_rank(keyword, product_id, logger=None, max_pages=None, config=None, *, use_deep=False):
     """
     특정 스마트스토어 상품 ID의 쇼핑 검색 노출 순위.
+    1~1000위: 네이버 API · 1001~10000위: 로컬 Playwright 딥스캔(use_deep).
     반환: (순위 또는 None, 상태) — 상태는 None|blocked|not_found|error
     """
     def log(msg):
         if logger:
             logger(msg)
 
+    config = config or load_config()
     if max_pages is None:
-        max_pages = rank_scan_max_pages(config)
-    depth_limit = rank_depth_limit(max_pages, config)
+        max_pages = deep_scan_max_pages(config) if use_deep else api_scan_max_pages(config)
+    api_pages = min(max_pages, NAVER_API_MAX_PAGES)
+    depth_limit = (
+        rank_depth_limit(deep_scan_max_pages(config), api_only=False)
+        if use_deep and max_pages > NAVER_API_MAX_PAGES
+        else rank_depth_limit(api_pages, api_only=True)
+    )
     product_id = str(product_id).strip()
-    log(f"🔍 '{keyword}' 검색 결과에서 상품 {product_id} 순위 조회 (최대 {depth_limit}위까지)...")
+    log(f"🔍 '{keyword}' 검색 — 상품 {product_id} (최대 {depth_limit}위 · API→딥스캔)")
 
     cumulative_rank = 0
 
     try:
-        for page in range(1, max_pages + 1):
+        for page in range(1, api_pages + 1):
             start = _page_start(page)
             log(f"   📄 {page}페이지 조회 중... (start={start})")
-
-            if start <= NAVER_API_MAX_START:
-                page_ids, err, _source = _fetch_shopping_page_ids(keyword, start=start, logger=logger)
-            else:
-                html, err = _fetch_shopping_html(keyword, start=start, logger=logger)
-                if err == "blocked":
-                    log("   ⚠️ HTTP 403 — 중단")
-                    return None, "blocked"
-                if err in ("timeout", "connection", "error"):
-                    log(f"   ⚠️ 조회 실패 ({err}) — 중단")
-                    return None, err
-                page_ids = _extract_ordered_product_ids(html or "")
-                err = None if page_ids else "empty"
+            page_ids, err, _source = _fetch_shopping_page_ids(keyword, start=start, logger=logger)
             if err == "blocked":
                 log("   ⚠️ HTTP 403 — 중단")
                 return None, "blocked"
@@ -1037,10 +1094,31 @@ def check_product_rank(keyword, product_id, logger=None, max_pages=None, config=
                     return cumulative_rank, None
 
             import time
-            delay = 1.2 if is_cloud_hub() else (0.6 if start <= NAVER_API_MAX_START else 0.9)
-            time.sleep(delay)
+            time.sleep(1.2 if is_cloud_hub() else 0.6)
 
-        log(f"⚠️ 상품 {product_id} {depth_limit}위까지 탐색·미노출")
+        if use_deep and max_pages > NAVER_API_MAX_PAGES and deep_scan_available(config):
+            try:
+                from rank_scan_deep import check_product_rank_deep
+
+                log(f"   🔎 API {NAVER_API_MAX_START}위 내 미노출 → Playwright 딥스캔 (1001~{depth_limit}위)")
+                deep_rank = check_product_rank_deep(
+                    keyword,
+                    product_id,
+                    max_pages=max_pages,
+                    start_page=NAVER_API_MAX_PAGES + 1,
+                    rank_offset=NAVER_API_MAX_START,
+                    logger=logger,
+                )
+                if deep_rank is not None:
+                    return deep_rank, None
+            except Exception as exc:
+                log(f"   ⚠️ 딥스캔 실패: {exc}")
+
+        api_depth = rank_depth_limit(api_pages, api_only=True)
+        if not use_deep or not deep_scan_available(config):
+            log(f"⚠️ 상품 {product_id} {api_depth}위까지 탐색·미노출 (API 한계)")
+        else:
+            log(f"⚠️ 상품 {product_id} {depth_limit}위까지 탐색·미노출")
         return None, "not_found"
     except Exception as e:
         log(f"❌ 상품 순위 조회 실패: {e}")
@@ -1143,12 +1221,12 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
     if logger and serverless:
         logger(f"📌 서버리스 우선 추적: {len(keywords)}개 키워드")
 
-    max_pages = rank_scan_max_pages(config)
+    max_pages = api_scan_max_pages(config)
     if serverless:
         batch_cap = int(config.get("serverless_max_pages") or 0)
         if batch_cap > 0:
             max_pages = min(max_pages, batch_cap)
-    depth_limit = rank_depth_limit(max_pages, config)
+    depth_limit = rank_depth_limit(max_pages, api_only=True)
 
     results = []
     blocked_abort = False
@@ -1305,7 +1383,7 @@ def build_completion_report(results):
             unchanged += 1
 
         rank_text = (
-            format_rank_label(rank, scan_depth=r.get("scan_depth") or rank_depth_limit())
+            format_rank_label(rank, scan_depth=r.get("scan_depth") or rank_depth_limit(api_only=True))
             if r.get("not_found") or rank is None
             else format_rank_label(rank)
         )
@@ -1359,11 +1437,16 @@ def build_workflow_status(
     hub_state = hub_state or {}
     kw_summary = kw_summary or get_keyword_rank_summary(config)
     overview = rank_overview or load_rank_overview() or {}
-    scan_depth = int(overview.get("scan_depth") or 0) or rank_depth_limit(config=config)
-
+    scan_depth = int(overview.get("scan_depth") or 0) or rank_depth_limit(api_only=True, config=config)
+    limits = rank_scan_limits(config)
     unranked = [s for s in kw_summary if s.get("bucket") == "unranked"]
     ranked = [s for s in kw_summary if s.get("bucket") == "ranked"]
     boost_targets = unranked[:8]
+    boost_hint = (
+        f"미진입 {len(unranked)}개 → {limits['boost_cloud']} 또는 PC {limits['boost_local']}"
+        if unranked
+        else "미진입 없음"
+    )
 
     steps = [
         {
@@ -1371,8 +1454,9 @@ def build_workflow_status(
             "title": "1. 순위 조회",
             "status": "done" if overview.get("scanned_at") else "pending",
             "detail": (
-                f"최대 {scan_depth}위 탐색 (10000위까지) · "
-                f"{overview.get('scanned_at') or '미실행'}"
+                f"API 최대 {limits['api_max_rank']}위"
+                + (f" · 딥스캔 {limits['deep_max_rank']}위 (로컬)" if limits["deep_available"] else "")
+                + f" · {overview.get('scanned_at') or '미실행'}"
             ),
         },
         {
@@ -1385,11 +1469,7 @@ def build_workflow_status(
             "id": "boost",
             "title": "3. 미진입 트래픽 (boost)",
             "status": "active" if hub_state.get("traffic_enabled") and unranked else "idle",
-            "detail": (
-                f"다음: {boost_targets[0]['keyword']}"
-                if boost_targets
-                else "대상 없음"
-            ),
+            "detail": boost_hint if unranked else "대상 없음",
         },
         {
             "id": "maintain",
@@ -1407,6 +1487,8 @@ def build_workflow_status(
 
     return {
         "scan_depth": scan_depth,
+        "rank_limits": limits,
+        "boost_hint": boost_hint,
         "ranked_count": len(ranked),
         "unranked_count": len(unranked),
         "boost_queue": [

@@ -185,16 +185,18 @@ def _rank_trend(keyword: str, store_name: str, history: list | None) -> str:
 
 def build_progress_board(config: dict | None = None, summary: list[dict] | None = None) -> dict:
     """API용 키워드 진행 보드."""
-    from rank_tracker import get_keyword_rank_summary, load_config, rank_depth_limit
+    from rank_tracker import get_keyword_rank_summary, load_config, rank_scan_limits
 
     config = config or load_config()
+    limits = rank_scan_limits(config)
     base = summary or get_keyword_rank_summary(config)
     items = enrich_keyword_summary(base)
     in_top10 = [i for i in items if normalize_rank(i.get("last_rank")) is not None and normalize_rank(i.get("last_rank")) <= 10]
     improving = [i for i in items if i.get("rank_trend") == "up"]
     return {
         "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "scan_depth": rank_depth_limit(config=config),
+        "scan_depth": limits["api_depth"],
+        "rank_limits": limits,
         "total": len(items),
         "in_top10": len(in_top10),
         "improving": len(improving),

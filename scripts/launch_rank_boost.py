@@ -108,8 +108,9 @@ def main() -> int:
         _run_traffic_burst(args.traffic, args.traffic_interval)
 
     _log("=== 완료 ===")
+    _log("미진입 키워드 boost: Cloudtype 「24h 시작」 또는 PC run_rank_boost.bat")
+    _log("1000위 밖 순위: PC run_rank_report.bat --deep (Playwright)")
     _log("24시간 자동: run.bat 으로 허브 실행 (순위·트래픽 백그라운드)")
-    _log("Cloudtype: main 브랜치 push 후 대시보드 /api/status 확인")
     return 0
 
 
