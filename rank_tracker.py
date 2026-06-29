@@ -14,8 +14,12 @@ HISTORY_HEADERS = ["날짜", "키워드", "스토어명", "순위", "이전순�
 
 RANKS_PER_PAGE = 40
 NAVER_API_MAX_START = 1000
-DEFAULT_MAX_PAGES = 25  # 25페이지 × 40 = 1000위 (네이버 API 상한)
-NOT_FOUND_RANK = 10001  # 실제 순위가 아닌 '탐색 범위 내 미노출' 저장값
+NAVER_API_MAX_PAGES = NAVER_API_MAX_START // RANKS_PER_PAGE  # 25
+MAX_SCAN_DEPTH = 10000  # 최대 탐색 깊이 (10000위)
+DEEP_MAX_PAGES = MAX_SCAN_DEPTH // RANKS_PER_PAGE  # 250
+DEFAULT_MAX_PAGES = DEEP_MAX_PAGES  # 기본: 10000위까지 탐색
+NOT_FOUND_RANK = 10001  # 10000위 밖·미노출 저장값
+LEGACY_NOT_FOUND = 999
 
 _BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 _DEFAULT_CONFIG_PATH = os.path.join(_BUNDLE_DIR, "config.defaults.json")
@@ -32,26 +36,30 @@ _SHOPPING_SESSION: requests.Session | None = None
 
 def rank_scan_max_pages(config: dict | None = None) -> int:
     config = config or {}
-    env = (os.environ.get("RANK_SCAN_MAX_PAGES") or "").strip()
-    if env.isdigit():
-        return max(1, int(env))
-    return int(config.get("rank_scan_max_pages") or DEFAULT_MAX_PAGES)
+    for env_key in ("RANK_SCAN_MAX_PAGES", "DEEP_SCAN_MAX_PAGES"):
+        env = (os.environ.get(env_key) or "").strip()
+        if env.isdigit():
+            return max(1, min(int(env), DEEP_MAX_PAGES))
+    raw = config.get("deep_scan_max_pages") or config.get("rank_scan_max_pages") or DEFAULT_MAX_PAGES
+    return max(1, min(int(raw), DEEP_MAX_PAGES))
 
 
 def rank_depth_limit(max_pages: int | None = None, config: dict | None = None) -> int:
     mp = max_pages if max_pages is not None else rank_scan_max_pages(config)
-    return min(mp * RANKS_PER_PAGE, NAVER_API_MAX_START)
+    return min(mp * RANKS_PER_PAGE, MAX_SCAN_DEPTH)
 
 
 def normalize_rank(rank) -> int | None:
-    """999/10001 등 미노출 저장값은 None, 그 외는 실제 순위."""
+    """10001·999 등 미노출 저장값은 None. 1~10000은 실제 순위."""
     if rank is None:
         return None
     try:
         value = int(rank)
     except (TypeError, ValueError):
         return None
-    if value >= 999:
+    if value >= NOT_FOUND_RANK or value == LEGACY_NOT_FOUND:
+        return None
+    if value < 1:
         return None
     return value
 
@@ -67,6 +75,8 @@ def format_rank_label(rank, *, threshold: int = 100, scan_depth: int | None = No
             return f"{real}위"
         return f"{real}위 (100위 밖)"
     depth = scan_depth or rank_depth_limit()
+    if depth >= MAX_SCAN_DEPTH:
+        return f"{MAX_SCAN_DEPTH}위까지 탐색·미노출 (10000위 밖)"
     return f"{depth}위까지 탐색·미노출"
 
 
@@ -399,7 +409,7 @@ def get_last_rank(keyword, store_name):
                 value = int(row.get("순위", 100))
             except (TypeError, ValueError):
                 return None
-            if value >= 999:
+            if value >= NOT_FOUND_RANK or value == LEGACY_NOT_FOUND:
                 return NOT_FOUND_RANK
             return value
     return None
@@ -735,6 +745,7 @@ def get_keyword_rank_summary(config: dict | None = None) -> list[dict]:
         summary.append(
             {
                 "keyword": row["keyword"],
+                "store_name": row.get("store_name") or "",
                 "product_id": row.get("product_id"),
                 "product_name": row.get("product_name") or row.get("product_id") or "",
                 "last_rank": rank,
@@ -798,15 +809,25 @@ def _product_url_for(config: dict, product_id: str, hub_state: dict | None = Non
 
 
 def pick_traffic_target(config: dict | None = None, hub_state: dict | None = None) -> dict:
-    """미진입 키워드 우선 트래픽, 모두 진입 후 유지 모드."""
+    """미진입·저순위 키워드 우선 트래픽 (집중 boost → 유지 maintain)."""
     config = config or load_config()
     hub_state = hub_state or {}
     unranked, ranked = split_keywords_by_rank(config)
 
+    def _boost_priority(item: dict) -> tuple[int, int]:
+        rank = item.get("last_rank")
+        real = normalize_rank(rank)
+        if real is None:
+            return (0, MAX_SCAN_DEPTH)
+        return (1, -real)
+
     if unranked:
-        pool, mode = unranked, "boost"
+        pool = sorted(unranked, key=_boost_priority)
+        focus = pool[: max(12, min(len(pool), 24))]
+        mode = "boost"
     elif ranked:
-        pool, mode = ranked, "maintain"
+        focus = ranked
+        mode = "maintain"
     else:
         return {
             "url": _product_url_for(config, ""),
@@ -821,8 +842,8 @@ def pick_traffic_target(config: dict | None = None, hub_state: dict | None = Non
         }
 
     idx = int(hub_state.get("traffic_target_index") or 0)
-    picked = pool[idx % len(pool)]
-    next_index = (idx + 1) % len(pool)
+    picked = focus[idx % len(focus)]
+    next_index = (idx + 1) % len(focus)
     keyword = picked["keyword"]
 
     return {
@@ -985,11 +1006,20 @@ def check_product_rank(keyword, product_id, logger=None, max_pages=None, config=
     try:
         for page in range(1, max_pages + 1):
             start = _page_start(page)
-            if start > NAVER_API_MAX_START:
-                break
             log(f"   📄 {page}페이지 조회 중... (start={start})")
 
-            page_ids, err, _source = _fetch_shopping_page_ids(keyword, start=start, logger=logger)
+            if start <= NAVER_API_MAX_START:
+                page_ids, err, _source = _fetch_shopping_page_ids(keyword, start=start, logger=logger)
+            else:
+                html, err = _fetch_shopping_html(keyword, start=start, logger=logger)
+                if err == "blocked":
+                    log("   ⚠️ HTTP 403 — 중단")
+                    return None, "blocked"
+                if err in ("timeout", "connection", "error"):
+                    log(f"   ⚠️ 조회 실패 ({err}) — 중단")
+                    return None, err
+                page_ids = _extract_ordered_product_ids(html or "")
+                err = None if page_ids else "empty"
             if err == "blocked":
                 log("   ⚠️ HTTP 403 — 중단")
                 return None, "blocked"
@@ -1007,9 +1037,10 @@ def check_product_rank(keyword, product_id, logger=None, max_pages=None, config=
                     return cumulative_rank, None
 
             import time
-            time.sleep(1.0 if is_cloud_hub() else 0.5)
+            delay = 1.2 if is_cloud_hub() else (0.6 if start <= NAVER_API_MAX_START else 0.9)
+            time.sleep(delay)
 
-        log(f"⚠️ 상품 {product_id} {depth_limit}위까지 탐색·미노출 (실제 {cumulative_rank}개 상품 조회)")
+        log(f"⚠️ 상품 {product_id} {depth_limit}위까지 탐색·미노출")
         return None, "not_found"
     except Exception as e:
         log(f"❌ 상품 순위 조회 실패: {e}")
@@ -1340,7 +1371,7 @@ def build_workflow_status(
             "title": "1. 순위 조회",
             "status": "done" if overview.get("scanned_at") else "pending",
             "detail": (
-                f"NAVER API · 최대 {scan_depth}위 탐색 · "
+                f"최대 {scan_depth}위 탐색 (10000위까지) · "
                 f"{overview.get('scanned_at') or '미실행'}"
             ),
         },

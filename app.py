@@ -24,6 +24,7 @@ from rank_tracker import (
     track_all_keywords,
     check_product_rank,
 )
+from keyword_progress import build_progress_board
 from seo_checker import get_latest_audit, run_full_audit
 from seo_auto_fix import remediate_after_traffic, remediate_from_audit, ensure_product_seo
 from hub_self_heal import (
@@ -719,6 +720,7 @@ def api_status():
 
         rank_overview = load_rank_overview()
         kw_summary = get_keyword_rank_summary(config)
+        keyword_progress = build_progress_board(config, kw_summary)
         ranked_n = sum(1 for s in kw_summary if s.get("bucket") == "ranked")
         unranked_n = len(kw_summary) - ranked_n
         if not rank_overview:
@@ -785,6 +787,7 @@ def api_status():
             "traffic_ranked_count": peek.get("ranked_count") if peek.get("ranked_count") is not None else ranked_n,
             "rank_overview": rank_overview,
             "keyword_rank_summary": kw_summary,
+            "keyword_progress": keyword_progress,
             "workflow": build_workflow_status(config, hub_state=state, kw_summary=kw_summary, rank_overview=rank_overview),
             "priority_keywords": priority_preview,
             "persistence": persistence_backend(),
@@ -1087,6 +1090,13 @@ def api_stop():
 @app.route("/api/logs")
 def api_logs():
     return jsonify({"logs": logs_queue})
+
+
+@app.route("/api/keyword/progress")
+def api_keyword_progress():
+    config = load_config()
+    summary = get_keyword_rank_summary(config)
+    return jsonify(build_progress_board(config, summary))
 
 
 @app.route("/api/history")

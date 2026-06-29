@@ -118,6 +118,32 @@
         .kw-rank-row.ranked { border-left: 3px solid #34d399; }
         .kw-rank-row .kw-status.boost { color: #fbbf24; font-weight: 600; font-size: 0.82rem; }
         .kw-rank-row .kw-status.maintain { color: #34d399; font-weight: 600; font-size: 0.82rem; }
+        .kw-progress-board { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
+        .kw-progress-card {
+            padding: 12px; border-radius: 12px; background: rgba(15,23,42,0.55);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .kw-progress-card.boost-focus { border-left: 3px solid #fbbf24; }
+        .kw-progress-card.in-top10 { border-left: 3px solid #34d399; }
+        .kw-progress-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+        .kw-progress-head .rank-now { font-size: 1rem; font-weight: 700; color: #e2e8f0; white-space: nowrap; }
+        .kw-progress-head .trend-up { color: #34d399; font-size: 0.72rem; }
+        .kw-progress-head .trend-down { color: #f87171; font-size: 0.72rem; }
+        .goal-track { margin: 6px 0; }
+        .goal-track-label { display: flex; justify-content: space-between; font-size: 0.68rem; color: #94a3b8; margin-bottom: 3px; }
+        .goal-track-bar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.08); overflow: hidden; position: relative; }
+        .goal-track-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+        .goal-track-fill.g100 { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .goal-track-fill.g50 { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+        .goal-track-fill.g10 { background: linear-gradient(90deg, #10b981, #34d399); }
+        .goal-markers { display: flex; justify-content: space-between; font-size: 0.62rem; color: #64748b; margin-top: 2px; }
+        .eta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .eta-chip { font-size: 0.68rem; padding: 3px 8px; border-radius: 6px; background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.2); }
+        .eta-chip.done { background: rgba(16,185,129,0.15); color: #6ee7b7; border-color: rgba(16,185,129,0.3); }
+        .eta-chip.unknown { color: #64748b; border-color: rgba(100,116,139,0.3); }
+        .top10-badge { font-size: 0.68rem; padding: 3px 8px; border-radius: 6px; background: rgba(16,185,129,0.2); color: #6ee7b7; font-weight: 600; }
+        .live-pulse { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #34d399; margin-right: 6px; animation: livePulse 1.5s infinite; }
+        @keyframes livePulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
         .workflow-panel { margin-bottom: 16px; }
         .workflow-steps { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
         .workflow-step {
@@ -458,9 +484,20 @@
                     전체 스캔 후 표시됩니다. PC에서 <code style="color:#93c5fd;">run_rank_report.bat</code>
                 </div>
             </div>
+            <div class="glass-panel" id="keywordLivePanel" style="margin-bottom:16px;padding:14px;">
+                <h3 style="font-size:0.95rem;margin-bottom:4px;">
+                    <span class="live-pulse"></span><i class="fa-solid fa-signal"></i> 키워드 순위 실시간
+                </h3>
+                <p style="font-size:0.72rem;color:#94a3b8;margin:0 0 10px;">
+                    10000위까지 조사 · 미진입 집중 트래픽 · TOP100/50/10 도달 예상
+                </p>
+                <div id="keywordLiveBoard" class="kw-progress-board">
+                    <div class="empty-state" style="padding:16px;">순위 조회 후 키워드별 진행이 표시됩니다.</div>
+                </div>
+            </div>
             <div class="glass-panel workflow-panel" id="workflowPanel" style="margin-bottom:16px;padding:14px;">
                 <h3 style="font-size:0.95rem;margin-bottom:4px;"><i class="fa-solid fa-diagram-project"></i> 작업 플로우</h3>
-                <p style="font-size:0.72rem;color:#94a3b8;margin:0 0 4px;">순위 조회 → 분류 → 미진입 boost 트래픽 → 진입 maintain · 최대 <span id="workflowScanDepth">1000</span>위 탐색</p>
+                <p style="font-size:0.72rem;color:#94a3b8;margin:0 0 4px;">순위 조회 → 분류 → 미진입 boost 트래픽 → 진입 maintain · 최대 <span id="workflowScanDepth">10000</span>위 탐색</p>
                 <div id="workflowSteps" class="workflow-steps"></div>
                 <details style="margin-top:12px;">
                     <summary style="font-size:0.75rem;color:#93c5fd;cursor:pointer;">화면 구성 (와이어프레임)</summary>
@@ -983,9 +1020,67 @@
                 html += `</div>`;
             }
             if (ov && ov.scan_depth) {
-                html += `<div style="font-size:0.72rem;color:#64748b;margin-top:6px;">탐색 깊이: 최대 ${ov.scan_depth}위 (네이버 API 상한)</div>`;
+                html += `<div style="font-size:0.72rem;color:#64748b;margin-top:6px;">탐색 깊이: 최대 ${ov.scan_depth}위 (10000위까지 조사)</div>`;
             }
             box.innerHTML = html;
+        }
+
+        function formatEtaDays(eta, label) {
+            if (eta === 0) return `<span class="eta-chip done">${label} 달성</span>`;
+            if (eta == null || eta === undefined) return `<span class="eta-chip unknown">${label} 예측 불가</span>`;
+            return `<span class="eta-chip">~${eta}일 후 ${label}</span>`;
+        }
+
+        function renderKeywordLiveBoard(progress) {
+            const box = document.getElementById('keywordLiveBoard');
+            if (!box) return;
+            const items = (progress && progress.items) ? progress.items : [];
+            if (!items.length) {
+                box.innerHTML = '<div class="empty-state" style="padding:16px;">순위 조회 후 키워드별 진행이 표시됩니다.</div>';
+                return;
+            }
+            const sorted = [...items].sort((a, b) => {
+                const ar = a.goal_progress && a.goal_progress.current;
+                const br = b.goal_progress && b.goal_progress.current;
+                if (ar == null && br == null) return 0;
+                if (ar == null) return -1;
+                if (br == null) return 1;
+                return ar - br;
+            });
+            const top = sorted.slice(0, 20);
+            const updated = progress.updated_at ? `<div style="font-size:0.68rem;color:#64748b;margin-bottom:8px;">갱신 ${progress.updated_at} · 상위 ${top.length}개 표시</div>` : '';
+            box.innerHTML = updated + top.map(item => {
+                const gp = item.goal_progress || {};
+                const real = gp.current;
+                const rankTxt = item.rank_display || item.status_label || (real ? `${real}위` : '10000위 밖');
+                const cls = item.bucket === 'ranked' ? 'in-top10' : 'boost-focus';
+                const trend = item.rank_trend === 'up' ? '<span class="trend-up">▲ 상승</span>'
+                    : (item.rank_trend === 'down' ? '<span class="trend-down">▼ 하락</span>' : '');
+                const prod = item.product_name ? `<div style="font-size:0.68rem;color:#6ee7b7;margin-top:2px;">${item.product_name}</div>` : '';
+                const top10 = item.top10_entry_label ? `<span class="top10-badge">${item.top10_entry_label}</span>` : '';
+                const goalBar = (label, pct, clsName) => `
+                    <div class="goal-track">
+                        <div class="goal-track-label"><span>${label}</span><span>${pct >= 100 ? '달성' : pct + '%'}</span></div>
+                        <div class="goal-track-bar"><div class="goal-track-fill ${clsName}" style="width:${Math.min(100, pct)}%;"></div></div>
+                    </div>`;
+                const bars = goalBar('TOP 100', gp.top100 || 0, 'g100')
+                    + goalBar('TOP 50', gp.top50 || 0, 'g50')
+                    + goalBar('TOP 10', gp.top10 || 0, 'g10');
+                const etas = formatEtaDays(item.eta_top100, 'TOP100')
+                    + formatEtaDays(item.eta_top50, 'TOP50')
+                    + formatEtaDays(item.eta_top10, 'TOP10');
+                const mode = item.traffic_mode === 'maintain' ? '유지' : '집중';
+                return `<div class="kw-progress-card ${cls}">
+                    <div class="kw-progress-head">
+                        <div><strong style="color:#e2e8f0;font-size:0.85rem;">${item.keyword}</strong>${prod}
+                        <div style="font-size:0.68rem;color:#94a3b8;margin-top:3px;">${mode} 트래픽 ${trend}</div></div>
+                        <div class="rank-now">${rankTxt}</div>
+                    </div>
+                    ${bars}
+                    <div class="goal-markers"><span>10000위</span><span>100위</span><span>50위</span><span>10위</span></div>
+                    <div class="eta-row">${etas}${top10}</div>
+                </div>`;
+            }).join('');
         }
 
         function renderKeywordRankTable(report, history, summary, statusData) {
@@ -994,6 +1089,9 @@
             if (!box) return;
 
             const items = Array.isArray(summary) ? summary : [];
+            const progressItems = (statusData && statusData.keyword_progress && statusData.keyword_progress.items) || [];
+            const progressMap = {};
+            progressItems.forEach(p => { progressMap[p.keyword] = p; });
             if (items.length) {
                 const unranked = items.filter(i => i.bucket === 'unranked').length;
                 const ranked = items.filter(i => i.bucket === 'ranked').length;
@@ -1009,7 +1107,20 @@
                     const prod = item.product_name ? `<div style="font-size:0.72rem;color:#6ee7b7;margin-top:3px;">🛒 ${item.product_name}</div>` : '';
                     const label = item.rank_display || item.status_label || '—';
                     const mode = item.traffic_mode === 'maintain' ? '유지' : '집중';
-                    return `<div class="kw-rank-row ${cls}"><div><strong style="color:#e2e8f0;">${item.keyword}</strong>${prod}</div><div class="kw-status ${statusCls}">${label} · ${mode}</div></div>`;
+                    const prog = progressMap[item.keyword] || {};
+                    let extra = '';
+                    if (prog.top10_entry_label) {
+                        extra += `<div class="top10-badge" style="margin-top:4px;display:inline-block;">${prog.top10_entry_label}</div>`;
+                    }
+                    if (prog.eta_top10 != null || prog.eta_top100 != null) {
+                        const etaParts = [];
+                        if (prog.eta_top100 === 0) etaParts.push('TOP100✓');
+                        else if (prog.eta_top100) etaParts.push(`TOP100 ~${prog.eta_top100}일`);
+                        if (prog.eta_top10 === 0) etaParts.push('TOP10✓');
+                        else if (prog.eta_top10) etaParts.push(`TOP10 ~${prog.eta_top10}일`);
+                        if (etaParts.length) extra += `<div style="font-size:0.68rem;color:#93c5fd;margin-top:4px;">${etaParts.join(' · ')}</div>`;
+                    }
+                    return `<div class="kw-rank-row ${cls}"><div><strong style="color:#e2e8f0;">${item.keyword}</strong>${prod}${extra}</div><div class="kw-status ${statusCls}">${label} · ${mode}</div></div>`;
                 }).join('');
                 return;
             }
@@ -1999,6 +2110,7 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
             if (tracksEl) tracksEl.textContent = data.total_tracks || 0;
             if (kwCountEl) kwCountEl.textContent = data.keyword_count || 0;
             renderRankOverview(data);
+            renderKeywordLiveBoard(data.keyword_progress);
             renderWorkflow(data);
             const hint = document.getElementById('kwHint');
             if (hint) {
@@ -2223,7 +2335,7 @@ const HUB_INLINE = {"/api/status": {"running": false, "traffic_running": false, 
             updateStatus();
             if (document.getElementById('tab-chart')?.classList.contains('active')) loadChart();
             updateLogs();
-        }, 60000);
+        }, 15000);
         setInterval(() => {
             updateStatus();
             updateLogs();
