@@ -74,6 +74,32 @@ def deep_scan_available(config: dict | None = None) -> bool:
         return False
 
 
+def auto_deep_after_api(config: dict | None = None, *, unlimited: bool = False) -> bool:
+    """로컬 PC: API 1000위 미노출 시 Playwright 딥스캔 자동 시도."""
+    if is_cloud_hub() or is_cron_mode():
+        return False
+    config = config or load_config()
+    if config.get("auto_deep_after_api") is False:
+        return False
+    if not deep_scan_available(config):
+        return False
+    return True
+
+
+def auto_deep_max_per_run(config: dict | None = None, *, unlimited: bool = False) -> int:
+    """백그라운드 순위 루프당 딥스캔 키워드 상한. 0=무제한(전수 리포트용)."""
+    if unlimited:
+        return 0
+    config = config or load_config()
+    raw = config.get("auto_deep_max_per_run")
+    if raw is None:
+        return 8
+    try:
+        return max(0, int(raw))
+    except (TypeError, ValueError):
+        return 8
+
+
 def rank_scan_limits(config: dict | None = None) -> dict:
     config = config or load_config()
     on_cloud = is_cloud_hub() or is_cron_mode()
@@ -91,7 +117,7 @@ def rank_scan_limits(config: dict | None = None) -> dict:
         "not_found_rank": NOT_FOUND_RANK,
         "boost_cloud": "Cloudtype 대시보드 「24h 시작」",
         "boost_local": "run_rank_boost.bat",
-        "deep_local": "run_rank_report.bat --deep (Playwright)",
+        "deep_local": "run_rank_report.bat (API 후 자동 딥스캔)",
         "api_note": "네이버 검색 API는 1000위까지만 조회 가능합니다.",
         "deep_note": "1000위 밖은 로컬 PC Playwright 딥스캔이 필요합니다.",
     }
@@ -1230,6 +1256,13 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
 
     results = []
     blocked_abort = False
+    try_deep_global = auto_deep_after_api(config) and not serverless
+    deep_cap = auto_deep_max_per_run(config) if try_deep_global else 0
+    deep_used = 0
+    if logger and try_deep_global:
+        cap_txt = f"최대 {deep_cap}개/사이클" if deep_cap else "전 키워드"
+        logger(f"🔎 API 미노출 시 Playwright 딥스캔 자동 ({cap_txt})")
+
     for item in keywords:
         if blocked_abort:
             break
@@ -1241,8 +1274,22 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
         prev = get_last_rank(keyword, store_name)
         product_id = item.get("product_id")
         rank_status = None
+        try_deep = (
+            try_deep_global
+            and bool(product_id)
+            and (deep_cap == 0 or deep_used < deep_cap)
+        )
         if product_id:
-            rank, rank_status = check_product_rank(keyword, product_id, logger=logger, max_pages=max_pages)
+            rank, rank_status = check_product_rank(
+                keyword,
+                product_id,
+                logger=logger,
+                max_pages=deep_scan_max_pages(config) if try_deep else max_pages,
+                config=config,
+                use_deep=try_deep,
+            )
+            if try_deep:
+                deep_used += 1
         else:
             rank = check_naver_shopping_rank(keyword, store_name, logger=logger)
             if rank is None:

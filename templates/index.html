@@ -489,7 +489,7 @@
                     <span class="live-pulse"></span><i class="fa-solid fa-signal"></i> 키워드 순위 실시간
                 </h3>
                 <p id="rankLimitsHint" style="font-size:0.72rem;color:#94a3b8;margin:0 0 10px;line-height:1.45;">
-                    Cloudtype: API 최대 <strong>1000위</strong> · 1000위 밖은 PC <code>run_rank_report.bat --deep</code> (Playwright)<br>
+                    Cloudtype: API 최대 <strong>1000위</strong> · 1000위 밖은 PC <code>run_rank_report.bat</code> (API 후 자동 딥스캔)<br>
                     미진입 boost: <strong>24h 시작</strong> 또는 PC <code>run_rank_boost.bat</code>
                 </p>
                 <div id="keywordLiveBoard" class="kw-progress-board">
@@ -976,7 +976,7 @@
             if (deepOk) {
                 html += ` · 로컬 딥스캔 최대 <strong>${deepMax}위</strong> (Playwright)`;
             } else {
-                html += ` · 1000위 밖: PC <code>run_rank_report.bat --deep</code>`;
+                html += ` · 1000위 밖: PC <code>run_rank_report.bat</code> (자동 딥스캔)`;
             }
             html += `<br>미진입 boost: <strong>24h 시작</strong> (Cloudtype) 또는 PC <code>run_rank_boost.bat</code>`;
             if (data.workflow && data.workflow.boost_hint) {

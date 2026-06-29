@@ -25,6 +25,7 @@ from rank_tracker import (  # noqa: E402
     _product_name_for,
     api_scan_max_pages,
     append_history,
+    auto_deep_after_api,
     build_completion_report,
     build_rank_overview,
     check_product_rank,
@@ -50,21 +51,31 @@ def _load_defaults_config() -> dict:
     return json.loads(DEFAULTS.read_text(encoding="utf-8"))
 
 
-def run_catalog_scan(*, max_pages: int | None = None, delay_sec: float = 0.7, use_deep: bool = False) -> list[dict]:
+def run_catalog_scan(
+    *,
+    max_pages: int | None = None,
+    delay_sec: float = 0.7,
+    use_deep: bool = False,
+    auto_deep: bool = False,
+) -> list[dict]:
     cid, secret = _naver_api_credentials()
     if not cid or not secret:
         _log("[FAIL] .env 에 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 필요")
         return []
 
     config = _load_defaults_config()
+    do_deep = use_deep or (auto_deep and auto_deep_after_api(config, unlimited=True))
     if max_pages is None:
-        max_pages = deep_scan_max_pages(config) if use_deep else api_scan_max_pages(config)
-    depth = rank_depth_limit(max_pages, api_only=not use_deep)
+        max_pages = deep_scan_max_pages(config) if do_deep else api_scan_max_pages(config)
+    depth = rank_depth_limit(max_pages, api_only=not do_deep)
     entries = _keyword_entries(config)
     threshold = int(config.get("traffic_rank_threshold") or 100)
     results: list[dict] = []
 
-    mode = "API+Playwright 딥스캔" if use_deep else "NAVER API"
+    if do_deep:
+        mode = "API 1000위 → 미노출 Playwright 딥스캔 (자동)"
+    else:
+        mode = "NAVER API"
     _log(f"대시보드 카탈로그 {len(entries)}개 · {mode} · 최대 {depth}위까지 탐색...")
 
     for i, entry in enumerate(entries, 1):
@@ -76,7 +87,11 @@ def run_catalog_scan(*, max_pages: int | None = None, delay_sec: float = 0.7, us
 
         if pid:
             rank, status = check_product_rank(
-                kw, pid, max_pages=max_pages, config=config, use_deep=use_deep,
+                kw,
+                pid,
+                max_pages=max_pages,
+                config=config,
+                use_deep=do_deep,
             )
         else:
             rank, status = None, "no_product_id"
@@ -120,12 +135,26 @@ def run_catalog_scan(*, max_pages: int | None = None, delay_sec: float = 0.7, us
 def main() -> int:
     parser = argparse.ArgumentParser(description="대시보드 카탈로그 순위 전수 조회")
     parser.add_argument("--max-pages", type=int, default=0, help="탐색 페이지 (기본 API 25=1000위)")
-    parser.add_argument("--deep", action="store_true", help="1000위 초과 Playwright 딥스캔 (로컬 PC)")
+    parser.add_argument("--deep", action="store_true", help="(호환) --auto-deep 와 동일")
+    parser.add_argument(
+        "--auto-deep",
+        action="store_true",
+        help="API 1000위 후 미노출 키워드 Playwright 딥스캔 (로컬 기본)",
+    )
+    parser.add_argument("--api-only", action="store_true", help="API 1000위만 (딥스캔 생략)")
     parser.add_argument("--delay", type=float, default=0.7)
     args = parser.parse_args()
     max_pages = args.max_pages if args.max_pages > 0 else None
+    auto_deep = (args.auto_deep or args.deep) and not args.api_only
+    if not args.api_only and not args.auto_deep and not args.deep:
+        auto_deep = auto_deep_after_api(_load_defaults_config(), unlimited=True)
 
-    results = run_catalog_scan(max_pages=max_pages, delay_sec=args.delay, use_deep=args.deep)
+    results = run_catalog_scan(
+        max_pages=max_pages,
+        delay_sec=args.delay,
+        use_deep=args.deep and not auto_deep,
+        auto_deep=auto_deep,
+    )
     if not results:
         return 1
 
