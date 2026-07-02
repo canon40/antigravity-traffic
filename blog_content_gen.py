@@ -2628,7 +2628,8 @@ def _build_image_prompt(
     else:
         variant_hint = ""
 
-    if image_desc and image_desc.strip():
+    # 만약 기본 템플릿의 범용 블로거 이미지 프롬프트("Modern blogger...")가 들어온 경우, 이를 무시하고 키워드 매칭 이미지를 생성하도록 함
+    if image_desc and image_desc.strip() and "Modern blogger" not in image_desc and "blogger analyzing" not in image_desc:
         desc = image_desc.strip()
         if len(desc) > 500:
             desc = desc[:500]
