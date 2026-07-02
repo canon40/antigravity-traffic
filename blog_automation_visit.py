@@ -290,7 +290,7 @@ async def run_blog_automation_for_account(
         async def naver_process(naver_id, naver_pw):
             log(f"네이버 계정 {naver_id} 작업 시작...")
             status("크롬 실행 중 · 네이버 로그인 중…")
-            await page.goto("https://nid.naver.com/nidlogin.login")
+            await page.goto("https://nid.naver.com/nidlogin.login", wait_until="domcontentloaded", timeout=20000)
             log("네이버 로그인 페이지를 불러왔습니다.")
             status("크롬 실행 중 · 네이버 로그인 중…")
             await page.bring_to_front()
@@ -306,7 +306,16 @@ async def run_blog_automation_for_account(
 
             status("크롬 실행 중 · 이웃 새글 목록 로드 중…")
             log("이웃 새글 목록을 불러오는 중...")
-            await page.goto("https://section.blog.naver.com/")
+            # 3회 재시도 및 wait_until="domcontentloaded" 적용으로 ERR_ABORTED 및 네트워크 지연 방지
+            for attempt in range(1, 4):
+                try:
+                    await page.goto("https://section.blog.naver.com/", wait_until="domcontentloaded", timeout=20000)
+                    break
+                except Exception as goto_exc:
+                    if attempt == 3:
+                        raise goto_exc
+                    log(f"   ⚠️ 이웃 새글 로드 지연 ({str(goto_exc)[:100]}) — {attempt}차 재시도 중...")
+                    await asyncio.sleep(2.0)
             await smart_delay(2, 4)
             log("이웃 새글 목록 로드 완료.")
 
