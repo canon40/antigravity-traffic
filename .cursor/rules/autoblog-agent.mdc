@@ -7,6 +7,11 @@ alwaysApply: true
 # Autoblog Agent Context
 
 - 프로젝트 루트 `AGENTS.md`와 `.cursor/skills/` 스킬을 작업 전에 확인한다.
+- **블로그 글쓰기·발행은 UI/UX로만 진행한다.** 헤드리스(`_run_blog_session.py`, API만 호출)는 사용자가 명시할 때만 사용.
+  - **데스크톱 GUI**: `run_gui.bat` → `blog_main.py` (canon4040's Autoblog)
+  - **웹 스튜디오**: `run_blog_web.bat` → `http://127.0.0.1:8790/` (`blog_studio.html`)
+  - 작업 전 GUI/웹 스튜디오 실행 여부 확인 → 없으면 bat 또는 pythonw/python으로 기동
+  - 글쓰기 트리거: GUI **원고+이미지 생성** / **자동화 시작**, 웹 **동일 버튼** (`/api/blog/draft`, `/api/blog/run`)
 - Vercel 트래픽·Base44·클라우드 연동: `.cursor/skills/vercel-traffic/SKILL.md`
 - 네이버 글 리프레시: `.cursor/skills/naver-blog-refresh/SKILL.md`
 - Vercel 연동 변경 후: `python scripts/verify_vercel_traffic.py`

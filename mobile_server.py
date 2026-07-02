@@ -41,6 +41,7 @@ class HeadlessApp:
         self.custom_img_paths = []
         self.img_mode_var = _DummyVar("ai")
         self.is_paused = False
+        self.is_processing = False
         self._logs = []
         self._lock = threading.Lock()
         self.master_guidelines = ""
@@ -127,6 +128,22 @@ def _default_keywords():
     return "듀라코트 리빙코트, 욕실코팅제, 타일코팅제, 식탁코팅, 원목코팅, 수전코팅"
 
 
+def _naver_account_field(index: int, field: str) -> str:
+    """config.NAVER_ACCOUNTS 항목이 비어 있거나 키가 달라도 안전하게 읽기."""
+    try:
+        accounts = getattr(cfg, "NAVER_ACCOUNTS", None) or []
+        if index >= len(accounts):
+            return ""
+        row = accounts[index]
+        if not isinstance(row, dict):
+            return str(row or "")
+        if field == "id":
+            return str(row.get("id") or row.get("naver_id") or "")
+        return str(row.get("pw") or row.get("naver_pw") or row.get("password") or "")
+    except Exception:
+        return ""
+
+
 def _load_defaults():
     base_dir = os.path.dirname(os.path.abspath(__file__))
     accounts_path = os.path.join(base_dir, "accounts.json")
@@ -151,12 +168,12 @@ def _load_defaults():
         "vercel_enabled": bool(data.get("vercel_enabled", False)),
         "vercel_interval_minutes": int(data.get("vercel_interval_minutes", 20)),
         "vercel_mode": data.get("vercel_mode", "local"),
-        "naver_id1": data.get("naver_id1", cfg.NAVER_ACCOUNTS[0]["id"] if len(cfg.NAVER_ACCOUNTS) > 0 else ""),
-        "naver_pw1": data.get("naver_pw1", cfg.NAVER_ACCOUNTS[0]["pw"] if len(cfg.NAVER_ACCOUNTS) > 0 else ""),
-        "naver_id2": data.get("naver_id2", cfg.NAVER_ACCOUNTS[1]["id"] if len(cfg.NAVER_ACCOUNTS) > 1 else ""),
-        "naver_pw2": data.get("naver_pw2", cfg.NAVER_ACCOUNTS[1]["pw"] if len(cfg.NAVER_ACCOUNTS) > 1 else ""),
-        "tistory_id": data.get("tistory_id", cfg.TISTORY_ID),
-        "tistory_pw": data.get("tistory_pw", cfg.TISTORY_PW),
+        "naver_id1": data.get("naver_id1") or _naver_account_field(0, "id"),
+        "naver_pw1": data.get("naver_pw1") or _naver_account_field(0, "pw"),
+        "naver_id2": data.get("naver_id2") or _naver_account_field(1, "id"),
+        "naver_pw2": data.get("naver_pw2") or _naver_account_field(1, "pw"),
+        "tistory_id": data.get("tistory_id") or getattr(cfg, "TISTORY_ID", "") or "",
+        "tistory_pw": data.get("tistory_pw") or getattr(cfg, "TISTORY_PW", "") or "",
         "use_naver1": bool(data.get("use_naver1", True)),
         "use_naver2": bool(data.get("use_naver2", True)),
         "use_tistory": bool(data.get("use_tistory", True)),
@@ -168,7 +185,10 @@ DEFAULTS = _load_defaults()
 
 def build_config(payload):
     keywords_raw = payload.get("keywords", "")
-    keywords = [k.strip() for k in keywords_raw.split(",") if k.strip()]
+    if isinstance(keywords_raw, list):
+        keywords = [str(k).strip() for k in keywords_raw if str(k).strip()]
+    else:
+        keywords = [k.strip() for k in str(keywords_raw or "").split(",") if k.strip()]
     keywords = list(dict.fromkeys(keywords))
 
     naver_ids = []

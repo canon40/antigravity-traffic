@@ -107,11 +107,15 @@ async def main() -> int:
         "writing_guidelines": data.get("writing_guidelines") or "",
         "text_provider": text_provider,
         "image_provider": image_provider,
+        "enable_intent_planner": bool(data.get("enable_intent_planner", True)),
+        "enable_quality_guard": bool(data.get("enable_quality_guard", True)),
     }
 
     config = build_config(payload)
     config["text_provider"] = text_provider
     config["image_provider"] = image_provider
+    config["enable_intent_planner"] = payload["enable_intent_planner"]
+    config["enable_quality_guard"] = payload["enable_quality_guard"]
     if payload.get("product_url"):
         config["product_url"] = payload["product_url"]
 

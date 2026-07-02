@@ -12,16 +12,6 @@ from hub_runtime import is_cloud_hub, is_cron_mode, uses_ephemeral_disk
 
 HISTORY_HEADERS = ["날짜", "키워드", "스토어명", "순위", "이전순위", "변동", "작업유형", "상세"]
 
-RANKS_PER_PAGE = 40
-NAVER_API_MAX_START = 1000
-NAVER_API_MAX_PAGES = NAVER_API_MAX_START // RANKS_PER_PAGE  # 25
-API_DEFAULT_MAX_PAGES = NAVER_API_MAX_PAGES
-MAX_SCAN_DEPTH = 10000
-DEEP_MAX_PAGES = MAX_SCAN_DEPTH // RANKS_PER_PAGE  # 250
-DEFAULT_MAX_PAGES = API_DEFAULT_MAX_PAGES
-NOT_FOUND_RANK = 10001
-LEGACY_NOT_FOUND = 999
-
 _BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 _DEFAULT_CONFIG_PATH = os.path.join(_BUNDLE_DIR, "config.defaults.json")
 
@@ -33,143 +23,6 @@ MOBILE_UA = (
 
 _NAVER_OPENAPI_URL = "https://openapi.naver.com/v1/search/shop.json"
 _SHOPPING_SESSION: requests.Session | None = None
-
-
-def rank_scan_max_pages(config: dict | None = None, *, deep: bool = False) -> int:
-    """deep=False: 네이버 API 상한(1000위). deep=True: 로컬 Playwright 최대 페이지."""
-    config = config or {}
-    if deep:
-        return deep_scan_max_pages(config)
-    if is_cloud_hub() or is_cron_mode():
-        cap = int(config.get("serverless_max_pages") or API_DEFAULT_MAX_PAGES)
-        return max(1, min(cap, NAVER_API_MAX_PAGES))
-    env = (os.environ.get("RANK_SCAN_MAX_PAGES") or "").strip()
-    if env.isdigit():
-        return max(1, min(int(env), NAVER_API_MAX_PAGES))
-    raw = config.get("rank_scan_max_pages") or API_DEFAULT_MAX_PAGES
-    return max(1, min(int(raw), NAVER_API_MAX_PAGES))
-
-
-def deep_scan_max_pages(config: dict | None = None) -> int:
-    config = config or {}
-    env = (os.environ.get("DEEP_SCAN_MAX_PAGES") or "").strip()
-    if env.isdigit():
-        return max(1, min(int(env), DEEP_MAX_PAGES))
-    raw = config.get("deep_scan_max_pages") or DEEP_MAX_PAGES
-    return max(1, min(int(raw), DEEP_MAX_PAGES))
-
-
-def deep_scan_available(config: dict | None = None) -> bool:
-    """Cloudtype/Cron에서는 Playwright 딥스캔 불가."""
-    if is_cloud_hub() or is_cron_mode():
-        return False
-    config = config or {}
-    if config.get("deep_scan_enabled") is False:
-        return False
-    try:
-        from rank_scan_deep import playwright_available
-
-        return playwright_available()
-    except Exception:
-        return False
-
-
-def auto_deep_after_api(config: dict | None = None, *, unlimited: bool = False) -> bool:
-    """로컬 PC: API 1000위 미노출 시 Playwright 딥스캔 자동 시도."""
-    if is_cloud_hub() or is_cron_mode():
-        return False
-    config = config or load_config()
-    if config.get("auto_deep_after_api") is False:
-        return False
-    if not deep_scan_available(config):
-        return False
-    return True
-
-
-def auto_deep_max_per_run(config: dict | None = None, *, unlimited: bool = False) -> int:
-    """백그라운드 순위 루프당 딥스캔 키워드 상한. 0=무제한(전수 리포트용)."""
-    if unlimited:
-        return 0
-    config = config or load_config()
-    raw = config.get("auto_deep_max_per_run")
-    if raw is None:
-        return 8
-    try:
-        return max(0, int(raw))
-    except (TypeError, ValueError):
-        return 8
-
-
-def rank_scan_limits(config: dict | None = None) -> dict:
-    config = config or load_config()
-    on_cloud = is_cloud_hub() or is_cron_mode()
-    api_depth = rank_depth_limit(api_scan_max_pages(config), api_only=True)
-    deep_depth = rank_depth_limit(deep_scan_max_pages(config), api_only=False)
-    return {
-        "api_max_rank": NAVER_API_MAX_START,
-        "api_max_pages": api_scan_max_pages(config),
-        "api_depth": api_depth,
-        "deep_max_rank": MAX_SCAN_DEPTH,
-        "deep_max_pages": deep_scan_max_pages(config),
-        "deep_depth": deep_depth,
-        "deep_available": deep_scan_available(config),
-        "on_cloud": on_cloud,
-        "not_found_rank": NOT_FOUND_RANK,
-        "boost_cloud": "Cloudtype 대시보드 「24h 시작」",
-        "boost_local": "run_rank_boost.bat",
-        "deep_local": "run_rank_report.bat (API 후 자동 딥스캔)",
-        "api_note": "네이버 검색 API는 1000위까지만 조회 가능합니다.",
-        "deep_note": "1000위 밖은 로컬 PC Playwright 딥스캔이 필요합니다.",
-    }
-
-
-def api_scan_max_pages(config: dict | None = None) -> int:
-    return rank_scan_max_pages(config, deep=False)
-
-
-def rank_depth_limit(max_pages: int | None = None, config: dict | None = None, *, api_only: bool = False) -> int:
-    if api_only:
-        mp = max_pages if max_pages is not None else api_scan_max_pages(config)
-        return min(mp * RANKS_PER_PAGE, NAVER_API_MAX_START)
-    mp = max_pages if max_pages is not None else deep_scan_max_pages(config)
-    return min(mp * RANKS_PER_PAGE, MAX_SCAN_DEPTH)
-
-
-def normalize_rank(rank) -> int | None:
-    """10001·999 등 미노출 저장값은 None. 1~10000은 실제 순위."""
-    if rank is None:
-        return None
-    try:
-        value = int(rank)
-    except (TypeError, ValueError):
-        return None
-    if value >= NOT_FOUND_RANK or value == LEGACY_NOT_FOUND:
-        return None
-    if value < 1:
-        return None
-    return value
-
-
-def is_not_found_rank(rank) -> bool:
-    return normalize_rank(rank) is None and rank is not None
-
-
-def format_rank_label(rank, *, threshold: int = 100, scan_depth: int | None = None) -> str:
-    real = normalize_rank(rank)
-    if real is not None:
-        if 1 <= real <= threshold:
-            return f"{real}위"
-        return f"{real}위 (100위 밖)"
-    depth = scan_depth or rank_depth_limit(api_only=True)
-    if depth >= NAVER_API_MAX_START and depth < MAX_SCAN_DEPTH:
-        return f"{NAVER_API_MAX_START}위까지 탐색·미노출 (API 한계)"
-    if depth >= MAX_SCAN_DEPTH:
-        return f"{MAX_SCAN_DEPTH}위까지 탐색·미노출 (10000위 밖)"
-    return f"{depth}위까지 탐색·미노출"
-
-
-def _page_start(page: int) -> int:
-    return (page - 1) * RANKS_PER_PAGE + 1
 
 
 def _naver_api_credentials() -> tuple[str | None, str | None]:
@@ -217,7 +70,7 @@ def _openapi_product_ids(keyword: str, start: int = 1, display: int = 40) -> tup
     params = {
         "query": keyword.strip(),
         "display": min(max(display, 1), 100),
-        "start": min(max(start, 1), NAVER_API_MAX_START),
+        "start": max(start, 1),
         "sort": "sim",
     }
     headers = {
@@ -494,466 +347,16 @@ def get_last_rank(keyword, store_name):
     for row in reversed(get_history()):
         if row.get("키워드") == keyword and row.get("스토어명") == store_name:
             try:
-                value = int(row.get("순위", 100))
+                return int(row.get("순위", 100))
             except (TypeError, ValueError):
-                return None
-            if value >= NOT_FOUND_RANK or value == LEGACY_NOT_FOUND:
-                return NOT_FOUND_RANK
-            return value
+                return 100
     return None
-
-
-def is_ranked(rank, threshold: int = 100) -> bool:
-    """1~threshold위만 '순위 진입'으로 간주."""
-    if rank is None:
-        return False
-    try:
-        value = int(rank)
-    except (TypeError, ValueError):
-        return False
-    return 1 <= value <= threshold
-
-
-def _rank_overview_path() -> str:
-    return os.path.join(get_storage_dir(), "data", "rank_latest_summary.json")
-
-
-def _bundled_rank_overview_path() -> str:
-    """배포 이미지에 포함된 순위 요약 (Cloudtype /tmp 비어 있을 때 사용)."""
-    for base in (os.getcwd(), os.path.dirname(os.path.abspath(__file__))):
-        path = os.path.join(base, "data", "rank_latest_summary.json")
-        if os.path.isfile(path):
-            return path
-    return os.path.join(os.getcwd(), "data", "rank_latest_summary.json")
-
-
-def _rank_overview_read_paths() -> list[str]:
-    """클라우드: 번들 우선 → /tmp. 로컬: 쓰기 경로 우선."""
-    runtime = _rank_overview_path()
-    bundled = _bundled_rank_overview_path()
-    if uses_ephemeral_disk():
-        return [p for p in (bundled, runtime) if p]
-    return [p for p in (runtime, bundled) if p]
-
-
-def build_rank_overview(results: list[dict], *, threshold: int = 100) -> dict:
-    """전체 순위 스캔 집계 — 대시보드·리포트용."""
-    total = len(results)
-    scanned = sum(1 for r in results if r.get("rank") is not None)
-    ranked_top100 = [r for r in results if r.get("in_top100")]
-    ranked_top50 = [r for r in results if is_ranked(r.get("rank"), 50)]
-    ranked_top10 = [r for r in results if is_ranked(r.get("rank"), 10)]
-    api_errors = sum(
-        1
-        for r in results
-        if r.get("status") in ("error", "timeout", "connection", "api_error", "blocked")
-        or (r.get("rank") is None and r.get("status") not in ("not_found", "ok", "no_product_id"))
-    )
-    outside_100 = [
-        r
-        for r in results
-        if normalize_rank(r.get("rank")) is not None and not r.get("in_top100")
-    ]
-    not_found = [r for r in results if is_not_found_rank(r.get("rank")) or r.get("rank") is None]
-    scan_depth = rank_depth_limit(api_only=True)
-
-    pct = round(100 * len(ranked_top100) / total, 1) if total else 0.0
-    return {
-        "total": total,
-        "scanned": scanned,
-        "ranked_top100": len(ranked_top100),
-        "ranked_top50": len(ranked_top50),
-        "ranked_top10": len(ranked_top10),
-        "outside_top100": len(outside_100),
-        "not_found": len(not_found),
-        "api_errors": api_errors,
-        "unranked": total - len(ranked_top100),
-        "progress_pct": pct,
-        "threshold": threshold,
-        "scan_depth": scan_depth,
-        "scanned_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "top100_keywords": [
-            {
-                "keyword": r["keyword"],
-                "rank": r.get("rank"),
-                "product_name": r.get("product_name") or "",
-                "product_id": r.get("product_id") or "",
-            }
-            for r in sorted(ranked_top100, key=lambda x: x.get("rank") or 9999)
-        ],
-        "work_queue": [
-            {
-                "keyword": r["keyword"],
-                "rank": r.get("rank"),
-                "rank_label": r.get("rank_label") or "미진입",
-                "product_name": r.get("product_name") or "",
-                "bucket": "boost",
-            }
-            for r in sorted(
-                [x for x in results if not x.get("in_top100")],
-                key=lambda x: (x.get("rank") is None, x.get("rank") or 9999),
-            )[:40]
-        ],
-    }
-
-
-def save_rank_overview(results: list[dict], *, threshold: int = 100, report_paths: dict | None = None) -> dict:
-    """최신 전체 스캔 요약을 data/rank_latest_summary.json 에 저장."""
-    overview = build_rank_overview(results, threshold=threshold)
-    overview["keywords"] = {
-        f"{r['keyword']}\0{r.get('store_name', '')}": {
-            "rank": r.get("rank"),
-            "in_top100": bool(r.get("in_top100")),
-            "rank_label": r.get("rank_label"),
-            "status": r.get("status"),
-            "product_id": r.get("product_id"),
-            "product_name": r.get("product_name"),
-        }
-        for r in results
-    }
-    if report_paths:
-        overview["report_csv"] = str(report_paths.get("csv") or "")
-        overview["report_txt"] = str(report_paths.get("txt") or "")
-
-    written: set[str] = set()
-    for path in _rank_overview_read_paths():
-        if path in written:
-            continue
-        try:
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(overview, f, ensure_ascii=False, indent=2)
-            written.add(path)
-        except OSError:
-            continue
-
-    try:
-        from rank_persistence import load_hub_state, save_hub_state
-
-        state = load_hub_state()
-        state["last_full_scan_at"] = overview["scanned_at"]
-        state["rank_overview"] = {
-            k: overview[k]
-            for k in (
-                "total",
-                "ranked_top100",
-                "ranked_top50",
-                "ranked_top10",
-                "outside_top100",
-                "not_found",
-                "api_errors",
-                "progress_pct",
-                "scanned_at",
-            )
-        }
-        save_hub_state(state)
-    except Exception:
-        pass
-
-    return overview
-
-
-def load_rank_overview(*, max_age_hours: int = 168) -> dict | None:
-    """최근 전체 스캔 요약 (기본 7일 이내)."""
-    data = None
-    for path in _rank_overview_read_paths():
-        if not os.path.isfile(path):
-            continue
-        try:
-            with open(path, encoding="utf-8") as f:
-                data = json.load(f)
-            break
-        except Exception:
-            continue
-    if not data:
-        return None
-    scanned_at = data.get("scanned_at") or ""
-    if scanned_at and max_age_hours > 0:
-        try:
-            ts = datetime.strptime(scanned_at, "%Y-%m-%d %H:%M:%S")
-            age_h = (datetime.now() - ts).total_seconds() / 3600
-            if age_h > max_age_hours:
-                data["_stale"] = True
-        except ValueError:
-            pass
-    return data
-
-
-def _rank_from_overview(overview: dict | None, keyword: str, store_name: str) -> int | None:
-    if not overview:
-        return None
-    keywords = overview.get("keywords") or {}
-    row = keywords.get(f"{keyword}\0{store_name}")
-    if not row:
-        row = keywords.get(f"{keyword}\0") or keywords.get(keyword)
-    if not row:
-        return None
-    rank = row.get("rank")
-    if rank is None:
-        return None
-    try:
-        return int(rank)
-    except (TypeError, ValueError):
-        return None
-
-
-def _keyword_entries(config: dict | None = None) -> list[dict]:
-    """priority_keywords + keywords 중복 제거 목록."""
-    config = config or load_config()
-    default_store = config.get("store_name", "")
-    seen: set[tuple[str, str, str]] = set()
-    entries: list[dict] = []
-
-    for source in (config.get("priority_keywords") or [], config.get("keywords") or []):
-        for item in source:
-            if not isinstance(item, dict):
-                continue
-            keyword = (item.get("keyword") or "").strip()
-            if not keyword:
-                continue
-            store_name = (item.get("store_name") or default_store).strip()
-            product_id = str(item.get("product_id") or "").strip()
-            key = (keyword, store_name, product_id)
-            if key in seen:
-                continue
-            seen.add(key)
-            entries.append({"keyword": keyword, "store_name": store_name, "product_id": product_id})
-    return entries
-
-
-def _product_name_for(config: dict, product_id: str) -> str:
-    if not product_id:
-        return ""
-    for product in config.get("products") or []:
-        if str(product.get("id")) == str(product_id):
-            return (product.get("name") or "").strip()
-    return ""
-
-
-def split_keywords_by_rank(
-    config: dict | None = None,
-    threshold: int | None = None,
-) -> tuple[list[dict], list[dict]]:
-    """(미진입 키워드, 순위 유지 키워드) 분리."""
-    config = config or load_config()
-    limit = int(threshold or config.get("traffic_rank_threshold") or 100)
-    overview = load_rank_overview()
-    use_overview = bool(overview and not overview.get("_stale") and overview.get("keywords"))
-    unranked: list[dict] = []
-    ranked: list[dict] = []
-
-    for entry in _keyword_entries(config):
-        kw = entry["keyword"]
-        store = entry["store_name"]
-        rank = get_last_rank(kw, store)
-        if use_overview:
-            ov_rank = _rank_from_overview(overview, kw, store)
-            if ov_rank is not None:
-                rank = ov_rank
-        row = {
-            **entry,
-            "last_rank": rank,
-            "product_name": _product_name_for(config, entry.get("product_id", "")),
-        }
-        if is_ranked(rank, limit):
-            ranked.append(row)
-        else:
-            unranked.append(row)
-    return unranked, ranked
-
-
-def _last_history_row(keyword: str, store_name: str) -> dict | None:
-    for row in reversed(get_history()):
-        if row.get("키워드") == keyword and row.get("스토어명") == store_name:
-            return row
-    return None
-
-
-def _rank_status_label(rank, threshold: int, row: dict | None, *, scan_depth: int | None = None) -> str:
-    depth = scan_depth or rank_depth_limit(api_only=True)
-    real = normalize_rank(rank)
-    if real is not None and is_ranked(real, threshold):
-        change = str((row or {}).get("변동") or "")
-        if "상승" in change or (change.startswith("+") and change not in ("0", "+0")):
-            return f"{real}위 상승"
-        if "하락" in change or (change.startswith("-") and change not in ("-", "-0")):
-            return f"{real}위 하락"
-        return f"{real}위 유지"
-    if real is not None:
-        change = str((row or {}).get("변동") or "")
-        if "상승" in change or (change.startswith("+") and change not in ("0", "+0")):
-            return f"{real}위 상승 (100위 밖)"
-        if "하락" in change or (change.startswith("-") and change not in ("-", "-0")):
-            return f"{real}위 하락 (100위 밖)"
-        return f"{real}위 (100위 밖)"
-    if rank is None and not row:
-        return "미조회"
-    return format_rank_label(None, scan_depth=depth)
-
-
-def get_keyword_rank_summary(config: dict | None = None) -> list[dict]:
-    """대시보드용 — 키워드별 최근 순위 (미진입 우선 정렬)."""
-    config = config or load_config()
-    threshold = int(config.get("traffic_rank_threshold") or 100)
-    overview = load_rank_overview()
-    use_overview = bool(overview and not overview.get("_stale") and overview.get("keywords"))
-    scan_depth = int((overview or {}).get("scan_depth") or 0) or rank_depth_limit(api_only=True, config=config)
-
-    unranked: list[dict] = []
-    ranked: list[dict] = []
-    for entry in _keyword_entries(config):
-        kw = entry["keyword"]
-        store = entry["store_name"]
-        rank = get_last_rank(kw, store)
-        if use_overview:
-            ov_rank = _rank_from_overview(overview, kw, store)
-            if ov_rank is not None:
-                rank = ov_rank
-        row = {
-            **entry,
-            "last_rank": rank,
-            "product_name": _product_name_for(config, entry.get("product_id", "")),
-        }
-        if is_ranked(rank, threshold):
-            ranked.append(row)
-        else:
-            unranked.append(row)
-
-    def _bucket_for(rank_val) -> str:
-        real = normalize_rank(rank_val)
-        if real is not None and is_ranked(real, threshold):
-            return "ranked"
-        return "unranked"
-
-    summary: list[dict] = []
-    for row in unranked + ranked:
-        rank = row.get("last_rank")
-        hist = _last_history_row(row["keyword"], row["store_name"])
-        bucket = _bucket_for(rank)
-        summary.append(
-            {
-                "keyword": row["keyword"],
-                "store_name": row.get("store_name") or "",
-                "product_id": row.get("product_id"),
-                "product_name": row.get("product_name") or row.get("product_id") or "",
-                "last_rank": rank,
-                "rank_display": format_rank_label(rank, threshold=threshold, scan_depth=scan_depth),
-                "status_label": _rank_status_label(rank, threshold, hist, scan_depth=scan_depth),
-                "bucket": bucket,
-                "traffic_mode": "maintain" if bucket == "ranked" else "boost",
-            }
-        )
-    return summary
-
-
-def _listing_urls_for(config: dict, product_id: str) -> list[str]:
-    """동일 storefront_id 에 매핑된 판매자 리스팅 URL (SEO 다중 상품)."""
-    pid = str(product_id or "").strip()
-    if not pid:
-        return []
-    urls: list[str] = []
-    seen: set[str] = set()
-    for row in config.get("product_listings") or []:
-        if not isinstance(row, dict):
-            continue
-        if str(row.get("storefront_id") or "").strip() != pid:
-            continue
-        url = (row.get("url") or "").strip()
-        if url.startswith(("http://", "https://")) and url not in seen:
-            seen.add(url)
-            urls.append(url)
-    return urls
-
-
-def _product_url_for(config: dict, product_id: str, hub_state: dict | None = None) -> str:
-    store = (config.get("store_name") or "nanumlab").replace(" ", "")
-    listings = _listing_urls_for(config, product_id)
-    if listings and hub_state is not None:
-        li = int(hub_state.get("listing_url_index") or 0)
-        hub_state["listing_url_index"] = (li + 1) % len(listings)
-        return listings[li % len(listings)]
-
-    if product_id:
-        for product in config.get("products") or []:
-            if str(product.get("id")) == str(product_id):
-                url = (product.get("url") or "").strip()
-                if url:
-                    return url
-        if listings:
-            return listings[0]
-        return f"https://smartstore.naver.com/{store}/products/{product_id}"
-
-    for product in config.get("products") or []:
-        url = (product or {}).get("url", "")
-        if url:
-            return url
-    urls = config.get("product_urls") or []
-    for item in urls:
-        if isinstance(item, str) and item:
-            return item
-        if isinstance(item, dict) and item.get("url"):
-            return item["url"]
-    return f"https://smartstore.naver.com/{store}"
-
-
-def pick_traffic_target(config: dict | None = None, hub_state: dict | None = None) -> dict:
-    """미진입·저순위 키워드 우선 트래픽 (집중 boost → 유지 maintain)."""
-    config = config or load_config()
-    hub_state = hub_state or {}
-    unranked, ranked = split_keywords_by_rank(config)
-
-    def _boost_priority(item: dict) -> tuple[int, int]:
-        rank = item.get("last_rank")
-        real = normalize_rank(rank)
-        if real is None:
-            return (0, MAX_SCAN_DEPTH)
-        return (1, -real)
-
-    if unranked:
-        pool = sorted(unranked, key=_boost_priority)
-        focus = pool[: max(12, min(len(pool), 24))]
-        mode = "boost"
-    elif ranked:
-        focus = ranked
-        mode = "maintain"
-    else:
-        return {
-            "url": _product_url_for(config, ""),
-            "keyword": "",
-            "product_id": "",
-            "mode": "fallback",
-            "last_rank": None,
-            "next_index": int(hub_state.get("traffic_target_index") or 0),
-            "unranked_count": 0,
-            "ranked_count": 0,
-            "referer_url": "https://m.naver.com/",
-        }
-
-    idx = int(hub_state.get("traffic_target_index") or 0)
-    picked = focus[idx % len(focus)]
-    next_index = (idx + 1) % len(focus)
-    keyword = picked["keyword"]
-
-    return {
-        "url": _product_url_for(config, picked.get("product_id", ""), hub_state),
-        "keyword": keyword,
-        "product_id": picked.get("product_id", ""),
-        "product_name": picked.get("product_name") or _product_name_for(config, picked.get("product_id", "")),
-        "mode": mode,
-        "last_rank": picked.get("last_rank"),
-        "next_index": next_index,
-        "unranked_count": len(unranked),
-        "ranked_count": len(ranked),
-        "referer_url": (
-            f"https://search.shopping.naver.com/search/all?query={quote(keyword)}"
-            if mode == "boost" and keyword
-            else "https://m.naver.com/"
-        ),
-    }
 
 
 def append_history(keyword, store_name, rank, prev_rank, task_type, detail):
     if prev_rank is None:
+        change = "-"
+    elif rank is None:
         change = "-"
     elif rank < prev_rank:
         change = f"+{prev_rank - rank}"
@@ -1074,34 +477,25 @@ def get_all_product_rankings(keyword, product_map, logger=None, max_pages=13):
         return results, str(e)
 
 
-def check_product_rank(keyword, product_id, logger=None, max_pages=None, config=None, *, use_deep=False):
+def check_product_rank(keyword, product_id, logger=None, max_pages=13):
     """
     특정 스마트스토어 상품 ID의 쇼핑 검색 노출 순위.
-    1~1000위: 네이버 API · 1001~10000위: 로컬 Playwright 딥스캔(use_deep).
     반환: (순위 또는 None, 상태) — 상태는 None|blocked|not_found|error
     """
     def log(msg):
         if logger:
             logger(msg)
 
-    config = config or load_config()
-    if max_pages is None:
-        max_pages = deep_scan_max_pages(config) if use_deep else api_scan_max_pages(config)
-    api_pages = min(max_pages, NAVER_API_MAX_PAGES)
-    depth_limit = (
-        rank_depth_limit(deep_scan_max_pages(config), api_only=False)
-        if use_deep and max_pages > NAVER_API_MAX_PAGES
-        else rank_depth_limit(api_pages, api_only=True)
-    )
     product_id = str(product_id).strip()
-    log(f"🔍 '{keyword}' 검색 — 상품 {product_id} (최대 {depth_limit}위 · API→딥스캔)")
+    log(f"🔍 '{keyword}' 검색 결과에서 상품 {product_id} 순위 조회 (최대 {max_pages}페이지)...")
 
     cumulative_rank = 0
 
     try:
-        for page in range(1, api_pages + 1):
-            start = _page_start(page)
+        for page in range(1, max_pages + 1):
+            start = (page - 1) * 40 + 1
             log(f"   📄 {page}페이지 조회 중... (start={start})")
+
             page_ids, err, _source = _fetch_shopping_page_ids(keyword, start=start, logger=logger)
             if err == "blocked":
                 log("   ⚠️ HTTP 403 — 중단")
@@ -1120,31 +514,9 @@ def check_product_rank(keyword, product_id, logger=None, max_pages=None, config=
                     return cumulative_rank, None
 
             import time
-            time.sleep(1.2 if is_cloud_hub() else 0.6)
+            time.sleep(1.0 if is_cloud_hub() else 0.5)
 
-        if use_deep and max_pages > NAVER_API_MAX_PAGES and deep_scan_available(config):
-            try:
-                from rank_scan_deep import check_product_rank_deep
-
-                log(f"   🔎 API {NAVER_API_MAX_START}위 내 미노출 → Playwright 딥스캔 (1001~{depth_limit}위)")
-                deep_rank = check_product_rank_deep(
-                    keyword,
-                    product_id,
-                    max_pages=max_pages,
-                    start_page=NAVER_API_MAX_PAGES + 1,
-                    rank_offset=NAVER_API_MAX_START,
-                    logger=logger,
-                )
-                if deep_rank is not None:
-                    return deep_rank, None
-            except Exception as exc:
-                log(f"   ⚠️ 딥스캔 실패: {exc}")
-
-        api_depth = rank_depth_limit(api_pages, api_only=True)
-        if not use_deep or not deep_scan_available(config):
-            log(f"⚠️ 상품 {product_id} {api_depth}위까지 탐색·미노출 (API 한계)")
-        else:
-            log(f"⚠️ 상품 {product_id} {depth_limit}위까지 탐색·미노출")
+        log(f"⚠️ 상품 {product_id} {cumulative_rank}위 이후에도 미발견")
         return None, "not_found"
     except Exception as e:
         log(f"❌ 상품 순위 조회 실패: {e}")
@@ -1195,26 +567,15 @@ def check_naver_shopping_rank(keyword, store_name, logger=None):
 
 
 def _keywords_for_run(config=None, *, serverless=False):
-    """클라우드·Cron: 미진입 키워드 우선 추적."""
+    """클라우드·Cron에서는 우선 키워드만 추적 (403·할당량 방지)."""
     config = config or load_config()
-    threshold = int(config.get("traffic_rank_threshold") or 100)
-    default_store = config.get("store_name", "")
-
-    def sort_key(item: dict) -> tuple[int, int]:
-        rank = get_last_rank(item.get("keyword", ""), item.get("store_name") or default_store)
-        if is_ranked(rank, threshold):
-            return (1, rank or 9999)
-        return (0, rank if rank is not None else 9999)
-
     if serverless or is_cron_mode() or is_cloud_hub():
         priority = config.get("priority_keywords") or []
         if priority:
-            keywords = list(priority)
-        else:
-            limit = int(config.get("priority_track_limit") or 10)
-            keywords = (config.get("keywords") or [])[:limit]
-        return sorted(keywords, key=sort_key)
-    return sorted(config.get("keywords") or [], key=sort_key)
+            return priority
+        limit = int(config.get("priority_track_limit") or 10)
+        return (config.get("keywords") or [])[:limit]
+    return config.get("keywords") or []
 
 
 def _rotate_keywords(keywords, offset: int, batch_size: int):
@@ -1247,22 +608,10 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
     if logger and serverless:
         logger(f"📌 서버리스 우선 추적: {len(keywords)}개 키워드")
 
-    max_pages = api_scan_max_pages(config)
-    if serverless:
-        batch_cap = int(config.get("serverless_max_pages") or 0)
-        if batch_cap > 0:
-            max_pages = min(max_pages, batch_cap)
-    depth_limit = rank_depth_limit(max_pages, api_only=True)
+    max_pages = int(config.get("serverless_max_pages") or 5) if serverless else 13
 
     results = []
     blocked_abort = False
-    try_deep_global = auto_deep_after_api(config) and not serverless
-    deep_cap = auto_deep_max_per_run(config) if try_deep_global else 0
-    deep_used = 0
-    if logger and try_deep_global:
-        cap_txt = f"최대 {deep_cap}개/사이클" if deep_cap else "전 키워드"
-        logger(f"🔎 API 미노출 시 Playwright 딥스캔 자동 ({cap_txt})")
-
     for item in keywords:
         if blocked_abort:
             break
@@ -1274,22 +623,8 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
         prev = get_last_rank(keyword, store_name)
         product_id = item.get("product_id")
         rank_status = None
-        try_deep = (
-            try_deep_global
-            and bool(product_id)
-            and (deep_cap == 0 or deep_used < deep_cap)
-        )
         if product_id:
-            rank, rank_status = check_product_rank(
-                keyword,
-                product_id,
-                logger=logger,
-                max_pages=deep_scan_max_pages(config) if try_deep else max_pages,
-                config=config,
-                use_deep=try_deep,
-            )
-            if try_deep:
-                deep_used += 1
+            rank, rank_status = check_product_rank(keyword, product_id, logger=logger, max_pages=max_pages)
         else:
             rank = check_naver_shopping_rank(keyword, store_name, logger=logger)
             if rank is None:
@@ -1333,10 +668,11 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
             continue
 
         if rank is None:
-            detail = format_rank_label(None, scan_depth=depth_limit)
-            if normalize_rank(prev) is not None:
-                detail = f"{format_rank_label(prev)} → {detail}"
-            append_history(keyword, store_name, NOT_FOUND_RANK, prev, "순위추적", detail)
+            # 탐색 범위 초과 — 미발견으로 기록
+            detail = f"미발견 (520위 초과)" if prev is None else (
+                f"{prev}위 → 미발견 (520위 초과)"
+            )
+            append_history(keyword, store_name, 999, prev, "순위추적", detail)
             results.append({
                 "keyword": keyword,
                 "store_name": store_name,
@@ -1347,7 +683,6 @@ def track_all_keywords(logger=None, *, serverless=None, keyword_offset=0, keywor
                 "detail": detail,
                 "success": True,
                 "not_found": True,
-                "scan_depth": depth_limit,
             })
             if logger:
                 logger(f"📊 [{keyword}] {detail}")
@@ -1410,32 +745,29 @@ def build_completion_report(results):
             continue
 
         prev = r.get("prev_rank")
-        rank = r.get("rank")
-        prev_real = normalize_rank(prev)
-        rank_real = normalize_rank(rank)
-        if r.get("not_found") or rank_real is None:
-            status = "미발견"
-            unchanged += 1
-        elif prev_real is None:
+        rank = r["rank"]
+        if rank is None:
+            if prev is None:
+                status = "미발견"
+                unchanged += 1
+            else:
+                status = "하락"
+                declined += 1
+        elif prev is None:
             status = "신규기록"
             unchanged += 1
-        elif rank_real < prev_real:
+        elif rank < prev:
             status = "상승"
             improved += 1
-        elif rank_real > prev_real:
+        elif rank > prev:
             status = "하락"
             declined += 1
         else:
             status = "유지"
             unchanged += 1
 
-        rank_text = (
-            format_rank_label(rank, scan_depth=r.get("scan_depth") or rank_depth_limit(api_only=True))
-            if r.get("not_found") or rank is None
-            else format_rank_label(rank)
-        )
-        prev_real = normalize_rank(prev)
-        prev_text = format_rank_label(prev) if prev_real is not None else "기록 없음"
+        rank_text = f"{rank}위" if rank is not None else "미발견"
+        prev_text = f"{prev}위" if prev else "기록 없음"
 
         items.append({
             "keyword": r["keyword"],
@@ -1452,15 +784,18 @@ def build_completion_report(results):
 
     lines = []
     for item in items:
-        if item["status"] == "실패":
-            lines.append(f"• {item['keyword']}: 조회 실패")
+        if "prev_text" not in item:
+            lines.append(f"• {item['keyword']}: {item.get('message', '조회 실패')}")
         else:
             lines.append(f"• {item['keyword']}: {item['prev_text']} → {item['rank_text']} ({item['status']})")
 
+    failures = sum(1 for i in items if i["status"] in ("실패", "차단"))
     summary = (
         f"작업 완료 — 상승 {improved}건, 하락 {declined}건, "
-        f"유지/신규 {unchanged + (len(items) - improved - declined - sum(1 for i in items if i['status']=='실패'))}건"
+        f"유지/신규 {unchanged}건"
     )
+    if failures > 0:
+        summary += f", 실패/차단 {failures}건"
 
     return {
         "summary": summary,
@@ -1469,89 +804,4 @@ def build_completion_report(results):
         "declined": declined,
         "unchanged": unchanged,
         "completed_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-    }
-
-
-def build_workflow_status(
-    config: dict | None = None,
-    *,
-    hub_state: dict | None = None,
-    kw_summary: list[dict] | None = None,
-    rank_overview: dict | None = None,
-) -> dict:
-    """대시보드 플로우차트용 — 단계별 작업·순위 진행."""
-    config = config or load_config()
-    hub_state = hub_state or {}
-    kw_summary = kw_summary or get_keyword_rank_summary(config)
-    overview = rank_overview or load_rank_overview() or {}
-    scan_depth = int(overview.get("scan_depth") or 0) or rank_depth_limit(api_only=True, config=config)
-    limits = rank_scan_limits(config)
-    unranked = [s for s in kw_summary if s.get("bucket") == "unranked"]
-    ranked = [s for s in kw_summary if s.get("bucket") == "ranked"]
-    boost_targets = unranked[:8]
-    boost_hint = (
-        f"미진입 {len(unranked)}개 → {limits['boost_cloud']} 또는 PC {limits['boost_local']}"
-        if unranked
-        else "미진입 없음"
-    )
-
-    steps = [
-        {
-            "id": "scan",
-            "title": "1. 순위 조회",
-            "status": "done" if overview.get("scanned_at") else "pending",
-            "detail": (
-                f"API 최대 {limits['api_max_rank']}위"
-                + (f" · 딥스캔 {limits['deep_max_rank']}위 (로컬)" if limits["deep_available"] else "")
-                + f" · {overview.get('scanned_at') or '미실행'}"
-            ),
-        },
-        {
-            "id": "classify",
-            "title": "2. 진입/미진입 분류",
-            "status": "done" if kw_summary else "pending",
-            "detail": f"100위 이내 {len(ranked)} · 미진입 {len(unranked)}",
-        },
-        {
-            "id": "boost",
-            "title": "3. 미진입 트래픽 (boost)",
-            "status": "active" if hub_state.get("traffic_enabled") and unranked else "idle",
-            "detail": boost_hint if unranked else "대상 없음",
-        },
-        {
-            "id": "maintain",
-            "title": "4. 순위 유지 (maintain)",
-            "status": "active" if ranked and hub_state.get("traffic_enabled") else "idle",
-            "detail": f"유지 {len(ranked)}개 키워드",
-        },
-        {
-            "id": "seo",
-            "title": "5. SEO·블로그",
-            "status": "idle",
-            "detail": "스마트스토어 메타 · Gemini 블로그 · 구글 색인",
-        },
-    ]
-
-    return {
-        "scan_depth": scan_depth,
-        "rank_limits": limits,
-        "boost_hint": boost_hint,
-        "ranked_count": len(ranked),
-        "unranked_count": len(unranked),
-        "boost_queue": [
-            {
-                "keyword": x["keyword"],
-                "rank_display": x.get("rank_display") or x.get("status_label"),
-                "product_name": x.get("product_name"),
-            }
-            for x in boost_targets
-        ],
-        "ranked_highlights": [
-            {
-                "keyword": x["keyword"],
-                "rank_display": x.get("rank_display") or format_rank_label(x.get("last_rank")),
-            }
-            for x in sorted(ranked, key=lambda r: normalize_rank(r.get("last_rank")) or 9999)[:6]
-        ],
-        "steps": steps,
     }

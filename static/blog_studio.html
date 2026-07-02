@@ -11,89 +11,113 @@
             --bg: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
             --panel: rgba(30, 41, 59, 0.85);
             --border: rgba(255,255,255,0.08);
-            --accent: #8b5cf6;
-            --green: #10b981;
             --text: #f8fafc;
             --sub: #94a3b8;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Outfit','Noto Sans KR',sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 20px 16px 40px; }
-        .wrap { max-width: 920px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 24px; }
+        .wrap { max-width: 960px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 20px; }
         header h1 { font-size: 1.55rem; background: linear-gradient(90deg,#a78bfa,#34d399); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
         header p { color: var(--sub); font-size: 0.82rem; margin-top: 6px; }
-        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; backdrop-filter: blur(10px); }
+        .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
         .panel h2 { font-size: 0.95rem; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-        .field { margin-bottom: 14px; }
+        .field { margin-bottom: 12px; }
         .field label { display: block; font-size: 0.75rem; color: var(--sub); margin-bottom: 6px; }
-        .field input, .field textarea {
-            width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
-            background: rgba(15,23,42,0.8); color: var(--text); font-size: 0.9rem;
+        .field input, .field textarea, .field select {
+            width: 100%; padding: 11px 13px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(15,23,42,0.8); color: var(--text); font-size: 0.88rem;
         }
         .field textarea { min-height: 72px; resize: vertical; }
-        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
-        .checks { display: flex; flex-wrap: wrap; gap: 14px; margin: 12px 0; font-size: 0.85rem; }
+        .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 640px) { .row2 { grid-template-columns: 1fr; } }
+        .checks { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.85rem; margin: 10px 0; }
         .checks label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-        .platforms { display: flex; flex-wrap: wrap; gap: 10px; }
-        .platforms label { font-size: 0.82rem; }
+        .product-row { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.85rem; margin: 8px 0; }
+        .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
         .btn {
-            border: none; border-radius: 12px; padding: 14px 18px; font-weight: 700; font-size: 0.95rem;
-            cursor: pointer; color: #fff; width: 100%; margin-top: 8px;
-            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            border: none; border-radius: 12px; padding: 14px 16px; font-weight: 700; font-size: 0.92rem;
+            cursor: pointer; color: #fff; display: flex; align-items: center; justify-content: center; gap: 8px;
         }
         .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-        .btn-secondary { background: linear-gradient(135deg, #2563eb, #3b82f6); margin-top: 8px; }
-        .status-box { font-size: 0.8rem; color: var(--sub); white-space: pre-wrap; line-height: 1.5; max-height: 120px; overflow-y: auto; }
-        .preview { background: rgba(15,23,42,0.9); border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; padding: 16px; min-height: 120px; font-size: 0.88rem; line-height: 1.7; }
-        .preview h1, .preview h2, .preview h3 { color: #c4b5fd; margin: 10px 0 6px; }
-        .log { background: #090d16; border-radius: 10px; padding: 12px; font-family: monospace; font-size: 0.75rem; color: #38bdf8; max-height: 160px; overflow-y: auto; }
-        .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.72rem; background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+        .btn-draft { background: linear-gradient(135deg, #7c3aed, #a855f7); }
+        .btn-run { background: linear-gradient(135deg, #2563eb, #3b82f6); }
+        .btn-save { background: linear-gradient(135deg, #475569, #64748b); width: 100%; margin-top: 8px; }
+        .hint { font-size: 0.75rem; color: var(--sub); margin-top: 8px; line-height: 1.45; }
+        .status-box, .log { font-size: 0.8rem; color: var(--sub); white-space: pre-wrap; line-height: 1.5; }
+        .log { background: #090d16; border-radius: 10px; padding: 12px; font-family: monospace; font-size: 0.75rem; color: #38bdf8; max-height: 220px; overflow-y: auto; }
+        .preview { background: rgba(15,23,42,0.9); border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; padding: 16px; min-height: 80px; font-size: 0.88rem; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.72rem; background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
         .badge.busy { background: rgba(245,158,11,0.15); color: #fbbf24; border-color: rgba(245,158,11,0.3); }
-        .badge.err { background: rgba(239,68,68,0.15); color: #f87171; border-color: rgba(239,68,68,0.3); }
     </style>
 </head>
 <body>
 <div class="wrap">
     <header>
         <h1><i class="fa-solid fa-pen-nib"></i> canon4040 블로그 스튜디오</h1>
-        <p>JARVIS 「블로그 자동」패널 클론 · 키워드 → 글·이미지 → 티스토리·네이버·Blogger</p>
-        <p style="margin-top:4px;"><span id="healthBadge" class="badge">연결 확인 중…</span></p>
+        <p>Autoblog GUI(첨부2)와 동일 엔진 · 글쓰기+이미지+네이버·티스토리 발행</p>
+        <p style="margin-top:6px;"><span id="healthBadge" class="badge">연결 확인 중…</span></p>
     </header>
 
     <div class="panel">
-        <h2><i class="fa-solid fa-keyboard"></i> 파이프라인</h2>
+        <h2><i class="fa-solid fa-robot"></i> 자동화 (GUI와 동일)</h2>
         <div class="field">
-            <label>키워드 (한 줄에 하나 · 쉼표 구분)</label>
-            <textarea id="keyword" rows="5" placeholder="예: Permacoat 퀵&#10;Permacoat 티탄&#10;자동차 유리막 코팅">듀라코트 리빙코트</textarea>
+            <label>포스팅 키워드 (쉼표 또는 줄바꿈)</label>
+            <textarea id="keywords" rows="4" placeholder="듀라코트 리빙코트, 욕실코팅제…"></textarea>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
-            <button type="button" class="btn btn-secondary" style="width:auto;flex:1;min-width:140px;margin-top:0;" onclick="saveKeywords()">
-                <i class="fa-solid fa-floppy-disk"></i> 키워드 저장
-            </button>
-            <label style="font-size:0.82rem;display:flex;align-items:center;gap:6px;">
-                <input type="checkbox" id="runAllKeywords" checked> 저장된 키워드 전체 순차 실행
-            </label>
-        </div>
-        <div class="field">
-            <label>작성 지침 파일 경로 (선택)</label>
-            <input id="guidelinePath" type="text" placeholder="예: D:\@code\javis\.jarvis\youtube_xxx.txt">
-        </div>
-        <div class="checks">
-            <label><input type="checkbox" id="dryRun" checked> 미리보기만 (발행 안 함)</label>
-            <label><input type="checkbox" id="skipMedia" checked> 이미지·영상 생략</label>
-            <label><input type="checkbox" id="withVideo" disabled> 영상 포함</label>
-        </div>
-        <div class="field">
-            <label>발행 플랫폼</label>
-            <div class="platforms" id="platformBox">
-                <label><input type="checkbox" name="plat" value="tistory" checked> 티스토리</label>
-                <label><input type="checkbox" name="plat" value="naver" checked> 네이버</label>
-                <label><input type="checkbox" name="plat" value="blogger" checked> Blogger</label>
+        <div class="row2">
+            <div class="field">
+                <label>글 유형</label>
+                <select id="postType"></select>
+            </div>
+            <div class="field">
+                <label>발행 개수 / 간격(분)</label>
+                <div class="row2" style="gap:8px;">
+                    <input id="count" type="number" min="1" value="1">
+                    <input id="gap" type="number" min="1" value="1">
+                </div>
             </div>
         </div>
-        <button class="btn" id="runBtn" onclick="runBlog()"><i class="fa-solid fa-wand-magic-sparkles"></i> 블로그 생성 실행</button>
-        <button class="btn btn-secondary" onclick="loadLast()"><i class="fa-solid fa-clock-rotate-left"></i> 마지막 결과 불러오기</button>
+        <div class="field">
+            <label>발행 대상</label>
+            <div class="checks">
+                <label><input type="checkbox" id="useNaver1" checked> 네이버1 (hymini1)</label>
+                <label><input type="checkbox" id="useNaver2" checked> 네이버2 (hymini11)</label>
+                <label><input type="checkbox" id="useTistory" checked> 티스토리</label>
+                <label><input type="checkbox" id="useGoogle"> 구글(Blogger)</label>
+            </div>
+        </div>
+        <div class="field">
+            <label>홍보 상품</label>
+            <div class="product-row" id="productRow"></div>
+            <input id="productUrl" type="text" placeholder="스마트스토어 URL" style="margin-top:8px;">
+        </div>
+        <div class="row2">
+            <div class="field">
+                <label>글 생성 엔진</label>
+                <select id="textProvider">
+                    <option value="로컬 Ollama (무료)">로컬 Ollama (무료)</option>
+                    <option value="Gemini API (유료)">Gemini API (유료)</option>
+                    <option value="클로드 코드 (Claude Code)">클로드 코드 (Claude Code)</option>
+                    <option value="자동 (Ollama → Gemini)">자동 (Ollama → Gemini)</option>
+                </select>
+            </div>
+            <div class="field">
+                <label>AI 이미지 엔진</label>
+                <select id="imageProvider">
+                    <option value="Gen AI (Gemini 이미지)">Gen AI (Gemini 이미지)</option>
+                    <option value="자동 (Gen AI → Vertex → 무료)">자동 (Gen AI → Vertex → 무료)</option>
+                    <option value="로컬 무료 (Pollinations)">로컬 무료 (Pollinations)</option>
+                    <option value="Pillow 플레이스홀더 (테스트용)">Pillow 플레이스홀더 (테스트용)</option>
+                </select>
+            </div>
+        </div>
+        <button type="button" class="btn btn-save" onclick="saveSettings()"><i class="fa-solid fa-floppy-disk"></i> 설정 저장 (accounts.json)</button>
+        <div class="btn-row">
+            <button type="button" class="btn btn-draft" id="draftBtn" onclick="runDraft()"><i class="fa-solid fa-file-pen"></i> 원고+이미지 생성</button>
+            <button type="button" class="btn btn-run" id="runBtn" onclick="runAutomation()"><i class="fa-solid fa-rocket"></i> 자동화 시작</button>
+        </div>
+        <p class="hint">원고+이미지: drafts/ 저장만 · 자동화 시작: 네이버·티스토리 실제 발행 (Playwright). GUI와 동일합니다.</p>
     </div>
 
     <div class="panel">
@@ -102,56 +126,86 @@
     </div>
 
     <div class="panel">
-        <h2><i class="fa-solid fa-file-lines"></i> 생성 결과</h2>
-        <div id="preview" class="preview"><span style="color:var(--sub)">실행 후 미리보기가 표시됩니다.</span></div>
-    </div>
-
-    <div class="panel">
         <h2><i class="fa-solid fa-terminal"></i> 로그</h2>
         <div id="logBox" class="log"></div>
     </div>
 </div>
 <script>
-    const skipMedia = document.getElementById('skipMedia');
-    const withVideo = document.getElementById('withVideo');
-    const dryRun = document.getElementById('dryRun');
-    const platBox = document.getElementById('platformBox');
+    let settings = {};
 
-    skipMedia.addEventListener('change', () => {
-        withVideo.disabled = skipMedia.checked;
-        if (skipMedia.checked) withVideo.checked = false;
-    });
-    dryRun.addEventListener('change', () => {
-        platBox.querySelectorAll('input').forEach(cb => { cb.disabled = dryRun.checked; });
-    });
-    dryRun.dispatchEvent(new Event('change'));
-
-    function selectedPlatforms() {
-        return [...platBox.querySelectorAll('input:checked')].map(cb => cb.value);
+    function parseKeywords(text) {
+        return text.split(/[,，\n;]+/).map(s => s.trim()).filter(Boolean);
     }
 
-    function renderPreview(report) {
-        const box = document.getElementById('preview');
-        if (!report || !report.ok) {
-            box.innerHTML = '<span style="color:#f87171">' + (report?.error || '실패') + '</span>';
-            return;
-        }
-        const nested = report.result?.content;
-        const art = (report.steps?.article?.article) || {};
-        const title = art.title || nested?.title || report.keyword || '—';
-        let body = art.body_html || art.body_plain || nested?.body || '';
-        if (!body && nested?.sections) {
-            body = Object.entries(nested.sections).map(([k, v]) => `## ${k}\n${v}`).join('\n\n');
-        }
-        const note = report.mode === 'cloud_content'
-            ? '<p style="color:#94a3b8;font-size:0.78rem;margin-bottom:8px;">클라우드 초안 · PC에서 run_gui.bat으로 발행 가능</p>'
-            : '';
-        if (body.includes('<')) {
-            box.innerHTML = note + '<h2>' + title + '</h2>' + body;
-        } else if (body) {
-            box.innerHTML = note + '<h2>' + title + '</h2><pre style="white-space:pre-wrap">' + body.slice(0,8000) + '</pre>';
-        } else {
-            box.innerHTML = note + '<h2>' + title + '</h2><span style="color:var(--sub)">본문 없음 — 로그를 확인하세요.</span>';
+    function collectPayload() {
+        const kws = parseKeywords(document.getElementById('keywords').value);
+        return {
+            keywords: kws,
+            keywords_text: kws.join('\n'),
+            post_type: document.getElementById('postType').value,
+            count: parseInt(document.getElementById('count').value, 10) || 1,
+            gap: parseInt(document.getElementById('gap').value, 10) || 1,
+            use_naver1: document.getElementById('useNaver1').checked,
+            use_naver2: document.getElementById('useNaver2').checked,
+            use_tistory: document.getElementById('useTistory').checked,
+            use_google: document.getElementById('useGoogle').checked,
+            product_choice: document.querySelector('input[name=product]:checked')?.value || 'living',
+            product_url: document.getElementById('productUrl').value.trim(),
+            text_provider: document.getElementById('textProvider').value,
+            image_provider: document.getElementById('imageProvider').value,
+            keyword: kws[0] || '',
+        };
+    }
+
+    function fillProductRow(labels) {
+        const row = document.getElementById('productRow');
+        const cur = settings.product_choice || 'living';
+        row.innerHTML = Object.entries(labels || {}).map(([k, label]) =>
+            `<label><input type="radio" name="product" value="${k}" ${k === cur ? 'checked' : ''}> ${label}</label>`
+        ).join('');
+    }
+
+    function applySettings(d) {
+        settings = d;
+        if (d.keywords_text) document.getElementById('keywords').value = d.keywords_text;
+        const sel = document.getElementById('postType');
+        sel.innerHTML = (d.post_types || ['제품 홍보']).map(t =>
+            `<option value="${t}" ${t === d.post_type ? 'selected' : ''}>${t}</option>`
+        ).join('');
+        document.getElementById('count').value = d.count || 1;
+        document.getElementById('gap').value = d.gap || 1;
+        document.getElementById('useNaver1').checked = !!d.use_naver1;
+        document.getElementById('useNaver2').checked = !!d.use_naver2;
+        document.getElementById('useTistory').checked = !!d.use_tistory;
+        document.getElementById('useGoogle').checked = !!d.use_google;
+        document.getElementById('productUrl').value = d.product_url || '';
+        fillProductRow(d.product_labels);
+        if (d.text_provider) document.getElementById('textProvider').value = d.text_provider;
+        if (d.image_provider) document.getElementById('imageProvider').value = d.image_provider;
+    }
+
+    async function loadSettings() {
+        try {
+            const r = await fetch('/api/blog/settings');
+            const d = await r.json();
+            if (d.ok !== false) applySettings(d);
+        } catch (e) { console.warn(e); }
+    }
+
+    async function saveSettings() {
+        const payload = collectPayload();
+        try {
+            const r = await fetch('/api/blog/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+            const d = await r.json();
+            if (!d.ok) throw new Error(d.error || '저장 실패');
+            applySettings(d);
+            alert('설정이 accounts.json에 저장되었습니다.');
+        } catch (e) {
+            alert('저장 실패: ' + e);
         }
     }
 
@@ -163,38 +217,23 @@
             if (d.job_running) {
                 badge.className = 'badge busy';
                 badge.textContent = '작업 실행 중…';
-            } else if (d.jarvis_installed && !d.standalone) {
-                badge.className = 'badge';
-                const root = (d.jarvis_root || '').split('\\').pop() || 'javis';
-                badge.textContent = 'JARVIS 블로그 자동 · ' + root + ' · :' + d.port;
             } else {
-                badge.className = 'badge err';
-                badge.textContent = 'JARVIS 미연결 — D:\\@code\\javis 확인';
+                badge.className = 'badge';
+                badge.textContent = 'login2 Autoblog 엔진 · :' + (d.port || '8790');
             }
-        } catch (e) {
-            badge.className = 'badge err';
+        } catch (_) {
+            badge.className = 'badge busy';
             badge.textContent = '서버 연결 실패';
         }
     }
 
     async function loadStatus() {
-        const box = document.getElementById('statusBox');
         try {
             const r = await fetch('/api/blog/status');
             const d = await r.json();
-            if (!d.ok) {
-                box.style.color = '#f87171';
-                box.textContent = d.error || '상태 조회 실패';
-                return;
-            }
-            box.style.color = '';
-            const head = d.mode === 'jarvis'
-                ? '엔진: D:\\@code\\javis (수정본)\n\n'
-                : (d.mode === 'missing' ? '' : '');
-            box.textContent = head + (d.text || '—');
+            document.getElementById('statusBox').textContent = d.text || d.error || '—';
         } catch (e) {
-            box.style.color = '#f87171';
-            box.textContent = String(e);
+            document.getElementById('statusBox').textContent = String(e);
         }
     }
 
@@ -202,101 +241,60 @@
         try {
             const r = await fetch('/api/blog/logs');
             const d = await r.json();
-            document.getElementById('logBox').textContent = (d.logs || []).join('\n');
+            const box = document.getElementById('logBox');
+            box.textContent = (d.logs || []).join('\n');
+            box.scrollTop = box.scrollHeight;
         } catch (_) {}
     }
 
-    function parseKeywords(text) {
-        return text.split(/[,，\n;]+/).map(s => s.trim()).filter(Boolean);
+    function setBusy(busy) {
+        document.getElementById('runBtn').disabled = busy;
+        document.getElementById('draftBtn').disabled = busy;
     }
 
-    async function loadKeywords() {
-        try {
-            const r = await fetch('/api/blog/keywords');
-            const d = await r.json();
-            if (d.keywords_text) {
-                document.getElementById('keyword').value = d.keywords_text;
-            } else if (Array.isArray(d.keywords) && d.keywords.length) {
-                document.getElementById('keyword').value = d.keywords.join('\n');
-            }
-        } catch (e) {
-            console.warn('keywords', e);
-        }
-    }
-
-    async function saveKeywords() {
-        const text = document.getElementById('keyword').value.trim();
-        try {
-            const r = await fetch('/api/blog/keywords', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keywords_text: text }),
-            });
-            const d = await r.json();
-            if (!d.success) throw new Error(d.error || '저장 실패');
-            alert('키워드 ' + (d.count || 0) + '개 저장됨');
-        } catch (e) {
-            alert('저장 실패: ' + e);
-        }
-    }
-
-    async function runBlog() {
-        const text = document.getElementById('keyword').value.trim();
-        const kws = parseKeywords(text);
+    async function postRun(url, payload) {
+        const kws = payload.keywords || [];
         if (!kws.length) { alert('키워드를 입력하세요.'); return; }
-        const btn = document.getElementById('runBtn');
-        btn.disabled = true;
-        const runAll = document.getElementById('runAllKeywords').checked;
-        const payload = {
-            keyword: kws[0],
-            keywords: runAll && kws.length > 1 ? kws : undefined,
-            guideline_path: document.getElementById('guidelinePath').value.trim(),
-            dry_run: document.getElementById('dryRun').checked,
-            skip_media: document.getElementById('skipMedia').checked,
-            with_video: document.getElementById('withVideo').checked,
-            platforms: selectedPlatforms(),
-            publish: !document.getElementById('dryRun').checked,
-        };
+        setBusy(true);
         try {
-            const r = await fetch('/api/blog/run', {
+            const r = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
+                body: JSON.stringify({ ...payload, keywords: kws.length > 1 ? kws : undefined }),
             });
             const d = await r.json();
-            if (!d.ok && !d.async) {
-                renderPreview(d);
+            if (d.busy) {
+                alert('이미 작업 중입니다. 로그를 확인하세요.');
+            } else if (!d.ok && !d.async) {
                 alert(d.error || '실패');
             } else {
-                alert(d.message || '시작됨 — 로그를 확인하세요.');
-                setTimeout(loadLast, 3000);
+                alert(d.message || '시작됨 — 아래 로그를 확인하세요.');
             }
         } catch (e) {
             alert('요청 실패: ' + e);
         } finally {
-            btn.disabled = false;
+            setBusy(false);
             refreshHealth();
+            pollLogs();
         }
     }
 
-    async function loadLast() {
-        try {
-            const r = await fetch('/api/blog/last');
-            const d = await r.json();
-            if (d.report) renderPreview(d.report);
-            refreshHealth();
-        } catch (e) {
-            console.error(e);
-        }
+    async function runDraft() {
+        await saveSettings();
+        await postRun('/api/blog/draft', collectPayload());
     }
 
+    async function runAutomation() {
+        await saveSettings();
+        await postRun('/api/blog/run', collectPayload());
+    }
+
+    loadSettings();
     loadStatus();
-    loadKeywords();
     refreshHealth();
     pollLogs();
-    setInterval(pollLogs, 4000);
+    setInterval(pollLogs, 3000);
     setInterval(refreshHealth, 5000);
-    setInterval(loadLast, 15000);
 </script>
 </body>
 </html>

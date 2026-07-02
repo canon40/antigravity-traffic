@@ -2,8 +2,8 @@
   "version": 1,
   "jarvis_root_hint": "D:\\@code\\javis",
   "jarvis_remote": "https://github.com/FatihMakes/Mark-XXXIX.git",
-  "traffic_count": 12,
-  "javis_count": 95,
+  "traffic_count": 13,
+  "javis_count": 101,
   "programs": [
     {
       "id": "traffic_web_hub",
@@ -25,6 +25,16 @@
       "description": "키워드 1회 원고 생성·발행 (run_blog_post.bat)",
       "icon": "fa-blog",
       "cloud_action": "blog_pipeline"
+    },
+    {
+      "id": "local_run_blog_web",
+      "name": "blog web",
+      "workspace": "traffic",
+      "source": "local",
+      "launcher": "run_blog_web.bat",
+      "category": "blog",
+      "description": "run_blog_web.bat — traffic 로컬 실행",
+      "icon": "fa-blog"
     },
     {
       "id": "traffic_content_factory",
@@ -201,6 +211,16 @@
       "icon": "fa-robot"
     },
     {
+      "id": "javis_run_autoblog_gui",
+      "name": "autoblog gui",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_autoblog_gui.bat",
+      "category": "blog",
+      "description": "run_autoblog_gui.bat — javis 로컬 실행",
+      "icon": "fa-blog"
+    },
+    {
       "id": "javis_run_blog_studio_login2",
       "name": "blog studio login2",
       "workspace": "javis",
@@ -279,6 +299,16 @@
       "category": "studio",
       "description": "run_detail_page_studio.bat — javis 로컬 실행",
       "icon": "fa-store"
+    },
+    {
+      "id": "javis_run_dmoe_k1_lab",
+      "name": "dmoe k1 lab",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_dmoe_k1_lab.bat",
+      "category": "agent",
+      "description": "run_dmoe_k1_lab.bat — javis 로컬 실행",
+      "icon": "fa-robot"
     },
     {
       "id": "javis_run_doctor",
@@ -391,6 +421,16 @@
       "icon": "fa-robot"
     },
     {
+      "id": "javis_run_jarvis_mcp",
+      "name": "jarvis mcp",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_jarvis_mcp.bat",
+      "category": "agent",
+      "description": "run_jarvis_mcp.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
       "id": "javis_run_jarvis_mobile",
       "name": "jarvis mobile",
       "workspace": "javis",
@@ -439,6 +479,16 @@
       "category": "video",
       "description": "run_keyword_video.bat — javis 로컬 실행",
       "icon": "fa-film"
+    },
+    {
+      "id": "javis_run_local_hub_bridge",
+      "name": "local hub bridge",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_local_hub_bridge.bat",
+      "category": "agent",
+      "description": "run_local_hub_bridge.bat — javis 로컬 실행",
+      "icon": "fa-robot"
     },
     {
       "id": "javis_run_local_llm",
@@ -498,6 +548,16 @@
       "launcher": "run_open_lovable.bat",
       "category": "agent",
       "description": "run_open_lovable.bat — javis 로컬 실행",
+      "icon": "fa-robot"
+    },
+    {
+      "id": "javis_run_open_webui",
+      "name": "open webui",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_open_webui.bat",
+      "category": "agent",
+      "description": "run_open_webui.bat — javis 로컬 실행",
       "icon": "fa-robot"
     },
     {
@@ -579,6 +639,16 @@
       "category": "studio",
       "description": "run_sangseopage.bat — javis 로컬 실행",
       "icon": "fa-store"
+    },
+    {
+      "id": "javis_run_seo_traffic_hub",
+      "name": "seo traffic hub",
+      "workspace": "javis",
+      "source": "javis",
+      "launcher": "run_seo_traffic_hub.bat",
+      "category": "seo",
+      "description": "run_seo_traffic_hub.bat — javis 로컬 실행",
+      "icon": "fa-magnifying-glass-chart"
     },
     {
       "id": "javis_run_setup_ppt_templates",

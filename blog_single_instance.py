@@ -150,8 +150,8 @@ def focus_existing_window() -> bool:
 
 
 def another_instance_running() -> bool:
-    """외부 스크립트(bat/JARVIS)용 — GUI 창, mutex, 또는 블로그 스튜디오 포트."""
-    return _gui_window_visible() or _mutex_taken() or _port_in_use(_blog_studio_port())
+    """외부 스크립트(bat/JARVIS)용 — GUI 창 또는 mutex만 확인 (웹 스튜디오 8790은 별도)."""
+    return _gui_window_visible() or _mutex_taken()
 
 
 if __name__ == "__main__":

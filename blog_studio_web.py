@@ -83,28 +83,23 @@ def _platforms_from_payload(p: dict[str, Any]) -> list[str] | None:
 
 def _run_pipeline(payload: dict[str, Any], *, manage_lock: bool = True) -> dict[str, Any]:
     global _last_report, _job_running
-    kw = (payload.get("keyword") or payload.get("topic") or "").strip()
-    if not kw:
-        kws = payload.get("keywords")
-        if isinstance(kws, list) and kws:
-            kw = ", ".join(str(x).strip() for x in kws if str(x).strip())
-    if not kw:
-        return {"ok": False, "error": "키워드가 비어 있습니다."}
+    from blog_studio_automation import run_studio_job
+
+    mode = "draft" if payload.get("draft_only") else "full"
+    if payload.get("dry_run") or payload.get("preview_only"):
+        mode = "draft"
 
     try:
-        from blog_pipeline_runner import run_pipeline
-
-        _log(f"블로그 파이프라인 시작: {kw[:80]}")
-        result = run_pipeline(payload, on_status=_log, prefer_jarvis=True)
+        result = run_studio_job(payload, mode=mode, on_log=_log)
         _last_report = result if isinstance(result, dict) else {"ok": False, "raw": result}
         if _last_report.get("ok"):
-            _log("블로그 파이프라인 완료")
+            _log("블로그 작업 완료")
         else:
             _log("실패: " + str(_last_report.get("error") or _last_report))
         return _last_report
     except Exception as e:
         _log(traceback.format_exc())
-        _last_report = {"ok": False, "error": str(e), "keyword": kw}
+        _last_report = {"ok": False, "error": str(e)}
         return _last_report
     finally:
         if manage_lock:
@@ -149,10 +144,15 @@ def _start_async(payload: dict[str, Any]) -> dict[str, Any]:
         _job_running = True
 
     def _worker() -> None:
+        global _job_running
         try:
             _run_pipeline(payload)
         except Exception as e:
             _log(f"worker error: {e}")
+            _log(traceback.format_exc())
+        finally:
+            with _job_lock:
+                _job_running = False
 
     threading.Thread(target=_worker, daemon=True).start()
     kw = (payload.get("keyword") or "").strip()
@@ -204,27 +204,53 @@ def javis_start():
     return jsonify(_start_async(payload))
 
 
+@app.route("/api/blog/settings", methods=["GET", "POST"])
+def blog_settings():
+    from blog_studio_automation import save_settings_from_ui, settings_for_ui
+
+    if request.method == "GET":
+        return jsonify({"ok": True, **settings_for_ui()})
+    data = request.get_json(silent=True) or {}
+    saved = save_settings_from_ui(data)
+    return jsonify({"ok": True, "saved": True, **saved})
+
+
+@app.route("/api/blog/draft", methods=["POST"])
+def blog_draft():
+    payload = request.get_json(silent=True) or {}
+    payload = {**payload, "draft_only": True}
+    return jsonify(_start_async(payload))
+
+
 @app.route("/api/blog/status")
 def blog_status():
     try:
-        from blog_pipeline_runner import bootstrap_jarvis_imports, resolve_jarvis_root
+        from blog_studio_automation import STUDIO, settings_for_ui
+        from blog_quality_guard import has_quality_report, summarize_quality_badge
 
-        root = bootstrap_jarvis_imports()
-        if root:
-            from integrations.blog_auto_pipeline import format_status_ko
-
-            text = format_status_ko()
-            return jsonify({
+        ui = settings_for_ui()
+        quality_report = getattr(STUDIO, "last_quality_report", {}) or {}
+        lines = [
+            "엔진: login2 Autoblog (blog_main과 동일 run_main_loop)",
+            f"글 유형: {ui.get('post_type')}",
+            f"발행: 네이버1={ui.get('use_naver1')} 네이버2={ui.get('use_naver2')} "
+            f"티스토리={ui.get('use_tistory')} 구글={ui.get('use_google')}",
+            f"상품: {ui.get('product_choice')} · {ui.get('product_url', '')[:60]}",
+            summarize_quality_badge(quality_report if has_quality_report(quality_report) else None),
+            "",
+            "=== 블로그 자동 글쓰기+이미지+업로드 ===",
+            "티스토리·네이버·Blogger 동시 발행 지원",
+        ]
+        if STUDIO.is_running():
+            lines.insert(0, "⏳ 작업 실행 중…")
+        return jsonify(
+            {
                 "ok": True,
-                "text": text,
-                "mode": "jarvis",
-                "jarvis_root": str(root),
-            })
-        return jsonify({
-            "ok": True,
-            "text": f"JARVIS 없음 ({resolve_jarvis_root()}) — D:\\@code\\javis 확인",
-            "mode": "missing",
-        })
+                "text": "\n".join(lines),
+                "mode": "login2",
+                "quality_report": quality_report if has_quality_report(quality_report) else None,
+            }
+        )
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)})
 
@@ -278,7 +304,11 @@ def blog_run():
 @app.route("/api/logs")
 @app.route("/api/blog/logs")
 def api_logs():
-    return jsonify({"logs": _logs[-80:]})
+    from blog_studio_automation import STUDIO
+
+    studio_logs = STUDIO.get_logs(80)
+    merged = studio_logs if studio_logs else _logs[-80:]
+    return jsonify({"logs": merged})
 
 
 def register_blog_routes(flask_app: Flask, *, url_prefix: str = "") -> None:
@@ -288,6 +318,14 @@ def register_blog_routes(flask_app: Flask, *, url_prefix: str = "") -> None:
     def _route(rule: str, **kwargs):
         path = f"{prefix}{rule}" if prefix else rule
         return flask_app.route(path, **kwargs)
+
+    @_route("/api/blog/settings", methods=["GET", "POST"])
+    def blog_settings_embed():
+        return blog_settings()
+
+    @_route("/api/blog/draft", methods=["POST"])
+    def blog_draft_embed():
+        return blog_draft()
 
     @_route("/api/blog/status")
     def blog_status_embed():

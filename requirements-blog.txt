@@ -1,4 +1,4 @@
-# canon4040 Autoblog (blog_main.py) — 로컬 데스크톱 전용
+# canon4040 Autoblog (blog_main.py) - Local Desktop Only
 google-genai>=1.0.0
 google-auth-oauthlib>=1.0.0
 google-api-python-client>=2.0.0

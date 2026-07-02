@@ -240,18 +240,24 @@ def _is_playwright_browser_missing_error(err_msg: str) -> bool:
 
 
 def _append_product_url(body: str, config: dict) -> str:
-    """선택된 스마트스토어 상품 URL을 본문 마지막에 붙인다."""
+    """스마트스토어 URL — 마지막 1문단 부드러운 참고 링크로만."""
     try:
         url = (config.get("product_url") or "").strip()
     except Exception:
         url = ""
-    if not url:
+    if not url or url in body:
         return body
-    # 이미 본문에 동일 URL이 있다면 중복 추가 방지
-    if url in body:
-        return body
-    body_clean = body.rstrip()
-    return f"{body_clean}\n\n{url}"
+    from blog_constants import PRODUCT_LABELS
+
+    choice = (config.get("product_choice") or "none").strip().lower()
+    label = PRODUCT_LABELS.get(choice, "관련 제품")
+    particle = "를" if label and (ord(label[-1]) - 0xAC00) % 28 == 0 else "을"
+    footer = (
+        f"\n\n직접 시공이 부담되시면, 위에서 정리한 기준(성분·함량·시공 난이도)에 맞는 "
+        f"{label}{particle} 먼저 비교해 보시는 것을 권합니다. "
+        f"참고 링크(나눔랩 스마트스토어): {url}"
+    )
+    return body.rstrip() + footer
 
 
 def _build_keyword_plan(keywords_list, total_rounds):
@@ -751,6 +757,13 @@ async def run_main_loop(app, config):
         def _reset_run_button():
             app.is_processing = False
             app.btn_run.config(state="normal", text="🚀 자동화 시작")
+            if getattr(app, "btn_draft", None):
+                app.btn_draft.config(state="normal", text="✍ 원고+이미지 생성")
+            if getattr(app, "btn_pause", None):
+                try:
+                    app.btn_pause.config(state="disabled")
+                except Exception:
+                    pass
 
         app.root.after(0, _reset_run_button)
 

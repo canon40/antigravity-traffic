@@ -172,12 +172,34 @@ _BANNED_BLOG_PHRASES = (
     "도움이 되었으면 합니다",
     "짜증 나시죠",
     "지금 바로 구매",
+    "지금만",
+    "한정 수량",
+    "최저가",
+    "무조건 추천",
+    "강력 추천",
+    "필수템",
+    "압도적",
+    "혁신적인 성능",
+    "최고의 성능",
+    "판매 중",
+    "특가",
     "카페에서 나와 집으로 향하는",
     "오래도록 새것처럼",
     "숨겨진 공간의 코팅",
     "온몸으로 느낄 수 있습니다",
     "이 지킴이 결국",
     "연장선상에는 우리 일상",
+)
+
+_CONVERSION_SOFT_SELL_BLOCK = (
+    "【전환형 글쓰기 — 홍보가 아닌 판매】\n"
+    "- 한 글 = 독자 고민 1개 해결. 제목에 제품명·'최고'·'강력 추천'·'판매' 금지.\n"
+    "- 본문 70%: 증상→원인→체크리스트→실패 사례. 20%: 원리·성분(Truth Table만). "
+    "10%: '이런 조건이면 퀵/티탄/레진 중 ~' 선택 가이드.\n"
+    "- 스펙·가격 나열표 금지. 대신 '선택 기준표'(DIY vs 전문 시공, 왁스 vs 유리막) 1개.\n"
+    "- 솔직한 제외 조건 1문장 필수: '이런 분께는 굳이 필요 없습니다'.\n"
+    "- CTA는 마지막 1문단만: '직접 하기 어렵다면 ~ 함량·시공 난이도 기준으로 비교' 톤. "
+    "'지금 구매'·링크 남발 금지.\n"
 )
 
 # 감성 에세이·주제 이탈 서사 (탐지 시 재생성 또는 삭제)
@@ -318,7 +340,7 @@ def _perfect_blog_writing_block(
     for_outline: bool = False,
 ) -> str:
     """네이버 정책 + Autoblog 강점을 한 블록으로 — Ollama/Gemini 공통."""
-    parts = [_NAVER_MATE_FIVE_PRINCIPLES]
+    parts = [_NAVER_MATE_FIVE_PRINCIPLES, _CONVERSION_SOFT_SELL_BLOCK]
     notice = _build_authenticity_notice(config, post_type)
     if notice:
         parts.append(f"【고지 문구】 본문 맨 앞에 다음 문장을 그대로 넣을 것:\n{notice}")
@@ -1135,6 +1157,24 @@ async def verify_gemini_api_key(api_key: str) -> tuple:
         return False, str(e)
 
 
+async def verify_gemini_api_keys(api_keys: list[str]) -> tuple[bool, str]:
+    """여러 키를 순서대로 검증. 하나라도 성공하면 연동 OK."""
+    keys: list[str] = []
+    for raw in api_keys or []:
+        key = (raw or "").strip()
+        if key and key not in keys:
+            keys.append(key)
+    if not keys:
+        return False, "API 키가 비어 있습니다."
+    errors: list[str] = []
+    for key in keys:
+        ok, msg = await verify_gemini_api_key(key)
+        if ok:
+            return True, msg
+        errors.append(f"{_api_key_suffix(key)}: {msg[:80]}")
+    return False, errors[0] if len(errors) == 1 else " / ".join(errors[:2])
+
+
 async def _claude_code_ping(log_func=None) -> bool:
     """Claude Code CLI 로그인·실행 가능 여부."""
     try:
@@ -1320,7 +1360,11 @@ def apply_product_choice(config: dict) -> dict:
         config["post_type"] = PRODUCT_POST_TYPE[choice]
 
     default_kws = PRODUCT_KEYWORDS.get(choice, [])
-    existing = [k.strip() for k in (config.get("keywords") or []) if k.strip()]
+    raw_kw = config.get("keywords") or []
+    if isinstance(raw_kw, str):
+        existing = [k.strip() for k in raw_kw.split(",") if k.strip()]
+    else:
+        existing = [str(k).strip() for k in raw_kw if str(k).strip()]
     matched = [k for k in existing if _keyword_matches_product(k, choice)]
     config["keywords"] = matched if matched else default_kws
     return config
@@ -1579,8 +1623,8 @@ def _default_guidelines():
         "신뢰성 강조: '10년 동안 아토피 문제 한 건 없었다', '10년 넘게 직접 차 닦고 코팅해왔다'는 사실을 근거로 독자에게 강한 신뢰감을 준다.\n"
         "2. 말투: 친절하고 신뢰감 있는 구어체를 사용하며, 전문 용어는 쉽게 풀어서 설명한다. "
         "너무 딱딱한 비즈니스 문체, '사료됨', '함에 있어서'와 같은 표현은 사용하지 않는다.\n"
-        "3. 네이버 블로그 관점: 판매 및 브랜딩을 염두에 두고, 시공 전/후(Before & After) 스토리텔링을 강조한다. "
-        "본문에서는 실제 고객 사례, 시공 과정, 관리 팁을 풀어 쓰고, 결론 부분에는 스마트스토어 방문 및 문의/댓글 유도를 자연스럽게 넣는다.\n"
+        "3. 네이버 블로그 관점: 브랜드 신뢰를 쌓은 뒤 자연스럽게 구매를 고민하게 한다. "
+        "본문은 고객 사례·시공 과정·관리 팁 중심(7:2:1). 결론 1문단에만 스마트스토어 참고·댓글 질문을 넣는다. '지금 구매'류 문구 금지.\n"
         "4. 티스토리·구글 관점: 정보성과 전문성을 높여 구글 SEO와 애드센스를 고려한다. "
         "H2, H3 소제목을 활용해 정보의 위계를 분명히 나누고, 최소 1,500자 이상 분량으로 원리 설명(코팅의 과학, 성분 비교, 내구성 등)을 포함한다.\n"
         "5. 본문은 항상 3단계 구조를 따른다. "
@@ -1775,6 +1819,54 @@ def _template_body(
     )
 
 
+def _apply_body_quality_guard(config, body, tags, keyword, intent_plan, log_func):
+    if config.get("enable_quality_guard", True):
+        try:
+            from blog_quality_guard import revise_article, summarize_quality_report
+
+            revised_body, quality_report = revise_article(body, keyword, intent_plan)
+            config["_quality_report"] = quality_report
+            _safe_log(log_func, f"      [품질 보정] {summarize_quality_report(quality_report)}")
+            return revised_body, tags
+        except Exception as quality_exc:
+            _safe_log(log_func, f"      [품질 보정 생략] {quality_exc}")
+    else:
+        try:
+            from blog_quality_guard import inspect_article
+
+            base_report = inspect_article(body, keyword, intent_plan)
+            config["_quality_report"] = {"before": base_report, "after": base_report}
+        except Exception:
+            pass
+    return body, tags
+
+
+def _template_body_with_quality(
+    title,
+    outline_str,
+    required_keyword,
+    post_type,
+    *,
+    min_chars,
+    config,
+    account_id,
+    intent_plan,
+    log_func,
+):
+    body, tags = _template_body(
+        title,
+        outline_str,
+        required_keyword,
+        post_type,
+        min_chars=min_chars,
+        config=config,
+        account_id=account_id,
+    )
+    return _apply_body_quality_guard(
+        config, body, tags, required_keyword, intent_plan, log_func
+    )
+
+
 async def generate_outline(config, required_keyword, extra_keyword, log_func, master_guidelines_str):
     """1단계: 제목·개요·이미지설명만 생성. 맥락에 맞는 글 흐름을 먼저 정함."""
     if extra_keyword is None:
@@ -1782,6 +1874,23 @@ async def generate_outline(config, required_keyword, extra_keyword, log_func, ma
     post_type, keyword_instruction, scope_instruction, type_instruction, prompt_lead = _get_keyword_and_scope_instructions(
         config, required_keyword, extra_keyword
     )
+    if config.get("enable_intent_planner", True):
+        try:
+            from blog_intent_planner import build_intent_plan, render_plan_prompt
+
+            intent_plan = build_intent_plan(required_keyword, post_type)
+            config["_intent_plan"] = intent_plan
+            intent_prompt = render_plan_prompt(intent_plan)
+            _safe_log(
+                log_func,
+                f"      [의도 분석] {intent_plan.get('intent_type')} · {intent_plan.get('reader_question')}",
+            )
+        except Exception:
+            intent_plan = {}
+            intent_prompt = ""
+    else:
+        intent_plan = {}
+        intent_prompt = ""
     master_guidelines = (master_guidelines_str or config.get("master_guidelines") or DEFAULT_MASTER_GUIDELINES).strip()
 
     if is_naeo_post_type(post_type):
@@ -1809,6 +1918,7 @@ async def generate_outline(config, required_keyword, extra_keyword, log_func, ma
         )
         outline_prompt = (
             f"{guidelines_block}\n\n"
+            f"{intent_prompt}\n"
             f"{type_instruction}\n"
             f"키워드 '{required_keyword}' 주제의 네이버 블로그 글 제목·개요만 작성. 본문은 쓰지 마라.\n"
             "제목 예: '장마철 체인 녹, 미리 막는 3가지' (판매 문구·브랜드 나열 금지).\n"
@@ -1822,7 +1932,7 @@ async def generate_outline(config, required_keyword, extra_keyword, log_func, ma
         outline_prompt = (
             f"{prompt_lead} "
             "자동차 코팅제·바이크 코팅제·리빙코팅제를 개발하는 10년 경력 제조 이사의 시선으로, 네이버/티스토리용 블로그 포스팅 하나를 기획해줘.\n"
-            f"{type_instruction}\n{scope_instruction}\n"
+            f"{type_instruction}\n{scope_instruction}\n{intent_prompt}\n"
             "아래 형식으로만 출력해. 본문은 쓰지 마라.\n"
             "[TITLE]\n(제목 한 줄, 50자 이내, 호기심·정보성)\n"
             "[OUTLINE]\n"
@@ -1897,6 +2007,13 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
     ollama_mode = _normalize_text_provider(config) == "ollama"
     master_guidelines = (master_guidelines_str or config.get("master_guidelines") or "").strip()
     extra_guidelines = (config.get("writing_guidelines") or "").strip()
+    intent_plan = config.get("_intent_plan") or {}
+    try:
+        from blog_intent_planner import render_plan_prompt
+
+        intent_prompt = render_plan_prompt(intent_plan)
+    except Exception:
+        intent_prompt = ""
     min_body_len = _resolve_min_body_len(
         master_guidelines,
         extra_guidelines,
@@ -1921,6 +2038,7 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
         body_prompt = (
             f"{guidelines_block}\n\n"
             f"{naeo_block}"
+            f"{intent_prompt}\n"
             f"【제목】\n{title}\n\n【개요(반드시 이 순서·내용으로)】\n{outline_str}\n\n"
             f"키워드 '{required_keyword}' 주제 네이버 블로그 본문을 한국어로 작성.\n"
             "개요에 없는 주제(글 유형과 무관한 자동차/리빙/맛집 등)를 섞지 마라.\n"
@@ -1987,6 +2105,7 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
         body_prompt = (
             f"{perfect_block}\n\n"
             f"{naeo_block}"
+            f"{intent_prompt}\n"
             "【필수】 아래 제목과 개요에 맞는 본문만 작성해. 개요에 없는 섹션을 추가하거나, 제목·개요와 무관한 내용을 넣지 마라.\n"
             "예: 제목이 '욕실 타일'이면 자동차 코팅·아토피·바이크 경험 등 다른 주제를 본문에 넣지 말 것. 제목이 '맛집'이면 제품 홍보를 본문 중심으로 넣지 말 것.\n"
             f"【글 유형】 {post_type}\n{scope_instruction}"
@@ -2024,7 +2143,7 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
             if ollama_mode:
                 if not await _ollama_ping_with_retry(log_func, attempts=3):
                     _safe_log(log_func, "      Ollama 사용 불가 → 템플릿 본문으로 진행합니다.")
-                    return _template_body(
+                    return _template_body_with_quality(
                         title,
                         outline_str,
                         required_keyword,
@@ -2032,6 +2151,8 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
                         min_chars=min_body_len,
                         config=config,
                         account_id=account_id,
+                        intent_plan=intent_plan,
+                        log_func=log_func,
                     )
                 deadline = _ollama_async_deadline(body_predict)
                 text = await asyncio.wait_for(
@@ -2054,7 +2175,7 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
                     _safe_log(log_func, "      본문 파싱 실패 → 재생성")
                     continue
                 _safe_log(log_func, "      본문 파싱 실패 → 템플릿 본문으로 진행합니다.")
-                return _template_body(
+                return _template_body_with_quality(
                     title,
                     outline_str,
                     required_keyword,
@@ -2062,6 +2183,8 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
                     min_chars=min_body_len,
                     config=config,
                     account_id=account_id,
+                    intent_plan=intent_plan,
+                    log_func=log_func,
                 )
 
             body = strip_strikethrough_markers(body)
@@ -2130,7 +2253,7 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
                     log_func,
                     f"      본문 길이 미달 ({len(body)}자) → 템플릿으로 보강 ({min_body_len}자)",
                 )
-                return _template_body(
+                return _template_body_with_quality(
                     title,
                     outline_str,
                     required_keyword,
@@ -2138,6 +2261,8 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
                     min_chars=min_body_len,
                     config=config,
                     account_id=account_id,
+                    intent_plan=intent_plan,
+                    log_func=log_func,
                 )
 
             tag_match = re.search(r"\[TAGS\](.*)", text, re.S)
@@ -2155,11 +2280,14 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
                 keyword=required_keyword,
                 account_id=account_id,
             )
+            body, tags = _apply_body_quality_guard(
+                config, body, tags, required_keyword, intent_plan, log_func
+            )
             _safe_log(log_func, f"      본문 확정 ({len(body)}자 / 최소 {min_body_len}자)")
             return body, tags
 
         _safe_log(log_func, "      본문 품질 미달 → 템플릿 본문으로 진행합니다.")
-        return _template_body(
+        return _template_body_with_quality(
             title,
             outline_str,
             required_keyword,
@@ -2167,10 +2295,12 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
             min_chars=min_body_len,
             config=config,
             account_id=account_id,
+            intent_plan=intent_plan,
+            log_func=log_func,
         )
     except asyncio.TimeoutError:
         _safe_log(log_func, "      본문 생성 지연 → 템플릿 본문으로 진행합니다.")
-        return _template_body(
+        return _template_body_with_quality(
             title,
             outline_str,
             required_keyword,
@@ -2178,13 +2308,15 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
             min_chars=min_body_len,
             config=config,
             account_id=account_id,
+            intent_plan=intent_plan,
+            log_func=log_func,
         )
     except Exception as e:
         if _is_quota_error(str(e)):
             _log_quota_hint(log_func)
         _safe_log(log_func, f"      본문 생성 오류: {e}")
         _safe_log(log_func, "      템플릿 본문으로 에디터 진입을 계속합니다.")
-        return _template_body(
+        return _template_body_with_quality(
             title,
             outline_str,
             required_keyword,
@@ -2192,6 +2324,8 @@ async def generate_body_from_outline(config, title, outline_str, required_keywor
             min_chars=min_body_len,
             config=config,
             account_id=account_id,
+            intent_plan=intent_plan,
+            log_func=log_func,
         )
 
 

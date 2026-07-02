@@ -69,6 +69,26 @@ def setup_automation_tab(app):
     tk.Checkbutton(target_frame, text="구글(Blogger)", variable=app.use_google_var,
                   bg=app.color_card, activebackground=app.color_card,
                   fg=app.color_text_dark, selectcolor=app.color_bg).pack(side="left", padx=10)
+    app.enable_intent_planner_var = tk.BooleanVar(value=True)
+    tk.Checkbutton(
+        target_frame,
+        text="검색 의도 자동 분석",
+        variable=app.enable_intent_planner_var,
+        bg=app.color_card,
+        activebackground=app.color_card,
+        fg=app.color_text_dark,
+        selectcolor=app.color_bg,
+    ).pack(side="left", padx=10)
+    app.enable_quality_guard_var = tk.BooleanVar(value=True)
+    tk.Checkbutton(
+        target_frame,
+        text="발행 전 품질 검사",
+        variable=app.enable_quality_guard_var,
+        bg=app.color_card,
+        activebackground=app.color_card,
+        fg=app.color_text_dark,
+        selectcolor=app.color_bg,
+    ).pack(side="left", padx=10)
 
     app.manual_confirm_var = tk.BooleanVar(value=False)
     tk.Checkbutton(target_frame, text="발행 전 수동 확인 (반자동)", variable=app.manual_confirm_var,
@@ -194,6 +214,19 @@ def setup_automation_tab(app):
         command=lambda: _set_product_url("living"),
     )
     rb_living.grid(row=0, column=2, sticky="w", padx=(10, 0))
+
+    app.btn_sync_traffic = tk.Button(
+        promo_frame,
+        text="🛒 트래픽 미노출 키워드 연동",
+        bg="#2563eb",
+        fg="white",
+        font=("Malgun Gothic", 9, "bold"),
+        relief="flat",
+        padx=10,
+        pady=2,
+        command=app.sync_traffic_unranked_keywords,
+    )
+    app.btn_sync_traffic.grid(row=0, column=3, sticky="w", padx=(15, 0))
 
     tk.Label(
         promo_frame,
@@ -374,11 +407,30 @@ def setup_automation_tab(app):
     app.btn_pause = tk.Button(input_card, text="⏸ 일시정지", bg="#f97316", fg="white", font=app.font_bold,
                              padx=20, pady=10, relief="flat", command=app.toggle_pause, state="disabled")
     app.btn_pause.grid(row=8, column=3, sticky="e")
+    app.lbl_quality_status = tk.Label(
+        input_card,
+        text="품질 점수: 아직 없음",
+        font=app.font_subtitle,
+        bg=app.color_card,
+        fg=app.color_text_light,
+    )
+    app.lbl_quality_status.grid(row=8, column=0, columnspan=3, sticky="w", pady=(6, 0))
+    app.lbl_quality_details = tk.Label(
+        input_card,
+        text="세부 항목: 아직 없음",
+        font=("Malgun Gothic", 8),
+        bg=app.color_card,
+        fg=app.color_text_light,
+    )
+    app.lbl_quality_details.grid(row=9, column=0, columnspan=3, sticky="w", pady=(2, 0))
 
     tk.Label(app.auto_frame, text="진행 로그", font=app.font_bold, bg=app.color_bg, fg=app.color_text_dark).pack(anchor="w", pady=(25, 5))
     app.log_area = scrolledtext.ScrolledText(app.auto_frame, bg="#020617", fg="#d1d5db", font=("Consolas", 10),
                                             highlightthickness=1, highlightbackground=app.color_border, bd=0, padx=10, pady=10)
     app.log_area.pack(fill="both", expand=True)
+
+    if hasattr(app, "bootstrap_from_accounts_json"):
+        app.bootstrap_from_accounts_json()
 
 
 def setup_guidelines_tab(app):
@@ -793,7 +845,11 @@ def setup_tistory_tab(app):
 
 def setup_store_tab(app):
     """스마트스토어 SEO 마케팅 에이전트 탭."""
-    from store_supabase import supabase_enabled
+    try:
+        from rank_persistence import supabase_enabled
+    except ImportError:
+        def supabase_enabled() -> bool:  # type: ignore[misc]
+            return False
 
     app.store_frame = tk.Frame(app.body, bg=app.color_bg)
 

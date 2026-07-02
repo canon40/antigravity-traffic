@@ -1,4 +1,4 @@
-# Cloudtype 24h SEO 허브 — 가벼운 런타임 (playwright·ollama 제외)
+# Cloudtype 24h SEO Hub - Lightweight runtime (excludes playwright/ollama)
 flask>=3.0.0
 gunicorn>=22.0.0
 requests>=2.31.0

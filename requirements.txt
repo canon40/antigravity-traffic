@@ -1,4 +1,4 @@
-# SEO 허브 (permacoat.shop) — 로컬·Cloudtype·Vercel
+# SEO Hub (permacoat.shop) - Local, Cloudtype, Vercel
 flask>=3.0.0
 gunicorn>=22.0.0
 requests>=2.31.0

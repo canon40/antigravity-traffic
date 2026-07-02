@@ -324,44 +324,57 @@ class CanonAutoGUI:
 
     def load_saved_credentials(self):
         """accounts.json에 저장된 계정/설정 정보를 읽어와 입력란에 반영."""
-        try:
-            if not os.path.exists(self.cred_file):
-                return
-            with open(self.cred_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-        except Exception:
-            return
+        data = self._read_accounts_json()
+        if data:
+            self._apply_accounts_data(data)
+        else:
+            self._sync_connection_status()
 
-        def _set(entry, key):
+    def bootstrap_from_accounts_json(self) -> None:
+        """lazy 탭 모드: 설정 탭 없이도 accounts.json → 자동화 탭 + 연동 상태 반영."""
+        data = self._read_accounts_json()
+        if data:
+            self._apply_accounts_data(data)
+        else:
+            self._sync_connection_status()
+
+    def _apply_accounts_data(self, data: dict) -> None:
+        def _set(entry_attr: str, key: str) -> None:
+            entry = getattr(self, entry_attr, None)
+            if entry is None:
+                return
             val = data.get(key)
             if val is not None:
-                entry.delete(0, tk.END)
-                entry.insert(0, val)
+                try:
+                    entry.delete(0, tk.END)
+                    entry.insert(0, val)
+                except Exception:
+                    pass
 
-        _set(self.entry_gemini_key, "gemini_key")
-        _set(self.entry_t_id, "tistory_id")
-        _set(self.entry_t_pw, "tistory_pw")
-        _set(self.entry_n_id1, "naver_id1")
-        _set(self.entry_n_pw1, "naver_pw1")
-        _set(self.entry_n_id2, "naver_id2")
-        _set(self.entry_n_pw2, "naver_pw2")
+        _set("entry_gemini_key", "gemini_key")
+        _set("entry_t_id", "tistory_id")
+        _set("entry_t_pw", "tistory_pw")
+        _set("entry_n_id1", "naver_id1")
+        _set("entry_n_pw1", "naver_pw1")
+        _set("entry_n_id2", "naver_id2")
+        _set("entry_n_pw2", "naver_pw2")
         for key, var_name in (
             ("use_naver1", "use_naver1_var"),
             ("use_naver2", "use_naver2_var"),
             ("use_tistory", "use_tistory_var"),
             ("use_google", "use_google_var"),
+            ("enable_intent_planner", "enable_intent_planner_var"),
+            ("enable_quality_guard", "enable_quality_guard_var"),
         ):
             if key in data and hasattr(self, var_name):
                 getattr(self, var_name).set(bool(data[key]))
-        _set(self.entry_proj_id, "vertex_project_id")
-        _set(self.entry_vx_key, "vertex_api_key")
-        # 구글 계정 메모용
+        _set("entry_proj_id", "vertex_project_id")
+        _set("entry_vx_key", "vertex_api_key")
         if hasattr(self, "entry_g_id"):
-            _set(self.entry_g_id, "google_id")
+            _set("entry_g_id", "google_id")
         if hasattr(self, "entry_g_pw"):
-            _set(self.entry_g_pw, "google_pw")
+            _set("entry_g_pw", "google_pw")
 
-        # 공통 글쓰기 마스터 지침 (저장값 없으면: exe 배포 시 설명서, 개발 시 마스터 지침)
         mg = data.get("master_guidelines")
         if hasattr(self, "master_guidelines_text"):
             self.master_guidelines_text.delete("1.0", tk.END)
@@ -370,7 +383,6 @@ class CanonAutoGUI:
             else:
                 default_guide = DISTRIBUTION_GUIDELINES if getattr(sys, "frozen", False) else self._default_master_guidelines()
                 self.master_guidelines_text.insert(tk.END, default_guide)
-        # 글·이미지 생성 엔진
         if hasattr(self, "text_provider_var"):
             tp = data.get("text_provider")
             legacy_tp = {
@@ -479,7 +491,8 @@ class CanonAutoGUI:
 
     def _sync_connection_status(self):
         """Gemini 키 또는 (Ollama/Claude + 네이버 계정)이면 자동화 시작 가능."""
-        has_key = bool(self.entry_gemini_key.get().strip())
+        has_key = bool(self._get_entry_or_accounts("entry_gemini_key", "gemini_key"))
+        has_key = has_key or bool(self._get_entry_or_accounts("entry_vx_key", "vertex_api_key"))
         tp = ""
         if getattr(self, "text_provider_var", None):
             try:
@@ -489,7 +502,9 @@ class CanonAutoGUI:
         use_gemini = "Gemini" in tp and "Ollama" not in tp.split("→")[0]
         claude_only = "클로드" in tp or "Claude Code" in tp
         ollama_only = "Ollama" in tp and not use_gemini and not claude_only
-        has_naver = bool(self.entry_n_id1.get().strip()) or bool(self.entry_n_id2.get().strip())
+        has_naver = bool(self._get_entry_or_accounts("entry_n_id1", "naver_id1")) or bool(
+            self._get_entry_or_accounts("entry_n_id2", "naver_id2")
+        )
         if use_gemini and has_key:
             self.is_connected = True
             self.lbl_conn_status.config(text="● Gemini 연동", fg="#00C73C")
@@ -506,6 +521,32 @@ class CanonAutoGUI:
             self.is_connected = False
             self.lbl_conn_status.config(text="ⓧ 연동 안됨", fg="#f97373")
 
+    def _update_quality_status(self, report: dict | None) -> None:
+        if not getattr(self, "lbl_quality_status", None):
+            return
+        try:
+            from blog_quality_guard import (
+                has_quality_report,
+                quality_color,
+                summarize_quality_badge,
+                summarize_quality_details,
+            )
+
+            valid = has_quality_report(report)
+            text = summarize_quality_badge(report if valid else None)
+            details = summarize_quality_details(report if valid else None)
+            after = (report or {}).get("after", report or {}) if valid else {}
+            score = int(after.get("score", 0)) if valid else 0
+            color = quality_color(score) if valid else self.color_text_light
+        except Exception:
+            text = "품질 점수: 확인 불가"
+            details = "세부 항목: 확인 불가"
+            color = self.color_text_light
+        self.lbl_quality_status.config(text=text)
+        self.lbl_quality_status.config(fg=color)
+        if getattr(self, "lbl_quality_details", None):
+            self.lbl_quality_details.config(text=details)
+
     def select_custom_images(self):
         files = filedialog.askopenfilenames(
             title="포스팅에 사용할 이미지 선택",
@@ -518,6 +559,70 @@ class CanonAutoGUI:
         else:
             self.custom_img_paths = []
             self.lbl_img_count.config(text="선택된 이미지: 0개", fg="#666666")
+
+    def sync_traffic_unranked_keywords(self):
+        """D:/@code/traffic/traffic_config.json 파일에서 현재 미노출 키워드를 가져와서 GUI 입력창에 넣어줍니다."""
+        import json
+        from pathlib import Path
+        
+        product_choice = self.product_choice_var.get()
+        if product_choice == "none":
+            messagebox.showwarning("경고", "먼저 상품(자동차 코팅제, 바이크 코팅제, 리빙 코팅제)을 선택해 주세요.")
+            return
+
+        traffic_path = Path("D:/@code/traffic/traffic_config.json")
+        if not traffic_path.exists():
+            # 상대 경로로 시도 (D:/@code/antigravity/blogauto/login2 기준 2단계 상위 -> D:/@code/traffic)
+            traffic_path = Path(self.base_dir).resolve().parents[2] / "traffic" / "traffic_config.json"
+
+        if not traffic_path.exists():
+            messagebox.showerror("오류", f"트래픽 프로그램 설정 파일을 찾을 수 없습니다.\n경로: {traffic_path}")
+            return
+
+        try:
+            with open(traffic_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            tasks = data.get("keyword_tasks") or []
+            unranked = []
+
+            for t in tasks:
+                pkey = t.get("product_key", "")
+                rank = t.get("last_rank")
+                kw = t.get("keyword", "")
+
+                # 상품군 분류 매칭
+                is_match = False
+                if product_choice == "auto":
+                    if pkey in ("permacoat", "coating_a", "coating_b", "coating_c", "coating_d", "coating_general"):
+                        is_match = True
+                elif product_choice == "bike":
+                    if pkey == "bike_coating":
+                        is_match = True
+                elif product_choice == "living":
+                    if pkey in ("living", "cleaner") or "리빙" in kw or "가구" in kw or "싱크" in kw or "욕실" in kw:
+                        is_match = True
+
+                if is_match:
+                    # 미노출/520위 밖 조건
+                    if rank is None or rank == 0 or rank > 500 or str(rank).strip() in ("", "None"):
+                        unranked.append(kw)
+
+            # 중복 제거
+            unranked = sorted(list(set(unranked)))
+
+            if unranked:
+                self.entry_keywords.delete(0, tk.END)
+                self.entry_keywords.insert(0, ", ".join(unranked))
+                self.log(f"      🔄 트래픽 미노출 키워드 {len(unranked)}개 동기화 완료: {', '.join(unranked)}")
+                messagebox.showinfo("성공", f"현재 트래픽 프로그램에서 '미노출' 상태인 키워드 {len(unranked)}개를 자동으로 불러와서 본문에 설정했습니다.\n\n불러온 키워드: {', '.join(unranked)}")
+            else:
+                self.log(f"      ⚠️ 트래픽 미노출 키워드를 찾지 못했습니다. (선택된 상품: {product_choice})")
+                messagebox.showinfo("알림", "트래픽 프로그램에서 해당 상품의 '미노출' 상태 키워드를 찾지 못했습니다. 모든 키워드가 순위권에 진입해 있거나 아직 1회 이상 탐색(check)이 실행되지 않았을 수 있습니다.")
+
+        except Exception as e:
+            self.log(f"❌ 트래픽 키워드 동기화 실패: {e}")
+            messagebox.showerror("오류", f"동기화 도중 오류가 발생했습니다: {e}")
 
     def _flush_accounts_json(self) -> None:
         """평일 일과·배치 실행 전 GUI 값을 accounts.json에 저장."""
@@ -544,6 +649,8 @@ class CanonAutoGUI:
             "use_naver2": bool(getattr(self, "use_naver2_var", None) and self.use_naver2_var.get()),
             "use_tistory": bool(getattr(self, "use_tistory_var", None) and self.use_tistory_var.get()),
             "use_google": bool(getattr(self, "use_google_var", None) and self.use_google_var.get()),
+            "enable_intent_planner": bool(getattr(self, "enable_intent_planner_var", None) and self.enable_intent_planner_var.get()),
+            "enable_quality_guard": bool(getattr(self, "enable_quality_guard_var", None) and self.enable_quality_guard_var.get()),
             "keywords": self.entry_keywords.get().strip() if hasattr(self, "entry_keywords") else "",
             "post_type": (self.post_type_var.get() or "제품 홍보").strip()
             if hasattr(self, "post_type_var")
@@ -619,6 +726,8 @@ class CanonAutoGUI:
                 "use_naver2": getattr(self, "use_naver2_var", None).get() if getattr(self, "use_naver2_var", None) else True,
                 "use_tistory": getattr(self, "use_tistory_var", None).get() if getattr(self, "use_tistory_var", None) else True,
                 "use_google": getattr(self, "use_google_var", None).get() if getattr(self, "use_google_var", None) else False,
+                "enable_intent_planner": getattr(self, "enable_intent_planner_var", None).get() if getattr(self, "enable_intent_planner_var", None) else True,
+                "enable_quality_guard": getattr(self, "enable_quality_guard_var", None).get() if getattr(self, "enable_quality_guard_var", None) else True,
                 "keywords": self.entry_keywords.get().strip() if hasattr(self, "entry_keywords") else "",
                 "post_type": (self.post_type_var.get() or "제품 홍보").strip()
                 if hasattr(self, "post_type_var")
@@ -699,11 +808,14 @@ class CanonAutoGUI:
                     )
                     return
 
-                key = data["gemini_key"]
-                suffix = f"...{key[-6:]}" if len(key) >= 6 else key
+                keys = []
+                for field in ("gemini_key", "vertex_api_key"):
+                    k = (data.get(field) or "").strip()
+                    if k and k not in keys:
+                        keys.append(k)
 
                 async def _check():
-                    return await _content_gen().verify_gemini_api_key(key)
+                    return await _content_gen().verify_gemini_api_keys(keys)
 
                 try:
                     ok, msg = asyncio.run(_check())
@@ -713,13 +825,13 @@ class CanonAutoGUI:
                 if ok:
                     messagebox.showinfo(
                         "성공",
-                        f"계정 및 API 정보가 저장되었습니다.\nGemini 키({suffix}) 연동 확인됨.\n\n"
+                        f"계정 및 API 정보가 저장되었습니다.\n{msg}\n\n"
                         "자동화 탭에서 [🚀 자동화 시작] 버튼을 눌러 작업을 시작해 주세요.",
                     )
                 elif "429" in msg or "prepayment" in msg.lower() or "resource_exhausted" in msg.lower():
                     messagebox.showwarning(
                         "Gemini 크레딧 없음",
-                        f"키({suffix})는 저장되었지만 선불 크레딧이 없습니다.\n\n"
+                        "등록한 Gemini API 키는 저장되었지만 선불 크레딧이 없습니다.\n\n"
                         "같은 Google 프로젝트에서 새로 만든 키도 크레딧을 공유합니다.\n"
                         "AI Studio(https://aistudio.google.com)에서 충전하거나\n"
                         "다른 계정/프로젝트의 API 키를 입력한 뒤 다시 저장해 주세요.\n\n"
@@ -728,7 +840,7 @@ class CanonAutoGUI:
                 else:
                     messagebox.showwarning(
                         "Gemini 연동 확인 실패",
-                        f"키({suffix}) 저장은 완료되었으나 API 호출에 실패했습니다.\n{msg[:200]}",
+                        f"키 저장은 완료되었으나 API 호출에 실패했습니다.\n{msg[:240]}",
                     )
             threading.Thread(target=_after_save_verify, daemon=True).start()
 
@@ -1313,6 +1425,8 @@ class CanonAutoGUI:
             "use_naver2": use_n2,
             "use_tistory": bool(getattr(self, "use_tistory_var", None) and self.use_tistory_var.get()),
             "use_google": bool(getattr(self, "use_google_var", None) and self.use_google_var.get()),
+            "enable_intent_planner": bool(getattr(self, "enable_intent_planner_var", None) and self.enable_intent_planner_var.get()),
+            "enable_quality_guard": bool(getattr(self, "enable_quality_guard_var", None) and self.enable_quality_guard_var.get()),
             "manual_confirm": bool(getattr(self, "manual_confirm_var", None) and self.manual_confirm_var.get()),
             "vertex_api_key": self._get_entry_or_accounts("entry_vx_key", "vertex_api_key", cfg.VERTEX_API_KEY),
             "vertex_project_id": self._get_entry_or_accounts("entry_proj_id", "vertex_project_id", cfg.VERTEX_PROJECT_ID),
@@ -1504,6 +1618,7 @@ class CanonAutoGUI:
         self.log(f"=== 원고+이미지 생성 (발행 없음): '{keyword}' ===")
         self.log(f"   글 유형: {config.get('post_type')}")
         self.log(f"   텍스트: {config.get('text_provider')} | 이미지: {config.get('image_provider')}")
+        self._update_quality_status(None)
 
         self.is_processing = True
         self.btn_run.config(state="disabled")
@@ -1647,8 +1762,13 @@ class CanonAutoGUI:
         self.switch_tab("automation")
         self.log("=== 자동화 시작 요청 ===")
         self.log(f"   발행 대상: 네이버1={self.use_naver1_var.get()}, 네이버2={self.use_naver2_var.get()}, 티스토리={self.use_tistory_var.get()}, 구글={self.use_google_var.get()}")
+        self.log(
+            f"   최적화 옵션: 의도분석={bool(getattr(self, 'enable_intent_planner_var', None) and self.enable_intent_planner_var.get())}, "
+            f"품질검사={bool(getattr(self, 'enable_quality_guard_var', None) and self.enable_quality_guard_var.get())}"
+        )
         tp_label = getattr(self, "text_provider_var", None).get() if getattr(self, "text_provider_var", None) else "Gemini"
         self.log(f"   글 생성 엔진: {tp_label} (Ollama 선택 시 원고 생성에 수 분 걸릴 수 있습니다)")
+        self._update_quality_status(None)
 
         import os as _os
 
@@ -1667,7 +1787,24 @@ class CanonAutoGUI:
         if hasattr(self, "btn_draft"):
             self.btn_draft.config(state="disabled")
         self.btn_pause.config(state='normal')
-        threading.Thread(target=lambda: asyncio.run(_run_main_loop()(self, config)), daemon=True).start()
+
+        def _automation_worker():
+            try:
+                asyncio.run(_run_main_loop()(self, config))
+            except Exception as exc:
+                self.root.after(0, lambda: self.log(f"❌ 자동화 스레드 오류: {exc}"))
+            finally:
+                def _reset_ui():
+                    self.is_processing = False
+                    self.btn_run.config(state="normal", text="🚀 자동화 시작")
+                    if hasattr(self, "btn_draft"):
+                        self.btn_draft.config(state="normal", text="✍ 원고+이미지 생성")
+                    if hasattr(self, "btn_pause"):
+                        self.btn_pause.config(state="disabled")
+
+                self.root.after(0, _reset_ui)
+
+        threading.Thread(target=_automation_worker, daemon=True).start()
 
     async def generate_images(self, config, required_keyword, extra_keyword=None, title=None, image_desc=None):
         gen = _content_gen()
@@ -1687,9 +1824,20 @@ class CanonAutoGUI:
             master = self._effective_master_guidelines(
                 (config or {}).get("post_type") if isinstance(config, dict) else None
             )
-        return await _content_gen().generate_body_from_outline(
+        result = await _content_gen().generate_body_from_outline(
             config, title, outline_str, required_keyword, extra_keyword, self.log, master, account_id
         )
+        if isinstance(config, dict):
+            report = config.get("_quality_report")
+            try:
+                from blog_quality_guard import has_quality_report
+
+                if has_quality_report(report):
+                    self.root.after(0, lambda r=report: self._update_quality_status(r))
+            except Exception:
+                if report:
+                    self.root.after(0, lambda r=report: self._update_quality_status(r))
+        return result
 
     async def generate_content(self, config, required_keyword, extra_keyword=None, account_id=None):
         master = config.get("master_guidelines") if isinstance(config, dict) and config.get("master_guidelines") else None

@@ -492,7 +492,7 @@ def index():
 @app.route("/blog-studio")
 @app.route("/blog-studio/")
 def blog_studio_page():
-    resp = make_response(send_from_directory(_ROOT / "static", "blog_studio.html"))
+    resp = make_response(render_template("blog_studio.html"))
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return resp
 
@@ -1414,7 +1414,34 @@ def api_cron_track():
 @app.route("/api/javis/programs")
 def api_javis_programs():
     workspace = (request.args.get("workspace") or "all").strip().lower()
-    return jsonify(get_catalog(workspace=workspace))
+    lite = request.args.get("lite", "").strip().lower() in ("1", "true", "yes")
+    try:
+        catalog = get_catalog(workspace=workspace)
+        if lite:
+            return jsonify({
+                "workspace": catalog.get("workspace"),
+                "jarvis_root": catalog.get("jarvis_root"),
+                "jarvis_installed": catalog.get("jarvis_installed"),
+                "jarvis_bundled": catalog.get("jarvis_bundled"),
+                "jarvis_remote": catalog.get("jarvis_remote"),
+                "catalog_count": catalog.get("catalog_count"),
+                "bridge": catalog.get("bridge"),
+                "cloud_mode": catalog.get("cloud_mode"),
+                "cloud_programs": catalog.get("cloud_programs"),
+                "hidden_pc_only": catalog.get("hidden_pc_only"),
+                "programs": catalog.get("programs") or [],
+            })
+        return jsonify(catalog)
+    except Exception as exc:
+        heal = heal_for_error(exc, "/api/javis/programs", logger=add_log)
+        if heal.get("retry"):
+            try:
+                catalog = get_catalog(workspace=workspace)
+                return jsonify(catalog)
+            except Exception as exc2:
+                return _json_error("/api/javis/programs", exc2)
+        add_log(traceback.format_exc())
+        return _json_error("/api/javis/programs", exc)
 
 
 @app.route("/api/javis/launch", methods=["POST"])
