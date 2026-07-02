@@ -500,6 +500,23 @@ async def run_blog_automation_for_account(
                                 try:
                                     status(f"크롬 실행 중 · 댓글 작성 중 (성공 {total_comments}/{n_max_actions})…")
                                     comment_box = frame.locator(".u_cbox_text").first
+                                    if await comment_box.count() == 0 or not await comment_box.is_visible(timeout=2000):
+                                        # 댓글 영역이 접혀있는 경우 클릭하여 열기
+                                        for sel in ["a:has-text('댓글')", "button:has-text('댓글')", "span:has-text('댓글')", ".btn_comment", "a.btn_comment", ".area_comment"]:
+                                            btn = frame.locator(sel).first
+                                            if await btn.count() > 0 and await btn.is_visible(timeout=1000):
+                                                await btn.click()
+                                                await asyncio.sleep(1.5)
+                                                comment_box = frame.locator(".u_cbox_text").first
+                                                if await comment_box.count() > 0 and await comment_box.is_visible(timeout=2000):
+                                                    break
+                                            btn_page = page.locator(sel).first
+                                            if await btn_page.count() > 0 and await btn_page.is_visible(timeout=1000):
+                                                await btn_page.click()
+                                                await asyncio.sleep(1.5)
+                                                comment_box = frame.locator(".u_cbox_text").first
+                                                if await comment_box.count() > 0 and await comment_box.is_visible(timeout=2000):
+                                                    break
                                     if await comment_box.count() > 0 and await comment_box.is_visible(timeout=5000):
                                         await comment_box.fill(random.choice(comment_messages))
                                         await asyncio.sleep(0.5)

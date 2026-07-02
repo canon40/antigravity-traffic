@@ -158,12 +158,23 @@ async def comment_on_latest_post(
             pass
 
     comment_box = frame.locator(".u_cbox_text").first
-    if await comment_box.count() == 0:
-        open_c = page.locator("a:has-text('댓글'), button:has-text('댓글')").first
-        if await open_c.count() > 0:
-            await open_c.click()
-            await asyncio.sleep(1.5)
-            comment_box = frame.locator(".u_cbox_text").first
+    if await comment_box.count() == 0 or not await comment_box.is_visible(timeout=2000):
+        # 댓글 영역이 접혀있는 경우 클릭하여 열기
+        for sel in ["a:has-text('댓글')", "button:has-text('댓글')", "span:has-text('댓글')", ".btn_comment", "a.btn_comment", ".area_comment"]:
+            btn = frame.locator(sel).first
+            if await btn.count() > 0 and await btn.is_visible(timeout=1000):
+                await btn.click()
+                await asyncio.sleep(1.5)
+                comment_box = frame.locator(".u_cbox_text").first
+                if await comment_box.count() > 0 and await comment_box.is_visible(timeout=2000):
+                    break
+            btn_page = page.locator(sel).first
+            if await btn_page.count() > 0 and await btn_page.is_visible(timeout=1000):
+                await btn_page.click()
+                await asyncio.sleep(1.5)
+                comment_box = frame.locator(".u_cbox_text").first
+                if await comment_box.count() > 0 and await comment_box.is_visible(timeout=2000):
+                    break
 
     if await comment_box.count() == 0 or not await comment_box.is_visible(timeout=5000):
         log(f"   ⚠️ [{target}] 댓글 입력창이 없습니다.")
