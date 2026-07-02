@@ -2809,16 +2809,16 @@ async def _generate_images_genai(config, prompt, log_func, image_dir):
 async def _generate_images_pollinations(prompt, log_func, image_dir):
     """API 키 없이 무료 이미지 생성 (Pollinations)."""
     import urllib.parse
-
     import requests
 
     short = re.sub(r"\s+", " ", (prompt or ""))[:480]
+    seed_val = random.randint(1, 9999999)
     url = (
         "https://image.pollinations.ai/prompt/"
         + urllib.parse.quote(short, safe="")
-        + "?width=1024&height=576&nologo=true&enhance=false"
+        + f"?width=1024&height=576&nologo=true&enhance=false&seed={seed_val}"
     )
-    log_func("         🎨 무료 이미지 생성(Pollinations) 시도...")
+    log_func(f"         🎨 무료 이미지 생성(Pollinations / seed={seed_val}) 시도...")
     try:
         res = await asyncio.to_thread(requests.get, url, timeout=120)
         if res.status_code == 402:
@@ -2839,6 +2839,42 @@ async def _generate_images_pollinations(prompt, log_func, image_dir):
         log_func("         ⚠️ Pollinations 응답이 이미지가 아닙니다.")
     except Exception as e:
         log_func(f"         ⚠️ Pollinations 실패: {str(e)[:80]}")
+    return []
+
+
+async def _generate_images_loremflickr(required_keyword, log_func, image_dir):
+    """Pollinations 차단/실패 시 실제 고품질 실사 이미지 검색 및 다운로드 (LoremFlickr)."""
+    import requests
+    
+    kw_all = str(required_keyword or "").lower()
+    if any(k in kw_all for k in ["오토바이", "바이크", "motorcycle", "bike"]):
+        eng = "motorcycle"
+    elif any(k in kw_all for k in ["자동차", "세차", "유리막", "퍼마코트", "car", "auto"]):
+        eng = "car"
+    elif any(k in kw_all for k in ["욕실", "화장실", "샤워부스", "타일"]):
+        eng = "bathroom"
+    elif any(k in kw_all for k in ["주방", "싱크", "싱크대"]):
+        eng = "kitchen"
+    elif any(k in kw_all for k in ["가구", "원목", "테이블", "식탁"]):
+        eng = "furniture"
+    else:
+        eng = "interior"
+
+    random_idx = random.randint(1, 1000)
+    url = f"https://loremflickr.com/1024/576/{eng}?random={random_idx}"
+    log_func(f"         🎨 무료 이미지 검색(LoremFlickr / 카테고리: {eng} / id: {random_idx}) 시도...")
+    try:
+        res = await asyncio.to_thread(requests.get, url, timeout=30)
+        if res.status_code == 200 and res.content and len(res.content) > 1024:
+            fpath = os.path.join(image_dir, f"img_{datetime.now().strftime('%H%M%S')}_flickr.png")
+            with open(fpath, "wb") as f:
+                f.write(res.content)
+            log_func(f"         ✅ 무료 실사 이미지 1개 다운로드 완료 (LoremFlickr)")
+            return [fpath]
+        else:
+            log_func(f"         ⚠️ LoremFlickr 응답 오류 (HTTP {res.status_code})")
+    except Exception as e:
+        log_func(f"         ⚠️ LoremFlickr 다운로드 실패: {str(e)[:80]}")
     return []
 
 
@@ -2924,8 +2960,11 @@ async def _generate_images_for_prompt(config, prompt, log_func, image_dir, *, ti
 
     if provider in ("free", "pollinations"):
         paths = await _generate_images_pollinations(prompt, log_func, image_dir)
+        if not paths:
+            log_func("         ↪ Pollinations 실패 → LoremFlickr 실사 이미지 백업 시도...")
+            paths = await _generate_images_loremflickr(required_keyword, log_func, image_dir)
         if not paths and (config.get("gemini_key") or config.get("vertex_api_key")):
-            log_func("         ↪ Pollinations 실패 → Gen AI(Gemini) 재시도...")
+            log_func("         ↪ 무료 이미지 실패 → Gen AI(Gemini) 재시도...")
             paths = await _generate_images_genai(config, prompt, log_func, image_dir)
 
     elif provider == "pillow":
@@ -2936,12 +2975,18 @@ async def _generate_images_for_prompt(config, prompt, log_func, image_dir, *, ti
         if not paths:
             log_func("         ↪ Vertex AI 이미지 실패 → 무료 이미지(Pollinations) 자동 백업 생성...")
             paths = await _generate_images_pollinations(prompt, log_func, image_dir)
+        if not paths:
+            log_func("         ↪ Pollinations 실패 → LoremFlickr 실사 이미지 백업 생성...")
+            paths = await _generate_images_loremflickr(required_keyword, log_func, image_dir)
 
     elif provider == "genai":
         paths = await _generate_images_genai(config, prompt, log_func, image_dir)
         if not paths:
             log_func("         ↪ Gen AI(Gemini) 이미지 실패 → 무료 이미지(Pollinations) 자동 백업 생성...")
             paths = await _generate_images_pollinations(prompt, log_func, image_dir)
+        if not paths:
+            log_func("         ↪ Pollinations 실패 → LoremFlickr 실사 이미지 백업 생성...")
+            paths = await _generate_images_loremflickr(required_keyword, log_func, image_dir)
 
     else:
         paths = await _generate_images_genai(config, prompt, log_func, image_dir)
@@ -2949,6 +2994,8 @@ async def _generate_images_for_prompt(config, prompt, log_func, image_dir, *, ti
             paths = await _generate_images_vertex(config, prompt, log_func, image_dir)
         if not paths:
             paths = await _generate_images_pollinations(prompt, log_func, image_dir)
+        if not paths:
+            paths = await _generate_images_loremflickr(required_keyword, log_func, image_dir)
 
     # 모든 AI 방식 실패 시 최종 로컬 Pillow 플레이스홀더 대체 생성 (빈 글 방지)
     if not paths and provider != "pillow":
