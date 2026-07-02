@@ -2906,25 +2906,41 @@ async def _generate_images_pillow(title, required_keyword, image_desc, log_func,
 async def _generate_images_for_prompt(config, prompt, log_func, image_dir, *, title=None, required_keyword=None, image_desc=None):
     """단일 프롬프트로 이미지 1장 생성."""
     provider = _normalize_image_provider(config)
+    paths = []
 
     if provider in ("free", "pollinations"):
         paths = await _generate_images_pollinations(prompt, log_func, image_dir)
         if not paths and (config.get("gemini_key") or config.get("vertex_api_key")):
             log_func("         ↪ Pollinations 실패 → Gen AI(Gemini) 재시도...")
             paths = await _generate_images_genai(config, prompt, log_func, image_dir)
-        return paths
-    if provider == "pillow":
-        return await _generate_images_pillow(title, required_keyword, image_desc, log_func, image_dir)
-    if provider == "vertex":
-        return await _generate_images_vertex(config, prompt, log_func, image_dir)
-    if provider == "genai":
-        return await _generate_images_genai(config, prompt, log_func, image_dir)
 
-    paths = await _generate_images_genai(config, prompt, log_func, image_dir)
-    if not paths:
+    elif provider == "pillow":
+        paths = await _generate_images_pillow(title, required_keyword, image_desc, log_func, image_dir)
+
+    elif provider == "vertex":
         paths = await _generate_images_vertex(config, prompt, log_func, image_dir)
-    if not paths:
-        paths = await _generate_images_pollinations(prompt, log_func, image_dir)
+        if not paths:
+            log_func("         ↪ Vertex AI 이미지 실패 → 무료 이미지(Pollinations) 자동 백업 생성...")
+            paths = await _generate_images_pollinations(prompt, log_func, image_dir)
+
+    elif provider == "genai":
+        paths = await _generate_images_genai(config, prompt, log_func, image_dir)
+        if not paths:
+            log_func("         ↪ Gen AI(Gemini) 이미지 실패 → 무료 이미지(Pollinations) 자동 백업 생성...")
+            paths = await _generate_images_pollinations(prompt, log_func, image_dir)
+
+    else:
+        paths = await _generate_images_genai(config, prompt, log_func, image_dir)
+        if not paths:
+            paths = await _generate_images_vertex(config, prompt, log_func, image_dir)
+        if not paths:
+            paths = await _generate_images_pollinations(prompt, log_func, image_dir)
+
+    # 모든 AI 방식 실패 시 최종 로컬 Pillow 플레이스홀더 대체 생성 (빈 글 방지)
+    if not paths and provider != "pillow":
+        log_func("         ↪ 최종 이미지 생성 실패 → 로컬 이미지(Pillow)로 대체 생성...")
+        paths = await _generate_images_pillow(title, required_keyword, image_desc, log_func, image_dir)
+
     return paths
 
 
