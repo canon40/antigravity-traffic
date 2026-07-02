@@ -2655,18 +2655,25 @@ def _build_image_prompt(
         extra_keyword = required_keyword
     keyword_for_img = f"{required_keyword} and {extra_keyword}" if extra_keyword != required_keyword else required_keyword
     kw_all = f"{required_keyword} {extra_keyword}".lower()
-    if any(k in kw_all for k in ["욕실", "화장실", "샤워부스"]):
-        scene_hint = "bright bathroom interior with tiles and glass shower booth, water beads visible on surfaces"
-    elif any(k in kw_all for k in ["주방", "싱크", "싱크대", "가스레인지", "인덕션"]):
-        scene_hint = "modern kitchen sink and cooktop area, clean surfaces, traces of water and oil"
-    elif any(k in kw_all for k in ["가구", "원목", "마루", "테이블", "식탁"]):
-        scene_hint = "wooden table and furniture in a living or dining room, warm lighting, clean coated surface"
-    elif any(k in kw_all for k in ["자동차", "카", "vehicle", "car"]):
-        scene_hint = "car hood and body close-up, strong reflection and water beading on coated paint"
-    elif any(k in kw_all for k in ["바이크", "오토바이", "motorcycle", "bike"]):
+    
+    if any(k in kw_all for k in ["욕실", "화장실", "샤워부스", "싱크", "주방", "대리석", "가구", "원목", "마루", "테이블", "식탁", "리빙"]):
+        # 리빙/생활용 코팅 제품군 (듀라코트)
+        if any(k in kw_all for k in ["욕실", "화장실", "샤워부스", "타일"]):
+            scene_hint = "bright bathroom interior with tiles and glass shower booth, water beads visible on surfaces"
+        elif any(k in kw_all for k in ["주방", "싱크", "싱크대", "대리석"]):
+            scene_hint = "modern kitchen sink and marble countertop area, clean polished surfaces, trace of water beading"
+        else:
+            scene_hint = "wooden table and furniture in a living room, warm lighting, clean glossy coated surface"
+    elif any(k in kw_all for k in ["오토바이", "바이크", "헬멧", "bike", "motorcycle"]):
+        # 바이크 코팅 제품군
         scene_hint = "motorcycle tank and engine area, metallic gloss and water-repellent coating effect"
+    elif any(k in kw_all for k in ["자동차", "카", "차량", "유리막", "퍼마코트", "발수", "세차", "광택", "car", "auto", "vehicle"]):
+        # 자동차 코팅 제품군 (퍼마코트)
+        scene_hint = "luxury car body and hood close-up, deep gloss reflection, strong water beading on coated paint"
     else:
-        scene_hint = "home interior surfaces that are often exposed to water and stains, looking very clean"
+        # 기본값: 가장 수요가 많은 자동차 광택 이미지로 기본 설정하여 관련성 극대화
+        scene_hint = "car body close-up with deep glossy reflection and perfect water beading on paint"
+
     return (
         f"A high-quality product photo for a coating brand about {keyword_for_img}. "
         f"{scene_hint}. "
@@ -2847,18 +2854,19 @@ async def _generate_images_loremflickr(required_keyword, log_func, image_dir):
     import requests
     
     kw_all = str(required_keyword or "").lower()
-    if any(k in kw_all for k in ["오토바이", "바이크", "motorcycle", "bike"]):
+    # 한국어 키워드 매칭 -> 영어 카테고리로 변경
+    if any(k in kw_all for k in ["오토바이", "바이크", "헬멧", "helmet", "motorcycle", "bike"]):
         eng = "motorcycle"
-    elif any(k in kw_all for k in ["자동차", "세차", "유리막", "퍼마코트", "car", "auto"]):
+    elif any(k in kw_all for k in ["자동차", "카", "차량", "유리막", "퍼마코트", "발수", "세차", "광택", "car", "auto"]):
         eng = "car"
     elif any(k in kw_all for k in ["욕실", "화장실", "샤워부스", "타일"]):
         eng = "bathroom"
     elif any(k in kw_all for k in ["주방", "싱크", "싱크대"]):
         eng = "kitchen"
-    elif any(k in kw_all for k in ["가구", "원목", "테이블", "식탁"]):
+    elif any(k in kw_all for k in ["가구", "원목", "테이블", "식탁", "리빙"]):
         eng = "furniture"
     else:
-        eng = "interior"
+        eng = "car"
 
     random_idx = random.randint(1, 1000)
     url = f"https://loremflickr.com/1024/576/{eng}?random={random_idx}"

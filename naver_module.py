@@ -1028,6 +1028,8 @@ class NaverBlogWriter:
         # 1. 파일 업로드 input 엘리먼트를 통한 업로드 시도 (가장 안정적, 클립보드 불필요)
         try:
             file_input = await frame.query_selector("input[type=file]")
+            if not file_input:
+                file_input = await self.page.query_selector("input[type=file]")
             if file_input:
                 self.log(f"      📸 이미지 #{idx+1} 파일 선택창(input[type=file])을 통해 직접 업로드 중...")
                 await file_input.set_input_files(abs_path)
