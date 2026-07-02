@@ -1023,11 +1023,26 @@ class NaverBlogWriter:
             return False
 
     async def upload_image(self, frame, img_path, idx):
+        abs_path = os.path.abspath(img_path)
+        
+        # 1. 파일 업로드 input 엘리먼트를 통한 업로드 시도 (가장 안정적, 클립보드 불필요)
+        try:
+            file_input = await frame.query_selector("input[type=file]")
+            if file_input:
+                self.log(f"      📸 이미지 #{idx+1} 파일 선택창(input[type=file])을 통해 직접 업로드 중...")
+                await file_input.set_input_files(abs_path)
+                await self.wait(4.0)  # 업로드 및 처리 대기시간 부여
+                await _dismiss_file_transfer_error(self.page, self.log)
+                self.log(f"         ✅ 이미지 #{idx+1} 삽입 성공 (File Input)")
+                return True
+        except Exception as e:
+            self.log(f"         ⚠️ 파일 선택창 업로드 실패: {e}. 클립보드 복사 방식으로 재시도합니다.", "warn")
+
+        # 2. 기존 클립보드 복사 및 붙여넣기 방식 (Fallback)
         try:
             self.log(f"      📸 이미지 #{idx+1} 클립보드 복사 및 붙여넣기 시도...")
-            abs_path = os.path.abspath(img_path)
             
-            # 1. 이미지를 클립보드에 비트맵 데이터로 복사
+            # 이미지를 클립보드에 비트맵 데이터로 복사
             image = Image.open(abs_path)
             output = io.BytesIO()
             image.convert("RGB").save(output, "BMP")
@@ -1039,7 +1054,7 @@ class NaverBlogWriter:
             win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
             win32clipboard.CloseClipboard()
 
-            # 2. 본문 영역에 포커스 후 붙여넣기 (제목란 오삽입 방지)
+            # 본문 영역에 포커스 후 붙여넣기 (제목란 오삽입 방지)
             if not await self._focus_body_area(frame):
                 await self.page.keyboard.press("Tab")
                 await self.wait(0.3)
