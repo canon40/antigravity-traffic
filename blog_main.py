@@ -1007,6 +1007,7 @@ class CanonAutoGUI:
 
     def start_neighbor_visit(self):
         """서이추 댓글 자동화를 별도 쓰레드에서 실행. 서이추 탭에서만 동작."""
+        self._ensure_tab("settings")
         if self.current_tab != "neighbor":
             messagebox.showinfo("서이추 댓글", "서이추 실행은 서이추 댓글 탭에서만 가능합니다.")
             self.switch_tab("neighbor")
@@ -1140,6 +1141,7 @@ class CanonAutoGUI:
 
     def start_tistory_visit(self):
         """티스토리 구독·댓글 자동화를 별도 스레드에서 실행."""
+        self._ensure_tab("settings")
         if self.current_tab != "tistory":
             messagebox.showinfo("티스토리 서이추", "티스토리 실행은 티스토리 서이추 탭에서만 가능합니다.")
             self.switch_tab("tistory")
