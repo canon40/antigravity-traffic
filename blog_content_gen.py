@@ -2848,42 +2848,56 @@ def _generate_images_pillow_sync(title, required_keyword, image_desc, image_dir)
 
     Image = _pil_image()
     width, height = 1024, 576
-    palettes = [
-        ((24, 48, 78), (52, 96, 140)),
-        ((34, 40, 58), (88, 72, 120)),
-        ((18, 52, 44), (46, 110, 92)),
-    ]
-    c1, c2 = random.choice(palettes)
+    
+    # 고급스러운 다크 슬레이트 그라데이션 매칭
+    c1 = (15, 23, 42)    # Slate 900
+    c2 = (30, 41, 59)    # Slate 800
     img = Image.new("RGB", (width, height), c1)
     draw = ImageDraw.Draw(img)
+    
+    # 백그라운드 그라데이션 채우기
     for y in range(height):
         t = y / max(height - 1, 1)
         color = tuple(int(c1[i] * (1 - t) + c2[i] * t) for i in range(3))
         draw.line([(0, y), (width, y)], fill=color)
 
-    headline = (title or required_keyword or "Blog Post").strip()[:36]
-    sub = (image_desc or required_keyword or "").strip()[:60]
-    if len(sub) > 60:
-        sub = sub[:57] + "..."
+    # 텍스트 추출 및 세련되게 정제
+    kw = (required_keyword or "프리미엄 코팅제").strip()
+    headline = (title or f"{kw} 성능 비교 및 완벽 시공 가이드").strip()
+    if len(headline) > 32:
+        headline = headline[:30] + "..."
+        
+    sub = "전문가용 나노 유리막 코팅 솔루션 | Premium Nano Coating"
 
     font_title = ImageFont.load_default()
     font_sub = ImageFont.load_default()
+    font_brand = ImageFont.load_default()
+    
+    # 맑은 고딕 볼드체 로드 시도
     for font_path in (
-        "C:/Windows/Fonts/malgun.ttf",
-        "C:/Windows/Fonts/malgunbd.ttf",
+        "C:/Windows/Fonts/malgunbd.ttf",  # 맑은 고딕 Bold
+        "C:/Windows/Fonts/malgun.ttf",    # 맑은 고딕 Regular
     ):
         if os.path.isfile(font_path):
             try:
-                font_title = ImageFont.truetype(font_path, 42)
-                font_sub = ImageFont.truetype(font_path, 22)
+                font_title = ImageFont.truetype(font_path, 40)
+                font_sub = ImageFont.truetype(font_path, 20)
+                font_brand = ImageFont.truetype(font_path, 16)
                 break
             except Exception:
                 pass
 
-    draw.rectangle([(48, height - 200), (width - 48, height - 56)], fill=(15, 22, 35))
-    draw.text((64, height - 185), headline, fill=(245, 248, 255), font=font_title)
-    if sub:
-        draw.text((64, height - 120), sub, fill=(200, 210, 225), font=font_sub)
+    # 디자인 레이아웃 그리기 (테두리 및 포인트 요소)
+    draw.rectangle([(30, 30), (width - 30, height - 30)], outline=(71, 85, 105), width=2)
+    
+    # 상단 브랜드 명칭
+    draw.text((60, 60), "NANOLAB COATING SOLUTION", fill=(148, 163, 184), font=font_brand)
+    
+    # 중앙 메인 제목 (키워드/글제목)
+    draw.text((60, 240), headline, fill=(248, 250, 252), font=font_title)
+    
+    # 하단 설명 문구
+    draw.text((60, 480), sub, fill=(56, 189, 248), font=font_sub) # 스카이블루 색상 포인트
 
     fpath = os.path.join(image_dir, f"img_{datetime.now().strftime('%H%M%S')}_local.png")
     img.save(fpath, format="PNG")
@@ -2995,11 +3009,24 @@ async def generate_images(config, required_keyword, extra_keyword, log_func, ima
             image_desc=desc,
             variant=variant,
         )
-        got = await _generate_images_for_prompt(config, prompt, log_func, image_dir)
+        got = await _generate_images_for_prompt(
+            config,
+            prompt,
+            log_func,
+            image_dir,
+            title=title,
+            required_keyword=required_keyword,
+            image_desc=desc,
+        )
         return got[:1] if got else []
 
-    results = await asyncio.gather(*[one(v) for v in variants])
-    paths = [p for batch in results for p in batch]
+    paths = []
+    for idx, v in enumerate(variants):
+        if idx > 0:
+            await asyncio.sleep(2.5)  # 429 Too Many Requests 방지를 위한 순차 호출 지연
+        got = await one(v)
+        if got:
+            paths.extend(got)
 
     if not paths:
         log_func("         ⚠️ AI 이미지 생성에 실패해, 이번 포스팅은 이미지 없이 진행합니다.")
