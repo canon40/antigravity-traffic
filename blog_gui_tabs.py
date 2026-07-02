@@ -165,13 +165,23 @@ def setup_automation_tab(app):
     }
 
     def _set_product_url(key):
-        url = app._product_url_map.get(key, "")
+        if key == "none":
+            url = "auto_detect"
+            post_type = None
+            keywords = []
+        else:
+            url = app._product_url_map.get(key, "")
+            post_type = PRODUCT_POST_TYPE.get(key)
+            keywords = PRODUCT_KEYWORDS.get(key, [])
+
         app.product_url_entry.delete(0, tk.END)
         app.product_url_entry.insert(0, url)
-        post_type = PRODUCT_POST_TYPE.get(key)
-        keywords = PRODUCT_KEYWORDS.get(key, [])
-        if post_type and getattr(app, "post_type_var", None):
-            app.post_type_var.set(post_type)
+        
+        # 사용자가 수동으로 선택한 글 유형이 있으면 덮어쓰지 않고 보존
+        current_pt = app.post_type_var.get() if getattr(app, "post_type_var", None) else ""
+        if current_pt in ("자동(매번 랜덤)", ""):
+            if post_type and getattr(app, "post_type_var", None):
+                app.post_type_var.set(post_type)
         if keywords and getattr(app, "entry_keywords", None):
             app.entry_keywords.delete(0, tk.END)
             app.entry_keywords.insert(0, ", ".join(keywords))
@@ -215,6 +225,19 @@ def setup_automation_tab(app):
     )
     rb_living.grid(row=0, column=2, sticky="w", padx=(10, 0))
 
+    rb_none = tk.Radiobutton(
+        promo_frame,
+        text="자동 감지 (키워드 매칭)",
+        variable=app.product_choice_var,
+        value="none",
+        bg=app.color_card,
+        activebackground=app.color_card,
+        fg=app.color_text_dark,
+        selectcolor=app.color_bg,
+        command=lambda: _set_product_url("none"),
+    )
+    rb_none.grid(row=0, column=3, sticky="w", padx=(10, 0))
+
     app.btn_sync_traffic = tk.Button(
         promo_frame,
         text="🛒 트래픽 미노출 키워드 연동",
@@ -226,7 +249,7 @@ def setup_automation_tab(app):
         pady=2,
         command=app.sync_traffic_unranked_keywords,
     )
-    app.btn_sync_traffic.grid(row=0, column=3, sticky="w", padx=(15, 0))
+    app.btn_sync_traffic.grid(row=0, column=4, sticky="w", padx=(15, 0))
 
     tk.Label(
         promo_frame,
@@ -237,11 +260,11 @@ def setup_automation_tab(app):
     ).grid(row=1, column=0, sticky="w", pady=(5, 0))
 
     app.product_url_entry = app.create_modern_entry(promo_frame, "", 70)
-    app.product_url_entry.grid(row=1, column=1, columnspan=3, sticky="ew", padx=(5, 0), pady=(5, 0))
+    app.product_url_entry.grid(row=1, column=1, columnspan=4, sticky="ew", padx=(5, 0), pady=(5, 0))
     default_promo_url = app._product_url_map.get("auto", "")
     if default_promo_url:
         app.product_url_entry.insert(0, default_promo_url)
-    promo_frame.columnconfigure(3, weight=1)
+    promo_frame.columnconfigure(4, weight=1)
 
     app.vercel_enabled_var = tk.BooleanVar(value=False)
     app.vercel_on_publish_var = tk.BooleanVar(value=False)
@@ -367,25 +390,12 @@ def setup_automation_tab(app):
         app.lbl_vercel_status.pack(side="left", padx=(12, 0))
         vercel_card.columnconfigure(3, weight=1)
 
-    app.btn_draft = tk.Button(
-        input_card,
-        text="✍ 원고+이미지 생성",
-        bg="#6366f1",
-        fg="white",
-        font=app.font_bold,
-        padx=15,
-        pady=10,
-        relief="flat",
-        command=app.start_draft_writing,
-    )
-    app.btn_draft.grid(row=6, column=2, sticky="e", padx=(0, 8))
-
-    app.btn_run = tk.Button(input_card, text="🚀 자동화 시작", bg=app.color_accent, fg="white", font=app.font_bold,
-                            padx=20, pady=10, relief="flat", command=app.start_processing)
-    app.btn_run.grid(row=6, column=3, sticky="e")
+    # 버튼들을 정렬할 프레임 생성 (간격을 가깝게 배치)
+    app.btn_action_frame = tk.Frame(input_card, bg=app.color_card)
+    app.btn_action_frame.grid(row=6, column=2, columnspan=2, sticky="e", pady=(5, 0))
 
     app.btn_weekday = tk.Button(
-        input_card,
+        app.btn_action_frame,
         text="📅 평일 일과",
         bg="#0d9488",
         fg="white",
@@ -395,7 +405,33 @@ def setup_automation_tab(app):
         relief="flat",
         command=app.start_daily_weekday,
     )
-    app.btn_weekday.grid(row=6, column=1, sticky="w", padx=(0, 8))
+    app.btn_weekday.pack(side="left", padx=(0, 8))
+
+    app.btn_draft = tk.Button(
+        app.btn_action_frame,
+        text="✍ 원고+이미지 생성",
+        bg="#6366f1",
+        fg="white",
+        font=app.font_bold,
+        padx=15,
+        pady=10,
+        relief="flat",
+        command=app.start_draft_writing,
+    )
+    app.btn_draft.pack(side="left", padx=(0, 8))
+
+    app.btn_run = tk.Button(
+        app.btn_action_frame,
+        text="🚀 자동화 시작",
+        bg=app.color_accent,
+        fg="white",
+        font=app.font_bold,
+        padx=20,
+        pady=10,
+        relief="flat",
+        command=app.start_processing,
+    )
+    app.btn_run.pack(side="left")
     tk.Label(
         input_card,
         text="월~금: 글쓰기 → hymini1↔hymini11 서로이웃·답글 → 티스토리",

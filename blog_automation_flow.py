@@ -239,17 +239,42 @@ def _is_playwright_browser_missing_error(err_msg: str) -> bool:
     )
 
 
-def _append_product_url(body: str, config: dict) -> str:
+def _append_product_url(body: str, config: dict, required_keyword: str = "") -> str:
     """스마트스토어 URL — 마지막 1문단 부드러운 참고 링크로만."""
     try:
+        # 1. 키워드 기반으로 상품 URL 및 카테고리(auto/bike/living) 자동 감지
+        kw = str(required_keyword or "").lower()
+        
+        PRODUCT_URL_MAP = {
+            "auto": "https://smartstore.naver.com/nanumlab/products/12639296730",  # 퍼마코트 자동차 코팅제
+            "bike": "https://smartstore.naver.com/nanumlab/products/12808836901",  # 나눔랩 바이크 코팅제
+            "living": "https://smartstore.naver.com/nanumlab/products/10713170202", # 듀라코트 리빙코트
+        }
+        from blog_constants import PRODUCT_LABELS
+        
+        # 기본값 설정
         url = (config.get("product_url") or "").strip()
+        choice = (config.get("product_choice") or "none").strip().lower()
+        
+        # 만약 product_choice가 none이거나, url이 없으면 키워드 기반 자동 연동
+        if choice == "none" or not url:
+            if any(x in kw for x in ("바이크", "오토바이", "이륜차", "bike")):
+                choice = "bike"
+            elif any(x in kw for x in ("가구", "원목", "싱크대", "욕실", "타일", "리빙", "식탁", "living", "곰팡이")):
+                choice = "living"
+            else:
+                choice = "auto"
+            url = PRODUCT_URL_MAP[choice]
+            # 실시간 config에 동기화
+            config["product_choice"] = choice
+            config["product_url"] = url
     except Exception:
         url = ""
+        choice = "none"
+        
     if not url or url in body:
         return body
-    from blog_constants import PRODUCT_LABELS
-
-    choice = (config.get("product_choice") or "none").strip().lower()
+        
     label = PRODUCT_LABELS.get(choice, "관련 제품")
     particle = "를" if label and (ord(label[-1]) - 0xAC00) % 28 == 0 else "을"
     footer = (
@@ -331,7 +356,7 @@ async def _generate_one_round(app, config, posting_targets, r, total_rounds, pos
     body, tags = await app.generate_body_from_outline(
         config, outline_title, outline_str, required_keyword, extra_keyword
     )
-    body = _append_product_url(body, config)
+    body = _append_product_url(body, config, required_keyword)
     for t in naver_targets:
         contents_by_key[f"naver:{t['id']}"] = (outline_title, body, tags)
     if any(t["type"] != "naver" for t in posting_targets):

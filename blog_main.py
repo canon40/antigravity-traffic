@@ -566,10 +566,6 @@ class CanonAutoGUI:
         from pathlib import Path
         
         product_choice = self.product_choice_var.get()
-        if product_choice == "none":
-            messagebox.showwarning("경고", "먼저 상품(자동차 코팅제, 바이크 코팅제, 리빙 코팅제)을 선택해 주세요.")
-            return
-
         traffic_path = Path("D:/@code/traffic/traffic_config.json")
         if not traffic_path.exists():
             # 상대 경로로 시도 (D:/@code/antigravity/blogauto/login2 기준 2단계 상위 -> D:/@code/traffic)
@@ -593,7 +589,10 @@ class CanonAutoGUI:
 
                 # 상품군 분류 매칭
                 is_match = False
-                if product_choice == "auto":
+                if product_choice == "none":
+                    # 자동 감지 모드일 때는 모든 카테고리의 키워드를 불러옵니다.
+                    is_match = True
+                elif product_choice == "auto":
                     if pkey in ("permacoat", "coating_a", "coating_b", "coating_c", "coating_d", "coating_general"):
                         is_match = True
                 elif product_choice == "bike":

@@ -1356,7 +1356,8 @@ def apply_product_choice(config: dict) -> dict:
         return config
 
     raw_post = (config.get("post_type") or "자동(매번 랜덤)").strip()
-    if raw_post not in _PRESERVE_POST_TYPES:
+    # 사용자가 GUI에서 수동으로 선택한 글 유형(제품 홍보, 취미글 등)은 보존하고, "자동(매번 랜덤)"이거나 비어있을 때만 기본값 부여
+    if raw_post == "자동(매번 랜덤)" or not raw_post:
         config["post_type"] = PRODUCT_POST_TYPE[choice]
 
     default_kws = PRODUCT_KEYWORDS.get(choice, [])
