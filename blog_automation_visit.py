@@ -350,12 +350,24 @@ async def run_blog_automation_for_account(
                         await human_delay(n_min_delay, n_max_delay)
                         has_frame = await page.locator("#mainFrame").count() > 0
                         frame = page.frame_locator("#mainFrame") if has_frame else page
+                        
+                        # 방해 팝업 정리
+                        for sel in ["button.btn_close", ".popup_close", ".btn_layer_close", "button:has-text('닫기')", "a:has-text('닫기')"]:
+                            try:
+                                btn = page.locator(sel).first
+                                if await btn.count() > 0 and await btn.is_visible(timeout=500):
+                                    await btn.click()
+                                btn_f = frame.locator(sel).first
+                                if await btn_f.count() > 0 and await btn_f.is_visible(timeout=500):
+                                    await btn_f.click()
+                            except Exception:
+                                pass
                         # 공감(좋아요): 네이버 블로그 공감 버튼
                         like_btn = frame.locator(".u_likeit_button, .blog_like_area .my_reaction a.u_likeit_button").first
                         if await like_btn.count() > 0 and await like_btn.is_visible(timeout=3000):
                             await like_btn.click()
                             await asyncio.sleep(0.8)
-                            layer_like = page.locator("ul.u_likeit_layer a.u_likeit_list_button[data-type='like']").first
+                            layer_like = frame.locator("ul.u_likeit_layer a.u_likeit_list_button[data-type='like']").first
                             if await layer_like.count() > 0 and await layer_like.is_visible(timeout=1500):
                                 await layer_like.click()
                                 await asyncio.sleep(0.5)
@@ -493,6 +505,20 @@ async def run_blog_automation_for_account(
                                 post_norm = _normalize_naver_url(post_url)
                                 await page.goto(href, wait_until="domcontentloaded", timeout=15000)
                                 await human_delay(n_min_delay, n_max_delay)
+                                
+                                # 방해 팝업 정리
+                                try:
+                                    has_frame_tmp = await page.locator("#mainFrame").count() > 0
+                                    frame_tmp = page.frame_locator("#mainFrame") if has_frame_tmp else page
+                                    for sel in ["button.btn_close", ".popup_close", ".btn_layer_close", "button:has-text('닫기')", "a:has-text('닫기')"]:
+                                        btn = page.locator(sel).first
+                                        if await btn.count() > 0 and await btn.is_visible(timeout=500):
+                                            await btn.click()
+                                        btn_f = frame_tmp.locator(sel).first
+                                        if await btn_f.count() > 0 and await btn_f.is_visible(timeout=500):
+                                            await btn_f.click()
+                                except Exception:
+                                    pass
 
                                 # 본문이 iframe(mainFrame)인 경우
                                 has_frame = await page.locator("#mainFrame").count() > 0
